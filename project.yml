@@ -1,0 +1,48 @@
+name: FlappyBird
+options:
+  bundleIdPrefix: com.jordanvalladares
+  deploymentTarget:
+    iOS: "15.0"
+targets:
+  FlappyBird:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes:
+          - "web/**"
+          - "Info.plist"
+      - path: App/web
+        type: folder
+        buildPhase: resources
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Flappy Bird
+        CFBundleShortVersionString: "4.5"
+        CFBundleVersion: "117"
+        UILaunchScreen:
+          UIColorName: ""
+        UIRequiresFullScreen: true
+        UIStatusBarHidden: true
+        UIViewControllerBasedStatusBarAppearance: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSPhotoLibraryAddUsageDescription: Save your score cards and replays to Photos.
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jordanvalladares.flappybird
+        PRODUCT_NAME: FlappyBird
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
