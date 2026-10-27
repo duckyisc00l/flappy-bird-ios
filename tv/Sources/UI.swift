@@ -20,7 +20,7 @@ final class PixelButton: UIButton {
         base = color
         super.init(frame: .zero)
         setTitle(title, for: .normal)
-        titleLabel?.font = Look.pixel(24)
+        titleLabel?.font = Look.pixel(21)
         titleLabel?.numberOfLines = 2
         titleLabel?.textAlignment = .center
         setTitleColor(Look.brown, for: .normal)
@@ -29,7 +29,7 @@ final class PixelButton: UIButton {
         layer.cornerRadius = 22
         layer.borderWidth = 6
         layer.borderColor = Look.brown.cgColor
-        contentEdgeInsets = UIEdgeInsets(top: 22, left: 34, bottom: 22, right: 34)
+        contentEdgeInsets = UIEdgeInsets(top: 20, left: 24, bottom: 20, right: 24)
         addTarget(self, action: #selector(tapped), for: .primaryActionTriggered)
     }
     required init?(coder: NSCoder) { fatalError() }

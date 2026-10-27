@@ -40,13 +40,13 @@ final class GameViewController: UIViewController, GameSceneHUD {
         scene.scaleMode = .aspectFill
         scene.hud = self
 
-        bar.axis = .horizontal; bar.spacing = 30; bar.alignment = .center
+        bar.axis = .horizontal; bar.spacing = 18; bar.alignment = .center
         bar.translatesAutoresizingMaskIntoConstraints = false
         for b in [playButton, partyButton, modeButton, birdButton, boardButton, accountButton, soundButton] { bar.addArrangedSubview(b) }
         view.addSubview(bar)
         NSLayoutConstraint.activate([bar.centerXAnchor.constraint(equalTo: view.centerXAnchor),
                                      bar.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -70)])
-        playButton.titleLabel?.font = Look.pixel(30)
+        playButton.titleLabel?.font = Look.pixel(26)
         playButton.onSelect = { [weak self] in self?.play() }
         modeButton.onSelect = { [weak self] in self?.openModes() }
         birdButton.onSelect = { [weak self] in self?.openBirds() }
@@ -63,7 +63,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
         pausedLabel.frame = view.bounds; pausedLabel.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         view.addSubview(pausedLabel)
 
-        hint.text = "CLICK OR TAP THE REMOTE TO FLAP"
+        hint.text = "PRESS THE REMOTE TO FLAP"
         hint.font = Look.pixel(24); hint.textColor = .white; hint.textAlignment = .center
         hint.layer.shadowColor = UIColor.black.cgColor; hint.layer.shadowOpacity = 0.8; hint.layer.shadowRadius = 0; hint.layer.shadowOffset = CGSize(width: 3, height: 3)
         hint.translatesAutoresizingMaskIntoConstraints = false
@@ -71,11 +71,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
         view.addSubview(hint)
         NSLayoutConstraint.activate([hint.centerXAnchor.constraint(equalTo: view.centerXAnchor), hint.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -90)])
 
-        // a tap on the Siri Remote's touch surface flaps too (faster than clicking)
-        let tap = UITapGestureRecognizer(target: self, action: #selector(surfaceTap))
-        tap.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.indirect.rawValue)]
-        tap.allowedPressTypes = []
-        view.addGestureRecognizer(tap)
+        // (only a real press flaps: a light tap on the remote's touch surface does nothing, so you can't flap by accident)
 
         updateLabels()
         skView.presentScene(scene)
@@ -120,7 +116,6 @@ final class GameViewController: UIViewController, GameSceneHUD {
     func openBirds() { let c = BirdsController(); c.onDone = { [weak self] in self?.choicesChanged() }; present(c, animated: true) }
     private func choicesChanged() { scene.refreshChoices(); updateLabels() }
 
-    @objc private func surfaceTap() { if !paused && (scene.phase == .ready || scene.phase == .playing) { scene.primaryAction() } }
 
     private func setPaused(_ p: Bool) {
         paused = p; skView.isPaused = p; scene.isPaused = p; pausedLabel.isHidden = !p
