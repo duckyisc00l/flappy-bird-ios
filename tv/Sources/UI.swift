@@ -68,10 +68,24 @@ class PanelController: UIViewController {
         return t
     }
     static func cell(_ t: UITableView, _ style: UITableViewCell.CellStyle, _ id: String) -> UITableViewCell {
-        let c = t.dequeueReusableCell(withIdentifier: id) ?? UITableViewCell(style: style, reuseIdentifier: id)
+        let c = t.dequeueReusableCell(withIdentifier: id) as? TVCell ?? TVCell(style: style, reuseIdentifier: id)
         c.textLabel?.font = Look.font(36, .medium); c.detailTextLabel?.font = Look.font(27)
         c.detailTextLabel?.numberOfLines = 2
+        c.recolor(c.isFocused)
         return c
+    }
+}
+
+/// A list row: white text over the blur, dark text on the white focused row (like Apple's Settings app).
+final class TVCell: UITableViewCell {
+    func recolor(_ f: Bool) {
+        textLabel?.textColor = f ? .black : .white
+        detailTextLabel?.textColor = f ? UIColor(white: 0, alpha: 0.6) : UIColor(white: 1, alpha: 0.65)
+        tintColor = f ? .black : .white
+    }
+    override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
+        super.didUpdateFocus(in: context, with: coordinator)
+        coordinator.addCoordinatedAnimations({ self.recolor(self.isFocused) })
     }
 }
 
