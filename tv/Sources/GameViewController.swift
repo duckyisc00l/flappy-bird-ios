@@ -11,6 +11,11 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
         window = w
         return true
     }
+    /// the Top Shelf's buttons open the app with flappytv://daily, flappytv://play or flappytv://leaderboard
+    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        (window?.rootViewController as? GameViewController)?.open(url)
+        return true
+    }
 }
 
 /// The TV screen: the game (SpriteKit) full screen. On the title and Game Over screens a row of big picture cards
@@ -28,7 +33,7 @@ final class GameViewController: UIViewController, GameSceneHUD, UICollectionView
     private var paused = false
     private var focusPlay = true
 
-    private enum Card: Int, CaseIterable { case play, party, mode, bird, board, account, settings }
+    private enum Card: Int, CaseIterable { case play, daily, party, mode, bird, board, account, settings }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -86,7 +91,7 @@ final class GameViewController: UIViewController, GameSceneHUD, UICollectionView
             l.translatesAutoresizingMaskIntoConstraints = false; view.addSubview(l)
         }
         hint.font = Look.font(30, .semibold); hint.numberOfLines = 0
-        hint.text = "Press the remote to flap\nSwipe \u{2190} \u{2192} to change mode     Swipe \u{2191} \u{2193} to change bird"
+        hint.text = "Swipe \u{2190} \u{2192} for mode   \u{00B7}   \u{2191} \u{2193} for bird"
         toast.font = Look.font(48, .bold)
         NSLayoutConstraint.activate([hint.centerXAnchor.constraint(equalTo: view.centerXAnchor), hint.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -60),
                                      toast.centerXAnchor.constraint(equalTo: view.centerXAnchor), toast.topAnchor.constraint(equalTo: view.topAnchor, constant: 70)])
@@ -134,6 +139,7 @@ final class GameViewController: UIViewController, GameSceneHUD, UICollectionView
     func collectionView(_ c: UICollectionView, didSelectItemAt ip: IndexPath) {
         switch Card(rawValue: ip.item)! {
         case .play: play()
+        case .daily: playDaily()
         case .party: openParty()
         case .mode: openModes()
         case .bird: openBirds()
@@ -153,6 +159,16 @@ final class GameViewController: UIViewController, GameSceneHUD, UICollectionView
                 Cards.bird(bird == "random" ? "yellow" : bird, height: 80, at: CGPoint(x: r.width * 0.36, y: r.height * 0.46))
                 UIColor.white.withAlphaComponent(0.92).setFill(); g.fillEllipse(in: CGRect(x: r.width * 0.62, y: r.height * 0.24, width: 84, height: 84))
                 Cards.symbol("play.fill", 38, at: CGPoint(x: r.width * 0.62 + 46, y: r.height * 0.24 + 42), color: Look.rgb(0x4ec0ca))
+            })
+        case .daily:
+            let day = Calendar.current.component(.day, from: Date())
+            return ("Daily Challenge", Cards.render(size) { g, r in
+                Cards.gradient(g, r, Look.rgb(0x26345e), Look.rgb(0x12182e))
+                UIColor.white.setFill(); g.fill(CGRect(x: r.midX - 52, y: r.height * 0.2, width: 104, height: 104).insetBy(dx: 0, dy: 0))
+                Look.orange.setFill(); g.fill(CGRect(x: r.midX - 52, y: r.height * 0.2, width: 104, height: 28))
+                let t = NSAttributedString(string: "\(day)", attributes: [.font: Look.font(56, .heavy), .foregroundColor: Look.rgb(0x26345e)])
+                let ts = t.size(); t.draw(at: CGPoint(x: r.midX - ts.width / 2, y: r.height * 0.2 + 30))
+                Cards.bird("yellow", height: 40, at: CGPoint(x: r.width * 0.82, y: r.height * 0.78))
             })
         case .party:
             return ("Party", Cards.render(size) { g, r in
@@ -194,6 +210,21 @@ final class GameViewController: UIViewController, GameSceneHUD, UICollectionView
 
     // MARK: actions
     func play() { scene.getReadyScreen() }
+    /// Daily Challenge: today's course (the Mode card then shows it; pick another mode any time)
+    func playDaily() { Prefs.mode = "daily"; choicesChanged(); play() }
+    /// links from the Top Shelf
+    func open(_ url: URL) {
+        let go = { [weak self] in
+            guard let s = self else { return }
+            if s.scene.phase == .playing || s.scene.phase == .dying { s.scene.showTitle() }
+            switch url.host ?? "" {
+            case "daily": s.playDaily()
+            case "leaderboard": s.present(LeaderboardController(), animated: true)
+            default: s.play()
+            }
+        }
+        if presentedViewController != nil { dismiss(animated: false) { go() } } else { go() }
+    }
     func openParty() {
         let args = ProcessInfo.processInfo.arguments
         let code = args.firstIndex(of: "-partycode").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }
@@ -296,6 +327,8 @@ enum Demo {
         at(2) { let c = SettingsController(); vc.present(c, animated: true); print("DEMO settings") }
         at(3) { vc.presentedViewController?.present(TrailsController(), animated: true); print("DEMO trails") }
         at(4) { vc.presentedViewController?.dismiss(animated: false); vc.dismiss(animated: true) }
+        at(2) { vc.playDaily(); print("DEMO daily ready \(Daily.key)") }
+        at(3) { s.showTitle(); Prefs.mode = "normal"; s.refreshChoices() }
         let looks = [("halloween", "rainbow"), ("christmas", "sparkles"), ("spring", "hearts"), ("fall", "fireribbon"), ("summer", "bubbles"), ("winter", "halo")]
         for (i, m) in ["normal", "flipped", "dark", "windy", "wavy", "hard"].enumerated() {
             at(2) { Prefs.season = looks[i].0; Prefs.trail = looks[i].1; Prefs.mode = m; s.refreshChoices(); s.autopilot = true; vc.play(); print("DEMO ready \(m) \(looks[i].0) \(looks[i].1)") }

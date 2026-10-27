@@ -50,6 +50,7 @@ final class GameScene: SKScene {
         var k = 0   // its number (seasons decorate every 2nd / 3rd pipe)
     }
     private var pipeCount = 0
+    private var dailyRng: Mulberry32?   // Daily Challenge: today's pipes
     let seasons = SeasonLayer()
     let trail = TrailRunner()
     private var pipes: [Pipe] = []
@@ -63,7 +64,7 @@ final class GameScene: SKScene {
     private var streaks: [(node: SKShapeNode, vy: CGFloat)] = []
     private lazy var logo = sprite("flappybird", 1.5, CGPoint(x: W / 2, y: H / 2 + 200))
     private lazy var getReady = sprite("get-ready", 1.2, CGPoint(x: W / 2, y: H / 2 + 130))
-    private lazy var tapTap = sprite("taptap", 1.5, CGPoint(x: W / 2, y: H / 2))
+    private lazy var tapTap = sprite("pressremote", 1.5, CGPoint(x: W / 2, y: H / 2))
     private lazy var gameOverNode = sprite("gameover", 1.5, CGPoint(x: W / 2, y: H / 2 + 210))
     private lazy var board = ScoreBoard(atlas: atlas)
     private let modeTag = SKLabelNode(fontNamed: "KongtextRegular")
@@ -198,6 +199,7 @@ final class GameScene: SKScene {
         modeTag.isHidden = true
         dynamic = true; vy = 0
         spawnTimer = 0.25
+        dailyRng = mode == "daily" ? Mulberry32(seed: Daily.seed) : nil
         if mode == "flipped" { world.yScale = -1; world.position = CGPoint(x: 0, y: H) }
         aimCamera()
         flap()
@@ -231,6 +233,7 @@ final class GameScene: SKScene {
     private func spawnPipe() {
         let q = Int(H / 4)
         var y = CGFloat(Int.random(in: q...(q * 2)))
+        if mode == "daily" { if dailyRng == nil { dailyRng = Mulberry32(seed: Daily.seed) }; y = CGFloat(q) + (dailyRng!.unit() * CGFloat(q + 1)).rounded(.down) }
         var wave: (CGFloat, CGFloat, CGFloat, CGFloat)? = nil
         if mode == "wavy" {
             let w = (y, 40 + CGFloat.random(in: 0..<30), CGFloat.random(in: 0..<(2 * .pi)), (2 * .pi) / (200 * (1.3 + CGFloat.random(in: 0..<0.8))))

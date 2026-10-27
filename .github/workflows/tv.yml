@@ -48,6 +48,14 @@ jobs:
           for i in $(seq -w 1 64); do sleep 2.5; xcrun simctl io "$UDID" screenshot "../out/shots/s$i.png" > /dev/null 2>&1 || true; done
           sleep 2; xcrun simctl terminate "$UDID" com.jordanvalladares.flappybird.tv || true
           grep DEMO ../out/console.txt | head -40 || true
+          # the Top Shelf's links: open the app with flappytv://daily
+          xcrun simctl launch "$UDID" com.jordanvalladares.flappybird.tv > /dev/null 2>&1 || true; sleep 5
+          xcrun simctl openurl "$UDID" "flappytv://daily" || echo "openurl failed" >> ../out/status.txt
+          sleep 4; xcrun simctl io "$UDID" screenshot ../out/shots/url_daily.png > /dev/null 2>&1 || true
+          xcrun simctl openurl "$UDID" "flappytv://leaderboard" || true
+          sleep 5; xcrun simctl io "$UDID" screenshot ../out/shots/url_board.png > /dev/null 2>&1 || true
+          xcrun simctl terminate "$UDID" com.jordanvalladares.flappybird.tv || true
+          ls build/Build/Products/Release-appletvos/FlappyBirdTV.app/PlugIns > ../out/plugins.txt 2>&1 || true
           # the couch party: the app opens a room, a pretend phone (node + supabase-js) joins through the real Supabase
           (cd ci && npm init -y > /dev/null && npm i --silent @supabase/supabase-js@2 > /dev/null 2>&1)
           xcrun simctl launch --console-pty "$UDID" com.jordanvalladares.flappybird.tv -partyshots -partycode CITV${{ github.run_number }} > ../out/party_console.txt 2>&1 &

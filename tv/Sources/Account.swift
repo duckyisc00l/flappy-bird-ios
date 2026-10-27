@@ -132,6 +132,7 @@ final class Account {
         withToken { [weak self] t in
             guard let self = self, let t = t, let s = self.session else { return }
             self.request("/rest/v1/rpc/add_stats", body: ["g": 1, "p": max(0, score), "f": 0, "s": Int(seconds)], token: t) { _, _ in }
+            let mode = Daily.scoreMode(mode)   // (Daily: today's own board)
             let key = "sent_" + s.userId + "_" + mode
             guard score > 0, score > UserDefaults.standard.integer(forKey: key) else { return }
             self.request("/rest/v1/scores", body: ["name": s.username, "mode": mode, "score": score, "bird": String(bird.prefix(40)),

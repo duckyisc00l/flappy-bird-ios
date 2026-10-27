@@ -20,18 +20,23 @@ targets:
         buildPhase: resources
       - path: Resources/ORIGINAL_LICENSE.txt
         buildPhase: resources
+    dependencies:
+      - target: TopShelf   # the live Top Shelf (embedded in the app)
     info:
       path: Info.plist
       properties:
         CFBundleDisplayName: Flappy Bird
         CFBundleShortVersionString: "1.0"
-        CFBundleVersion: "7"
+        CFBundleVersion: "8"
         UIAppFonts: [inside.ttf, outside.ttf, pixel.ttf]
         UILaunchScreen: {}
         UIRequiredDeviceCapabilities: [arm64]
         UIUserInterfaceStyle: Dark
         ITSAppUsesNonExemptEncryption: false
         GCSupportsControllerUserInteraction: true
+        CFBundleURLTypes:
+          - CFBundleURLName: flappytv
+            CFBundleURLSchemes: [flappytv]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jordanvalladares.flappybird.tv
@@ -41,3 +46,25 @@ targets:
         SWIFT_VERSION: "5.0"
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_STYLE: Automatic   # Xcode signs it with your Apple ID (the GitHub build turns signing off by itself)
+  TopShelf:
+    type: app-extension
+    platform: tvOS
+    sources:
+      - path: TopShelf
+    info:
+      path: TopShelf/Info.plist
+      properties:
+        CFBundleDisplayName: Flappy Bird
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "8"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.tv-top-shelf
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ContentProvider
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jordanvalladares.flappybird.tv.topshelf
+        PRODUCT_NAME: TopShelf
+        TARGETED_DEVICE_FAMILY: "3"
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic

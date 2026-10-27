@@ -9,7 +9,7 @@ enum Online {
     struct Row { let name: String; let score: Int; let bird: String; let userId: String; let avatar: String?; let avatarBg: String? }
 
     static func leaderboard(mode: String, week: Bool, done: @escaping (Result<[Row], Error>) -> Void) {
-        var q = "scores?select=name,score,bird,user_id,created_at,profiles(avatar,avatar_bg)&mode=eq.\(mode)&user_id=not.is.null&order=score.desc,created_at.asc&limit=400"
+        var q = "scores?select=name,score,bird,user_id,created_at,profiles(avatar,avatar_bg)&mode=eq.\(Daily.scoreMode(mode))&user_id=not.is.null&order=score.desc,created_at.asc&limit=400"
         if week {
             let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
             q += "&created_at=gte." + f.string(from: Date().addingTimeInterval(-7 * 86400))
