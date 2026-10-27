@@ -1,0 +1,57 @@
+name: Build Apple TV app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths: [ 'tv/**', '.github/workflows/tv.yml' ]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Make the Xcode project
+        working-directory: tv
+        run: xcodegen generate
+      - name: Build for Apple TV (unsigned)
+        working-directory: tv
+        run: |
+          mkdir -p ../out
+          xcodebuild -project FlappyBirdTV.xcodeproj -scheme FlappyBirdTV -sdk appletvos -configuration Release \
+            -destination 'generic/platform=tvOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            -derivedDataPath build build > ../out/build.log 2>&1 || { grep -E "error:" ../out/build.log | sort -u | head -40 > ../out/errors.txt; cat ../out/errors.txt; echo FAILED > ../out/status.txt; exit 0; }
+          mkdir -p Payload && cp -R build/Build/Products/Release-appletvos/FlappyBirdTV.app Payload/
+          zip -qry ../out/FlappyBirdTV.ipa Payload
+          echo BUILT > ../out/status.txt
+          grep -E "warning:" ../out/build.log | sort -u | head -30 > ../out/warnings.txt || true
+      - name: Run in the Apple TV simulator and take screenshots
+        if: ${{ hashFiles('out/FlappyBirdTV.ipa') != '' }}
+        working-directory: tv
+        run: |
+          xcodebuild -project FlappyBirdTV.xcodeproj -scheme FlappyBirdTV -sdk appletvsimulator -configuration Debug \
+            -destination 'generic/platform=tvOS Simulator' -derivedDataPath simbuild build > ../out/simbuild.log 2>&1 || { echo SIMFAILED >> ../out/status.txt; exit 0; }
+          xcrun simctl list devices available | grep -i "apple tv" | tee ../out/sims.txt
+          UDID=$(xcrun simctl list devices available | grep -i "Apple TV 4K" | grep -v -i "1080" | head -1 | grep -oE '[0-9A-F-]{36}')
+          [ -z "$UDID" ] && UDID=$(xcrun simctl list devices available | grep -i "Apple TV" | head -1 | grep -oE '[0-9A-F-]{36}')
+          echo "sim $UDID"
+          xcrun simctl boot "$UDID"; xcrun simctl bootstatus "$UDID" -b > /dev/null
+          APP=$(find simbuild/Build/Products -name "FlappyBirdTV.app" -path "*simulator*" | head -1)
+          xcrun simctl install "$UDID" "$APP"
+          mkdir -p ../out/shots
+          xcrun simctl launch --console-pty "$UDID" com.jordanvalladares.flappybird.tv -shots > ../out/console.txt 2>&1 &
+          for i in $(seq -w 1 52); do sleep 2.5; xcrun simctl io "$UDID" screenshot "../out/shots/s$i.png" > /dev/null 2>&1 || true; done
+          sleep 2; xcrun simctl terminate "$UDID" com.jordanvalladares.flappybird.tv || true
+          grep DEMO ../out/console.txt | head -40 || true
+      - name: Save to the 'tv-build' branch
+        if: always()
+        run: |
+          cd out
+          git init -q; git config user.name "github-actions"; git config user.email "github-actions@users.noreply.github.com"
+          git checkout -q -b tv-build; git add -A; git commit -qm "Apple TV build ${{ github.run_number }}"
+          git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" tv-build

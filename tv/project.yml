@@ -1,0 +1,41 @@
+name: FlappyBirdTV
+options:
+  bundleIdPrefix: com.jordanvalladares
+  deploymentTarget:
+    tvOS: "15.0"
+targets:
+  FlappyBirdTV:
+    type: application
+    platform: tvOS
+    sources:
+      - path: Sources
+      - path: Resources/Assets.xcassets
+      - path: Resources/sounds
+      - path: Resources/fonts
+      - path: Resources/birds
+        type: folder
+        buildPhase: resources
+      - path: Resources/ORIGINAL_LICENSE.txt
+        buildPhase: resources
+    info:
+      path: Info.plist
+      properties:
+        CFBundleDisplayName: Flappy Bird
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UIAppFonts: [inside.ttf, outside.ttf, pixel.ttf]
+        UILaunchScreen: {}
+        UIRequiredDeviceCapabilities: [arm64]
+        UIUserInterfaceStyle: Dark
+        ITSAppUsesNonExemptEncryption: false
+        GCSupportsControllerUserInteraction: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jordanvalladares.flappybird.tv
+        PRODUCT_NAME: FlappyBirdTV
+        TARGETED_DEVICE_FAMILY: "3"
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
