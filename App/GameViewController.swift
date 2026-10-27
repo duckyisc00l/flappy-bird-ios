@@ -10,7 +10,8 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
         guard let url = task.request.url else { return }
         var path = url.path
         if path.isEmpty || path == "/" { path = "/index.html" }
-        let file = root.appendingPathComponent(String(path.dropFirst()))
+        var file = root.appendingPathComponent(String(path.dropFirst()))
+        if path == "/index.html", let hot = GameUpdate.newerGame() { file = hot }   // a newer game downloaded with the Update button
         guard let data = try? Data(contentsOf: file) else {
             task.didFailWithError(NSError(domain: "FlappyBird", code: 404))
             return
@@ -27,6 +28,58 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
     }
 
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {}
+}
+
+/// One-tap updates: the game (one HTML file) can be replaced by a newer one from the website without reinstalling.
+/// The newer file is kept in Application Support and used while its build is newer than the one inside the app.
+enum GameUpdate {
+    static var bundledBuild: Int { Int(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0") ?? 0 }
+    static var folder: URL {
+        let u = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("game", isDirectory: true)
+        try? FileManager.default.createDirectory(at: u, withIntermediateDirectories: true)
+        return u
+    }
+    static var hotFile: URL { folder.appendingPathComponent("index.html") }
+    static func newerGame() -> URL? {
+        let b = UserDefaults.standard.integer(forKey: "hotBuild")
+        guard b > bundledBuild, FileManager.default.fileExists(atPath: hotFile.path) else { return nil }
+        return hotFile
+    }
+}
+
+/// The game posts { build, url } to window.webkit.messageHandlers.update when you tap Update.
+final class UpdateBridge: NSObject, WKScriptMessageHandler {
+    weak var webView: WKWebView?
+
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard let body = message.body as? [String: Any], let build = body["build"] as? Int,
+              let s = body["url"] as? String, let url = URL(string: s), url.scheme == "https",
+              url.host == "duckyisc00l.github.io" else { return fail("That update doesn't look right") }
+        var req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalAndRemoteCacheData, timeoutInterval: 60)
+        req.url = URL(string: s + "?t=\(Int(Date().timeIntervalSince1970))")
+        URLSession.shared.dataTask(with: req) { [weak self] data, resp, err in
+            guard let self = self else { return }
+            guard err == nil, (resp as? HTTPURLResponse)?.statusCode == 200, let data = data, data.count > 300_000,
+                  let text = String(data: data, encoding: .utf8), text.contains("const APP_BUILD = \(build);") else {
+                return self.fail(err == nil ? "The download wasn't complete. Try again." : "Couldn't download. Check your internet.")
+            }
+            do {
+                try data.write(to: GameUpdate.hotFile, options: .atomic)
+                UserDefaults.standard.set(build, forKey: "hotBuild")
+                DispatchQueue.main.async {
+                    self.webView?.evaluateJavaScript("try { sessionStorage.setItem('fb_justUpdated', '\(build)') } catch (e) {}")
+                    self.webView?.load(URLRequest(url: URL(string: "flappy://game/index.html")!))
+                }
+            } catch { self.fail("Couldn't save the update") }
+        }.resume()
+    }
+
+    private func fail(_ msg: String) {
+        DispatchQueue.main.async {
+            let m = msg.replacingOccurrences(of: "'", with: "")
+            self.webView?.evaluateJavaScript("window.fbUpdateFailed && window.fbUpdateFailed('\(m)')")
+        }
+    }
 }
 
 /// Haptics for the app only: the game posts "flap", "light", "medium", "heavy" or "error"
@@ -71,6 +124,8 @@ final class GameViewController: UIViewController, WKUIDelegate, WKNavigationDele
         config.websiteDataStore = .default()
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
         config.userContentController.add(HapticBridge(), name: "haptic")
+        let updater = UpdateBridge()
+        config.userContentController.add(updater, name: "update")
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
@@ -82,6 +137,7 @@ final class GameViewController: UIViewController, WKUIDelegate, WKNavigationDele
         webView.allowsLinkPreview = false
         webView.uiDelegate = self
         webView.navigationDelegate = self
+        updater.webView = webView
         view = webView
     }
 

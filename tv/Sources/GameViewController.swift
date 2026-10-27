@@ -73,6 +73,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
 
         updateLabels()
         skView.presentScene(scene)
+        checkForUpdate()
         if ProcessInfo.processInfo.arguments.contains("-shots") { Demo.run(self) }
     }
 
@@ -85,6 +86,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
         }
         bar.isUserInteractionEnabled = menu
         playButton.setTitle(phase == .over ? "PLAY AGAIN" : "PLAY", for: .normal)
+        updateNote.isHidden = phase != .title
         updateLabels()
         setNeedsFocusUpdate(); updateFocusIfNeeded()
     }
@@ -128,6 +130,28 @@ final class GameViewController: UIViewController, GameSceneHUD {
         default: break
         }
         super.pressesBegan(presses, with: event)
+    }
+
+    // MARK: a newer Apple TV version? (the website's version.json says which build is newest)
+    private let updateNote = UILabel()
+    private func checkForUpdate() {
+        guard let url = URL(string: "https://duckyisc00l.github.io/flappy-bird/version.json?t=\(Int(Date().timeIntervalSince1970))") else { return }
+        URLSession.shared.dataTask(with: URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)) { [weak self] data, _, _ in
+            guard let data = data, let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let tv = obj["tv"] as? Int else { return }
+            let mine = Int(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "0") ?? 0
+            guard tv > mine else { return }
+            DispatchQueue.main.async { self?.showUpdateNote() }
+        }.resume()
+    }
+    private func showUpdateNote() {
+        updateNote.text = "  A NEW VERSION OF THE APPLE TV APP IS OUT. INSTALL IT AGAIN FROM XCODE TO GET IT.  "
+        updateNote.font = Look.pixel(20); updateNote.textColor = Look.brown; updateNote.backgroundColor = Look.light
+        updateNote.layer.cornerRadius = 14; updateNote.layer.borderWidth = 5; updateNote.layer.borderColor = Look.brown.cgColor; updateNote.clipsToBounds = true
+        updateNote.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(updateNote)
+        NSLayoutConstraint.activate([updateNote.centerXAnchor.constraint(equalTo: view.centerXAnchor), updateNote.topAnchor.constraint(equalTo: view.topAnchor, constant: 50),
+                                     updateNote.heightAnchor.constraint(equalToConstant: 64)])
+        phaseChanged(scene.phase)
     }
 
     // used by the demo
