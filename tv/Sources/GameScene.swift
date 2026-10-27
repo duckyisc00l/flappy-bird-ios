@@ -429,7 +429,7 @@ final class GameScene: SKScene {
         guard phase == .playing, dynamic, !showingGameOver else { return }
         let next = pipes.first { $0.gx + pipeW / 2 + birdRadius > birdX - 5 }
         let target: CGFloat = next.map { groupY + $0.y + pipeH / 2 + $0.gap / 2 - 8 } ?? H / 2
-        if birdY < target - 6 && vy < 60 { flap() }
+        if birdY < target - 30 && vy <= 0 { flap() }   // a flap rises about 65 points, so this keeps the bird near the middle of the gap
     }
 }
 
