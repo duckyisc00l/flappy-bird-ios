@@ -76,6 +76,7 @@ final class SeasonLayer {
         if p.used < p.nodes.count { n = p.nodes[p.used] } else { n = SKSpriteNode(); layer.addChild(n); p.nodes.append(n) }
         p.used += 1; pools[k] = p
         n.isHidden = false; n.colorBlendFactor = 0
+        n.xScale = 1; n.yScale = 1; n.zRotation = 0   // (a reused sprite keeps its old zoom, and SpriteKit divides a new size by it: everything came out 1/3 size)
         return n
     }
     private func beginFrame() { for k in pools.keys { pools[k]!.used = 0 } }
