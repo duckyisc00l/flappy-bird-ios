@@ -47,7 +47,11 @@ final class GameScene: SKScene {
         var gx: CGFloat, traveled: CGFloat = 0, y: CGFloat, gap: CGFloat
         var scored = false
         var wave: (y0: CGFloat, amp: CGFloat, ph: CGFloat, wk: CGFloat)?
+        var k = 0   // its number (seasons decorate every 2nd / 3rd pipe)
     }
+    private var pipeCount = 0
+    let seasons = SeasonLayer()
+    let trail = TrailRunner()
     private var pipes: [Pipe] = []
 
     // MARK: nodes
@@ -91,6 +95,8 @@ final class GameScene: SKScene {
         addChild(world)
         world.addChild(pipeLayer); pipeLayer.zPosition = -2
         bird.zPosition = -1; world.addChild(bird)
+        seasons.add(to: world)
+        trail.back.zPosition = -1.2; trail.front.zPosition = -0.8; world.addChild(trail.back); world.addChild(trail.front)
         let land = tex("land")
         for i in 0..<4 {
             let g = SKSpriteNode(texture: land); g.setScale(2); g.zPosition = 0
@@ -110,7 +116,9 @@ final class GameScene: SKScene {
 
     private func makeSky() {
         skyNodes.forEach { $0.removeFromParent() }; skyNodes = []
-        let t = tex(Bool.random() ? "night-sky" : "day-sky")
+        seasons.set(Seasons.current)
+        trail.set(Prefs.trail == "none" ? nil : Prefs.trail)
+        let t = tex(seasons.wantsNight || Bool.random() ? "night-sky" : "day-sky")
         for i in 0..<4 {
             let s = SKSpriteNode(texture: t); s.setScale(1.5); s.zPosition = -3
             s.position = CGPoint(x: CGFloat(i) * (s.size.width - 1), y: s.size.height / 3.5 + groundTop)
@@ -128,6 +136,8 @@ final class GameScene: SKScene {
     func refreshChoices() {
         mode = Prefs.mode
         if !dynamic { pickBird() }
+        if seasons.season != Seasons.current { makeSky() }
+        trail.set(Prefs.trail == "none" ? nil : Prefs.trail)
         updateModeTag()
     }
 
@@ -199,6 +209,7 @@ final class GameScene: SKScene {
         rot = flapRotation
         vy = flapImpulse / birdMass
         sound(sWing)
+        trail.flap(birdX, birdY)
     }
 
     // MARK: modes
@@ -223,7 +234,9 @@ final class GameScene: SKScene {
             node.addChild(p)
         }
         pipeLayer.addChild(node)
+        pipeCount += 1
         var pipe = Pipe(node: node, up: up, down: down, gx: W + pipeW, y: y, gap: modeGap)
+        pipe.k = pipeCount
         if let w = wave { pipe.wave = (w.0, w.1, w.2, w.3) }
         place(pipe)
         pipes.append(pipe)
@@ -268,6 +281,11 @@ final class GameScene: SKScene {
         }
         for (i, g) in groundNodes.enumerated() { g.position.x = groundX + CGFloat(i) * (g.size.width - 1) }
         for (i, s) in skyNodes.enumerated() { s.position.x = skyX + CGFloat(i) * (s.size.width - 1) }
+        // seasons: scenery on the ground and pipes, visitors in the sky, snow / leaves falling
+        let sp: [SeasonPipe] = pipes.map { SeasonPipe(x: $0.gx, top: groupY + $0.y + pipeH / 2, bottom: groupY + $0.y + pipeH + $0.gap - pipeH / 2, k: $0.k) }
+        seasons.update(dt, scroll: md * moveSpeed, groundX: groundX, pipes: sp)
+        // your trail
+        trail.step(dt, bird: CGPoint(x: birdX, y: birdY), scroll: md * moveSpeed, spawning: phase == .playing && dynamic && movingSpeed > 0 && !showingGameOver)
         // new pipes
         if phase == .playing && movingSpeed > 0 && !showingGameOver {
             spawnTimer -= dt
@@ -331,6 +349,7 @@ final class GameScene: SKScene {
 
     private func addPoint() {
         score += 1
+        trail.point(birdX, birdY)
         sound(sPoint)
         for l in [scoreLabel, scoreInside] { l.run(.sequence([.scale(to: 1.5, duration: 0.1), .scale(to: 1, duration: 0.1)])) }
     }

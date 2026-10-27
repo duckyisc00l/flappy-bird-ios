@@ -35,6 +35,16 @@ enum Prefs {
         get { d.object(forKey: "sound") == nil ? true : d.bool(forKey: "sound") }
         set { d.set(newValue, forKey: "sound") }
     }
+    /// a trail id, or "none"
+    static var trail: String {
+        get { d.string(forKey: "trail") ?? "none" }
+        set { d.set(newValue, forKey: "trail") }
+    }
+    /// "auto" (by date) or a season id
+    static var season: String {
+        get { d.string(forKey: "season") ?? "auto" }
+        set { d.set(newValue, forKey: "season") }
+    }
     static func best(_ mode: String) -> Int { d.integer(forKey: "best_" + mode) }
     static func setBest(_ mode: String, _ v: Int) { if v > best(mode) { d.set(v, forKey: "best_" + mode) } }
 }

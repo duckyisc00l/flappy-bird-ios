@@ -37,7 +37,9 @@ final class PartyScene: SKScene {
     private var windAy: CGFloat = 0, windTarget: CGFloat = 0, windTimer: TimeInterval = 0
     private var bestScore = 0
 
-    private struct Pipe { let node: SKNode, up: SKSpriteNode, down: SKSpriteNode; var gx: CGFloat, traveled: CGFloat = 0, y: CGFloat, gap: CGFloat; var scoredBy = Set<String>(); var wave: (CGFloat, CGFloat, CGFloat, CGFloat)? }
+    private struct Pipe { let node: SKNode, up: SKSpriteNode, down: SKSpriteNode; var gx: CGFloat, traveled: CGFloat = 0, y: CGFloat, gap: CGFloat; var scoredBy = Set<String>(); var wave: (CGFloat, CGFloat, CGFloat, CGFloat)?; var k = 0 }
+    private var pipeCount = 0
+    private let seasons = SeasonLayer()
     private var pipes: [Pipe] = []
     private let atlas = SKTextureAtlas(named: "textures")
     private let pipeLayer = SKNode()
@@ -57,7 +59,8 @@ final class PartyScene: SKScene {
         anchorPoint = .zero
         backgroundColor = UIColor(red: 0.31, green: 0.75, blue: 0.79, alpha: 1)
         pipeLayer.zPosition = -2; addChild(pipeLayer)
-        let t = tex(Bool.random() ? "night-sky" : "day-sky")
+        seasons.add(to: self); seasons.set(Seasons.current)
+        let t = tex(seasons.wantsNight || Bool.random() ? "night-sky" : "day-sky")
         for i in 0..<4 {
             let s = SKSpriteNode(texture: t); s.setScale(1.5); s.zPosition = -3
             s.position = CGPoint(x: CGFloat(i) * (s.size.width - 1), y: s.size.height / 3.5 + groundTop); addChild(s); skyNodes.append(s)
@@ -187,7 +190,8 @@ final class PartyScene: SKScene {
         let node = SKNode(), up = SKSpriteNode(texture: tex("PipeUp")), down = SKSpriteNode(texture: tex("PipeDown"))
         for s in [up, down] { s.setScale(2); if mode == "hard" { s.color = UIColor(red: 0.9, green: 0.15, blue: 0.1, alpha: 1); s.colorBlendFactor = 0.55 }; node.addChild(s) }
         pipeLayer.addChild(node)
-        var p = Pipe(node: node, up: up, down: down, gx: W + pipeW, y: y, gap: gapSize); p.wave = wave
+        pipeCount += 1
+        var p = Pipe(node: node, up: up, down: down, gx: W + pipeW, y: y, gap: gapSize); p.wave = wave; p.k = pipeCount
         place(p); pipes.append(p)
     }
     private func place(_ p: Pipe) { p.node.position = CGPoint(x: p.gx, y: groupY); p.up.position = CGPoint(x: 0, y: p.y); p.down.position = CGPoint(x: 0, y: p.y + pipeH + p.gap) }
@@ -208,6 +212,7 @@ final class PartyScene: SKScene {
         skyX -= md / 20; if skyX <= -432 { skyX += 432 }
         for (i, g) in groundNodes.enumerated() { g.position.x = groundX + CGFloat(i) * (g.size.width - 1) }
         for (i, s) in skyNodes.enumerated() { s.position.x = skyX + CGFloat(i) * (s.size.width - 1) }
+        seasons.update(dt, scroll: md, groundX: groundX, pipes: pipes.map { SeasonPipe(x: $0.gx, top: groupY + $0.y + pipeH / 2, bottom: groupY + $0.y + pipeH + $0.gap - pipeH / 2, k: $0.k) })
         for i in pipes.indices {
             pipes[i].gx -= md; pipes[i].traveled += md
             if let w = pipes[i].wave { pipes[i].y = w.0 + w.1 * sin(w.2 + w.3 * pipes[i].traveled) }

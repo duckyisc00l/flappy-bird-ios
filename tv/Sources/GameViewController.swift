@@ -24,7 +24,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
     private let modeButton = PixelButton("MODE")
     private let birdButton = PixelButton("BIRD")
     private let boardButton = PixelButton("LEADERBOARD")
-    private let soundButton = PixelButton("SOUND")
+    private let soundButton = PixelButton("SETTINGS")
     private let partyButton = PixelButton("PARTY", color: UIColor(red: 0.61, green: 0.42, blue: 0.84, alpha: 1))
     private let accountButton = PixelButton("SIGN IN")
     private let pausedLabel = UILabel()
@@ -55,7 +55,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
         accountButton.onSelect = { [weak self] in self?.present(SignInController(), animated: true) }
         NotificationCenter.default.addObserver(forName: .accountChanged, object: nil, queue: .main) { [weak self] _ in self?.updateLabels() }
         boardButton.onSelect = { [weak self] in self?.present(LeaderboardController(), animated: true) }
-        soundButton.onSelect = { [weak self] in Prefs.sound.toggle(); self?.updateLabels() }
+        soundButton.onSelect = { [weak self] in let c = SettingsController(); c.onDone = { self?.choicesChanged() }; self?.present(c, animated: true) }
 
         pausedLabel.text = "PAUSED\n\nCLICK TO KEEP GOING\nMENU TO QUIT"
         pausedLabel.numberOfLines = 0; pausedLabel.textAlignment = .center; pausedLabel.font = Look.pixel(40); pausedLabel.textColor = .white
@@ -104,7 +104,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
         modeButton.setTitle("MODE\n" + Modes.info(Prefs.mode).title.uppercased(), for: .normal)
         let b = Prefs.bird
         birdButton.setTitle("BIRD\n" + (b == "random" ? "RANDOM" : (Birds.shared.info(b)?.name.uppercased() ?? "RANDOM")), for: .normal)
-        soundButton.setTitle("SOUND\n" + (Prefs.sound ? "ON" : "OFF"), for: .normal)
+        soundButton.setTitle("SETTINGS", for: .normal)
         let acc = Account.shared
         accountButton.setTitle(acc.signedIn ? "ME\n" + acc.username.uppercased() : "SIGN IN", for: .normal)
     }
@@ -189,12 +189,16 @@ enum Demo {
         at(7) { vc.dismiss(animated: true) }
         at(2) { vc.present(SignInController(), animated: true); print("DEMO signin") }
         at(6) { vc.dismiss(animated: true) }
+        at(2) { let c = SettingsController(); vc.present(c, animated: true); print("DEMO settings") }
+        at(3) { vc.presentedViewController?.present(TrailsController(), animated: true); print("DEMO trails") }
+        at(4) { vc.presentedViewController?.dismiss(animated: false); vc.dismiss(animated: true) }
+        let looks = [("halloween", "rainbow"), ("christmas", "sparkles"), ("spring", "hearts"), ("fall", "fireribbon"), ("summer", "bubbles"), ("winter", "halo")]
         for (i, m) in ["normal", "flipped", "dark", "windy", "wavy", "hard"].enumerated() {
-            at(2) { Prefs.mode = m; s.refreshChoices(); s.autopilot = true; vc.play(); print("DEMO ready \(m)") }
+            at(2) { Prefs.season = looks[i].0; Prefs.trail = looks[i].1; Prefs.mode = m; s.refreshChoices(); s.autopilot = true; vc.play(); print("DEMO ready \(m) \(looks[i].0) \(looks[i].1)") }
             at(2) { s.primaryAction(); print("DEMO play \(m)") }
             at(i == 0 ? 12 : 8) { print("DEMO score \(m) \(s.score)"); s.autopilot = false }
             at(5) { print("DEMO over \(m) \(s.score)") }
         }
-        at(3) { s.showTitle(); Prefs.mode = "normal"; print("DEMO end") }
+        at(3) { Prefs.season = "auto"; Prefs.trail = "none"; s.showTitle(); Prefs.mode = "normal"; print("DEMO end") }
     }
 }

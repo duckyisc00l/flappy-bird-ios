@@ -342,3 +342,110 @@ final class ScoreRow: UITableViewCell {
         pic.backgroundColor = Online.color(row.avatarBg)
     }
 }
+
+// MARK: - Settings: sound, trail, season
+
+final class SettingsController: PanelController, UITableViewDataSource, UITableViewDelegate {
+    var onDone: (() -> Void)?
+    private let table = UITableView(frame: .zero, style: .plain)
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        heading.text = "Settings"
+        table.dataSource = self; table.delegate = self; table.backgroundColor = .clear; table.rowHeight = 120
+        table.register(ModeCell.self, forCellReuseIdentifier: "s")
+        table.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(table)
+        NSLayoutConstraint.activate([table.topAnchor.constraint(equalTo: content.topAnchor), table.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+                                     table.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 160), table.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -160)])
+    }
+    override func viewWillAppear(_ animated: Bool) { super.viewWillAppear(animated); table.reloadData() }
+    func tableView(_ t: UITableView, numberOfRowsInSection s: Int) -> Int { 3 }
+    func tableView(_ t: UITableView, cellForRowAt ip: IndexPath) -> UITableViewCell {
+        let c = t.dequeueReusableCell(withIdentifier: "s", for: ip) as! ModeCell
+        switch ip.row {
+        case 0: c.set(GameMode(id: "", title: "Sound: " + (Prefs.sound ? "On" : "Off"), desc: "Flaps, points and crashes."), on: false, best: 0)
+        case 1: c.set(GameMode(id: "", title: "Trail: " + (Trails.shared.def(Prefs.trail)?.name ?? "None"), desc: "100 trails and effects that follow your bird."), on: false, best: 0)
+        default: c.set(GameMode(id: "", title: "Season: " + Seasons.title(Prefs.season), desc: "Halloween, Christmas, spring... Auto picks by the date."), on: false, best: 0)
+        }
+        return c
+    }
+    func tableView(_ t: UITableView, didSelectRowAt ip: IndexPath) {
+        switch ip.row {
+        case 0: Prefs.sound.toggle(); t.reloadData(); onDone?()
+        case 1: let c = TrailsController(); c.onDone = { [weak self] in self?.table.reloadData(); self?.onDone?() }; present(c, animated: true)
+        default: let c = SeasonsController(); c.onDone = { [weak self] in self?.table.reloadData(); self?.onDone?() }; present(c, animated: true)
+        }
+    }
+}
+
+final class SeasonsController: PanelController, UITableViewDataSource, UITableViewDelegate {
+    var onDone: (() -> Void)?
+    private let table = UITableView(frame: .zero, style: .plain)
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        heading.text = "Seasons"
+        table.dataSource = self; table.delegate = self; table.backgroundColor = .clear; table.rowHeight = 96
+        table.register(ModeCell.self, forCellReuseIdentifier: "s")
+        table.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(table)
+        NSLayoutConstraint.activate([table.topAnchor.constraint(equalTo: content.topAnchor), table.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+                                     table.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 200), table.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -200)])
+    }
+    func tableView(_ t: UITableView, numberOfRowsInSection s: Int) -> Int { Seasons.all.count }
+    func tableView(_ t: UITableView, cellForRowAt ip: IndexPath) -> UITableViewCell {
+        let c = t.dequeueReusableCell(withIdentifier: "s", for: ip) as! ModeCell
+        let s = Seasons.all[ip.row]
+        c.set(GameMode(id: s.id, title: s.title, desc: s.id == "auto" ? "Right now: " + Seasons.title(Seasons.byDate()) : ""), on: s.id == Prefs.season, best: 0)
+        return c
+    }
+    func tableView(_ t: UITableView, didSelectRowAt ip: IndexPath) { Prefs.season = Seasons.all[ip.row].id; onDone?(); dismiss(animated: true) }
+}
+
+final class TrailsController: PanelController, UITableViewDataSource, UITableViewDelegate, UICollectionViewDataSource, UICollectionViewDelegate {
+    var onDone: (() -> Void)?
+    private let cats = UITableView(frame: .zero, style: .plain)
+    private var grid: UICollectionView!
+    private var catIndex = 0
+    private var names: [String] { ["All trails"] + Trails.shared.categories }
+    private var shown: [TrailDef] { catIndex == 0 ? Trails.shared.all : Trails.shared.all.filter { $0.cat == names[catIndex] } }
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        heading.text = "Trails"
+        let layout = UICollectionViewFlowLayout()
+        layout.itemSize = CGSize(width: 190, height: 190); layout.minimumInteritemSpacing = 22; layout.minimumLineSpacing = 34
+        layout.sectionInset = UIEdgeInsets(top: 20, left: 20, bottom: 40, right: 20)
+        grid = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        grid.backgroundColor = .clear; grid.dataSource = self; grid.delegate = self
+        grid.register(BirdCell.self, forCellWithReuseIdentifier: "t")
+        cats.dataSource = self; cats.delegate = self; cats.backgroundColor = .clear; cats.rowHeight = 66
+        cats.register(UITableViewCell.self, forCellReuseIdentifier: "c")
+        for v in [cats, grid!] as [UIView] { v.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(v) }
+        NSLayoutConstraint.activate([
+            cats.leadingAnchor.constraint(equalTo: content.leadingAnchor), cats.topAnchor.constraint(equalTo: content.topAnchor),
+            cats.bottomAnchor.constraint(equalTo: content.bottomAnchor), cats.widthAnchor.constraint(equalToConstant: 420),
+            grid.leadingAnchor.constraint(equalTo: cats.trailingAnchor, constant: 24), grid.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            grid.topAnchor.constraint(equalTo: content.topAnchor), grid.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+        ])
+    }
+    override var preferredFocusEnvironments: [UIFocusEnvironment] { [grid] }
+    func tableView(_ t: UITableView, numberOfRowsInSection s: Int) -> Int { names.count }
+    func tableView(_ t: UITableView, cellForRowAt ip: IndexPath) -> UITableViewCell {
+        let c = t.dequeueReusableCell(withIdentifier: "c", for: ip)
+        c.textLabel?.text = names[ip.row].uppercased(); c.textLabel?.font = Look.pixel(17); c.textLabel?.adjustsFontSizeToFitWidth = true
+        c.textLabel?.textColor = ip.row == catIndex ? Look.orange : Look.brown; c.backgroundColor = .clear
+        return c
+    }
+    func tableView(_ t: UITableView, didUpdateFocusIn context: UITableViewFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
+        if let ip = context.nextFocusedIndexPath, ip.row != catIndex { catIndex = ip.row; grid.reloadData(); t.reloadData() }
+    }
+    private var offset: Int { catIndex == 0 ? 1 : 0 }
+    func collectionView(_ c: UICollectionView, numberOfItemsInSection s: Int) -> Int { shown.count + offset }
+    func collectionView(_ c: UICollectionView, cellForItemAt ip: IndexPath) -> UICollectionViewCell {
+        let cell = c.dequeueReusableCell(withReuseIdentifier: "t", for: ip) as! BirdCell
+        if ip.item < offset { cell.set(image: Birds.shared.image("yellow"), name: "NONE", on: Prefs.trail == "none") }
+        else { let t = shown[ip.item - offset]; cell.set(image: Trails.shared.icon(t), name: t.name, on: Prefs.trail == t.id) }
+        return cell
+    }
+    func collectionView(_ c: UICollectionView, didSelectItemAt ip: IndexPath) {
+        Prefs.trail = ip.item < offset ? "none" : shown[ip.item - offset].id
+        onDone?(); dismiss(animated: true)
+    }
+}
