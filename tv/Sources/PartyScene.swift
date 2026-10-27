@@ -36,6 +36,7 @@ final class PartyScene: SKScene {
     private var groundX: CGFloat = 0, skyX: CGFloat = 0, spawnTimer: TimeInterval = 0, moving: CGFloat = 1
     private var windAy: CGFloat = 0, windTarget: CGFloat = 0, windTimer: TimeInterval = 0
     private var bestScore = 0
+    private var ending = false
 
     private struct Pipe { let node: SKNode, up: SKSpriteNode, down: SKSpriteNode; var gx: CGFloat, traveled: CGFloat = 0, y: CGFloat, gap: CGFloat; var scoredBy = Set<String>(); var wave: (CGFloat, CGFloat, CGFloat, CGFloat)?; var k = 0 }
     private var pipeCount = 0
@@ -134,7 +135,7 @@ final class PartyScene: SKScene {
         guard phase == .lobby || phase == .over, !players.isEmpty else { return }
         mode = Prefs.mode
         pipes.forEach { $0.node.removeFromParent() }; pipes = []
-        winners = []; round += 1
+        winners = []; round += 1; ending = false
         phase = .count; countLeft = 3
         for (i, p) in players.enumerated() {
             p.inRound = true; p.alive = true; p.landed = false; p.score = 0; p.vy = 0; p.rot = 0; p.speed = 1
@@ -159,9 +160,11 @@ final class PartyScene: SKScene {
         party?.partyChanged()
     }
     private func checkEnd() {
-        guard phase == .play else { return }
+        guard phase == .play, !ending else { return }
         let inRound = players.filter { $0.inRound }
         if inRound.contains(where: { $0.alive }) { return }
+        ending = true
+        if inRound.isEmpty { moving = 0; phase = .over; backToLobby(); return }   // everyone left: back to the lobby
         // the winner is the last bird down; birds that crashed in the same moment share it
         let lastDown = inRound.map { $0.diedAt }.max() ?? 0
         let top = inRound.filter { abs($0.diedAt - lastDown) < 0.05 }
@@ -235,6 +238,7 @@ final class PartyScene: SKScene {
             p.animT += dt * Double(p.speed)
             if !p.frames.isEmpty { p.node.texture = p.frames[[0, 1, 2, 1][Int(p.animT / 0.1) % 4]] }
             let flying = p.inRound && (phase == .play || (phase == .over && !p.landed)) && !p.landed
+            p.node.isHidden = (phase == .count || phase == .play) && !p.inRound   // joined mid-round: waits for the next one off screen
             if (phase == .lobby || phase == .count || (phase == .over && !p.inRound)) {
                 let k = (idleT + Double(p.slot) * 0.25).truncatingRemainder(dividingBy: 2)
                 p.node.position = CGPoint(x: p.x, y: p.y + 35 * CGFloat(k < 1 ? k : 2 - k) - 17)

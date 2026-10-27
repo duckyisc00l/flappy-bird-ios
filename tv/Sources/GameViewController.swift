@@ -54,6 +54,15 @@ final class GameViewController: UIViewController, GameSceneHUD {
         partyButton.onSelect = { [weak self] in self?.openParty() }
         accountButton.onSelect = { [weak self] in self?.present(SignInController(), animated: true) }
         NotificationCenter.default.addObserver(forName: .accountChanged, object: nil, queue: .main) { [weak self] _ in self?.updateLabels() }
+        // leaving the app (TV button, screen saver) in the middle of a round pauses it
+        NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            guard let s = self, s.scene.phase == .playing, !s.paused else { return }
+            s.setPaused(true)
+        }
+        NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            guard let s = self, s.paused else { return }
+            s.skView.isPaused = true; s.scene.isPaused = true   // (tvOS un-pauses the view by itself; stay paused until you click)
+        }
         boardButton.onSelect = { [weak self] in self?.present(LeaderboardController(), animated: true) }
         soundButton.onSelect = { [weak self] in let c = SettingsController(); c.onDone = { self?.choicesChanged() }; self?.present(c, animated: true) }
 

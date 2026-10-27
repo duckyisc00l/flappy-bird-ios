@@ -173,6 +173,8 @@ final class GameScene: SKScene {
         vy = 0; rot = 0; birdSpeed = 1; movingSpeed = 1; windAy = 0; windTarget = 0
         world.yScale = 1; world.position = .zero
         bird.removeAllActions(); flash.alpha = 0
+        removeAllActions()   // (a round's pending "show the score card" must not fire after you left it)
+        gameOverNode.removeAllActions(); board.removeAllActions(); board.isHidden = true
     }
 
     private func updateModeTag() {

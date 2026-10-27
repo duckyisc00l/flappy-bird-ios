@@ -198,9 +198,10 @@ final class BirdsController: PanelController, UITableViewDataSource, UITableView
         return c
     }
     func tableView(_ t: UITableView, didUpdateFocusIn context: UITableViewFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
-        if let ip = context.nextFocusedIndexPath, ip.row != catIndex { load(ip.row); t.reloadData() }
+        if let ip = context.nextFocusedIndexPath, ip.row != catIndex { load(ip.row); recolor(t) }
     }
-    func tableView(_ t: UITableView, didSelectRowAt ip: IndexPath) { load(ip.row); t.reloadData(); setNeedsFocusUpdate() }
+    func tableView(_ t: UITableView, didSelectRowAt ip: IndexPath) { load(ip.row); recolor(t); setNeedsFocusUpdate() }
+    private func recolor(_ t: UITableView) { for c in t.visibleCells { if let ip = t.indexPath(for: c) { c.textLabel?.textColor = ip.row == catIndex ? Look.orange : Look.brown } } }
 
     // birds (the first cell of "All birds" is Random)
     private var offset: Int { catIndex == 0 ? 1 : 0 }
@@ -434,7 +435,7 @@ final class TrailsController: PanelController, UITableViewDataSource, UITableVie
         return c
     }
     func tableView(_ t: UITableView, didUpdateFocusIn context: UITableViewFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
-        if let ip = context.nextFocusedIndexPath, ip.row != catIndex { catIndex = ip.row; grid.reloadData(); t.reloadData() }
+        if let ip = context.nextFocusedIndexPath, ip.row != catIndex { catIndex = ip.row; grid.reloadData(); for c in t.visibleCells { if let i = t.indexPath(for: c) { c.textLabel?.textColor = i.row == catIndex ? Look.orange : Look.brown } } }
     }
     private var offset: Int { catIndex == 0 ? 1 : 0 }
     func collectionView(_ c: UICollectionView, numberOfItemsInSection s: Int) -> Int { shown.count + offset }
