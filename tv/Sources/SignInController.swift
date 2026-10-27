@@ -2,12 +2,11 @@ import CoreImage
 import UIKit
 
 /// Sign in with your phone: a QR code for SITE#tv=CODE. Scan it, tap Approve on the phone, and the TV signs in.
-/// Signed in already: your name and a Sign out button. 2FA accounts type their 6-digit code once.
+/// Signed in already: your name and a Sign out button. (No 2FA code here: your phone already did 2FA to approve the TV.)
 final class SignInController: PanelController {
     private let qr = UIImageView(), info = UILabel(), codeLabel = UILabel(), status = UILabel()
     private let codeField = UITextField()
     private let mainButton = PixelButton("SIGN OUT")
-    private let cancelButton = PixelButton("CANCEL")
     private var link: Account.Link?
     private var pollTimer: Timer?
     private var busy = false
@@ -21,8 +20,7 @@ final class SignInController: PanelController {
         codeField.font = Look.pixel(40); codeField.textAlignment = .center; codeField.keyboardType = .numberPad
         codeField.placeholder = "6-DIGIT CODE"; codeField.backgroundColor = Look.light
         mainButton.onSelect = { [weak self] in self?.mainTapped() }
-        cancelButton.onSelect = { [weak self] in Account.shared.signOut(); self?.link = nil; self?.refresh() }
-        for v in [qr, info, codeLabel, status, codeField, mainButton, cancelButton] as [UIView] { v.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(v) }
+        for v in [qr, info, codeLabel, status, codeField, mainButton] as [UIView] { v.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(v) }
         NSLayoutConstraint.activate([
             qr.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 60), qr.centerYAnchor.constraint(equalTo: content.centerYAnchor),
             qr.widthAnchor.constraint(equalToConstant: 520), qr.heightAnchor.constraint(equalToConstant: 520),
@@ -34,28 +32,21 @@ final class SignInController: PanelController {
             status.topAnchor.constraint(equalTo: codeLabel.bottomAnchor, constant: 50), status.leadingAnchor.constraint(equalTo: info.leadingAnchor),
             status.trailingAnchor.constraint(equalTo: info.trailingAnchor),
             mainButton.topAnchor.constraint(equalTo: status.bottomAnchor, constant: 40), mainButton.centerXAnchor.constraint(equalTo: info.centerXAnchor),
-            cancelButton.topAnchor.constraint(equalTo: mainButton.bottomAnchor, constant: 30), cancelButton.centerXAnchor.constraint(equalTo: info.centerXAnchor),
         ])
         refresh()
     }
     override func viewDidDisappear(_ animated: Bool) { super.viewDidDisappear(animated); pollTimer?.invalidate() }
-    override var preferredFocusEnvironments: [UIFocusEnvironment] { Account.shared.session?.needCode == true ? [codeField] : [mainButton] }
+    override var preferredFocusEnvironments: [UIFocusEnvironment] { [mainButton] }
 
     private func refresh() {
         let a = Account.shared
-        codeField.isHidden = true; codeLabel.isHidden = false; qr.isHidden = false; cancelButton.isHidden = true
+        codeField.isHidden = true; codeLabel.isHidden = false; qr.isHidden = false
         if a.signedIn {
             pollTimer?.invalidate(); link = nil
             qr.image = Birds.shared.image(Prefs.bird == "random" ? "yellow" : Prefs.bird, scale: 12); qr.backgroundColor = UIColor(red: 0.306, green: 0.753, blue: 0.792, alpha: 1)
             info.text = "SIGNED IN AS"; codeLabel.text = a.username.uppercased()
             status.text = "YOUR SCORES ON THIS TV GO ON THE ONLINE LEADERBOARD,\nAND YOUR GAMES ADD UP ON YOUR PROFILE."
             mainButton.setTitle("SIGN OUT", for: .normal); mainButton.isHidden = false
-        } else if a.session?.needCode == true {
-            pollTimer?.invalidate()
-            qr.image = nil; qr.isHidden = true; codeLabel.isHidden = true; codeField.isHidden = false
-            info.text = "YOUR ACCOUNT USES 2FA.\nTYPE THE 6-DIGIT CODE FROM YOUR AUTHENTICATOR APP:"
-            status.text = ""
-            mainButton.setTitle("VERIFY", for: .normal); mainButton.isHidden = false; cancelButton.isHidden = false
         } else {
             qr.backgroundColor = .white
             info.text = "SCAN THIS WITH YOUR PHONE CAMERA,\nTHEN TAP APPROVE ON YOUR PHONE.\n\nYOUR PHONE NEEDS TO BE SIGNED IN\nTO FLAPPY BIRD."
@@ -97,12 +88,6 @@ final class SignInController: PanelController {
     private func mainTapped() {
         let a = Account.shared
         if a.signedIn { a.signOut(); refresh(); return }
-        if a.session?.needCode == true {
-            let c = (codeField.text ?? "").filter { $0.isNumber }
-            guard c.count == 6 else { status.text = "TYPE ALL 6 NUMBERS"; return }
-            status.text = "CHECKING..."
-            a.verifyCode(c) { [weak self] ok in self?.status.text = ok ? "" : "WRONG CODE. TRY THE NEWEST ONE."; if ok { self?.refresh() } }
-        }
     }
 
     static func qrImage(_ s: String) -> UIImage? {

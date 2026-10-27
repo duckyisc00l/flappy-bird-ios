@@ -278,11 +278,11 @@ final class LeaderboardController: PanelController, UITableViewDataSource {
         note.font = Look.pixel(22); note.textColor = Look.brown; note.textAlignment = .center; note.numberOfLines = 0
         for v in [modes, when, table, note] as [UIView] { v.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(v) }
         NSLayoutConstraint.activate([
-            modes.topAnchor.constraint(equalTo: content.topAnchor), modes.leadingAnchor.constraint(equalTo: content.leadingAnchor),
-            modes.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            modes.topAnchor.constraint(equalTo: content.topAnchor), modes.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+            modes.widthAnchor.constraint(lessThanOrEqualTo: content.widthAnchor),
             when.topAnchor.constraint(equalTo: modes.bottomAnchor, constant: 18), when.centerXAnchor.constraint(equalTo: content.centerXAnchor),
-            table.topAnchor.constraint(equalTo: when.bottomAnchor, constant: 18), table.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 120),
-            table.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -120), table.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+            table.topAnchor.constraint(equalTo: when.bottomAnchor, constant: 24), table.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+            table.widthAnchor.constraint(equalToConstant: 900), table.bottomAnchor.constraint(equalTo: content.bottomAnchor),
             note.centerXAnchor.constraint(equalTo: table.centerXAnchor), note.centerYAnchor.constraint(equalTo: table.centerYAnchor),
             note.widthAnchor.constraint(equalTo: table.widthAnchor),
         ])

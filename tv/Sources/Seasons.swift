@@ -94,8 +94,8 @@ final class SeasonLayer {
         let speed = f > 0 ? scroll / f : 0
         // ---- sky visitors ----
         if s == "halloween" {
-            put(sky, "glowOrange", 830, 640, sx: 3, sy: 3, alpha: 0.35)
-            let mt = moon; let m = node(sky); m.texture = mt; m.size = mt.size(); m.setScale(3); m.position = CGPoint(x: 830, y: 640); m.alpha = 1
+            put(sky, "glowOrange", 820, 600, sx: 3, sy: 3, alpha: 0.35)
+            let mt = moon; let m = node(sky); m.texture = mt; m.size = mt.size(); m.setScale(3); m.position = CGPoint(x: 820, y: 600); m.alpha = 1
             let span: CGFloat = 1400
             var x0 = (visL + 260 + par * 0.25).truncatingRemainder(dividingBy: span); if x0 < 0 { x0 += span }; x0 += visL - 200
             var x = x0

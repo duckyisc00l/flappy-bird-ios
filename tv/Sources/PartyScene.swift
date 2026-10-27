@@ -72,6 +72,7 @@ final class PartyScene: SKScene {
             l.fontSize = 90; l.fontColor = c; l.zPosition = z; l.position = CGPoint(x: W / 2 + dx, y: H / 2 + 40); addChild(l)
         }
         setBig("")
+        let cam = SKCameraNode(); cam.setScale(0.9375); cam.position = CGPoint(x: 512, y: 402); addChild(cam); camera = cam   // sharp pixels (see GameScene)
     }
 
     private func setBig(_ s: String) { bigLabel.text = s; bigInside.text = s }

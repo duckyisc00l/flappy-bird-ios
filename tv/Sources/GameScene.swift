@@ -70,6 +70,11 @@ final class GameScene: SKScene {
     private let scoreLabel = SKLabelNode(fontNamed: "04b19"), scoreInside = SKLabelNode(fontNamed: "inside")
     private lazy var darkness = makeDarkness()
     private let flash = SKSpriteNode(color: .white, size: CGSize(width: 1024, height: 768))
+    /// Sharp pixels: the TV shows 960 x 540 of the scene, so 1 point = exactly 2 screen points and every art pixel
+    /// (drawn at 1.5x, 2x, 3x) covers a whole number of pixels on a 1080p or 4K TV. Before, they were 5.6 / 7.5 pixels
+    /// wide on 4K, so neighbouring pixels came out different sizes and shimmered while scrolling.
+    private let cam = SKCameraNode()
+    private func aimCamera() { cam.setScale(0.9375); cam.position = CGPoint(x: 512, y: mode == "flipped" && dynamic ? 366 : 402) }
 
     // sounds
     private let sWing = SKAction.playSoundFileNamed("sfx_wing.caf", waitForCompletion: false)
@@ -111,6 +116,7 @@ final class GameScene: SKScene {
         modeTag.fontSize = 12; modeTag.fontColor = .white; modeTag.zPosition = 5; modeTag.position = CGPoint(x: W / 2, y: H / 2 + 72); addChild(modeTag)
         darkness.zPosition = 20; world.addChild(darkness)
         flash.anchorPoint = .zero; flash.zPosition = 50; flash.alpha = 0; addChild(flash)
+        addChild(cam); camera = cam; aimCamera()
         showTitle()
     }
 
@@ -172,7 +178,7 @@ final class GameScene: SKScene {
         dynamic = false; landOnly = false; hasHitGround = false; showingGameOver = false
         vy = 0; rot = 0; birdSpeed = 1; movingSpeed = 1; windAy = 0; windTarget = 0
         world.yScale = 1; world.position = .zero
-        bird.removeAllActions(); flash.alpha = 0
+        bird.removeAllActions(); flash.alpha = 0; aimCamera()
         removeAllActions()   // (a round's pending "show the score card" must not fire after you left it)
         gameOverNode.removeAllActions(); board.removeAllActions(); board.isHidden = true
     }
@@ -192,6 +198,7 @@ final class GameScene: SKScene {
         dynamic = true; vy = 0
         spawnTimer = 0.25
         if mode == "flipped" { world.yScale = -1; world.position = CGPoint(x: 0, y: H) }
+        aimCamera()
         flap()
     }
 

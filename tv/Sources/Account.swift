@@ -16,6 +16,7 @@ final class Account {
 
     private init() {
         if let d = UserDefaults.standard.data(forKey: store), let s = try? JSONDecoder().decode(Session.self, from: d) { session = s }
+        if session?.needCode == true { session = nil; UserDefaults.standard.removeObject(forKey: store) }   // (older builds asked for a 2FA code here; sign in again with your phone)
     }
     private func save() {
         if let s = session, let d = try? JSONEncoder().encode(s) { UserDefaults.standard.set(d, forKey: store) } else { UserDefaults.standard.removeObject(forKey: store) }
@@ -58,14 +59,20 @@ final class Account {
     enum Poll { case waiting, done, failed(String) }
     /// ask whether the phone has approved yet; when it has, sign in
     func poll(_ link: Link, done: @escaping (Poll) -> Void) {
-        request("/functions/v1/tv-link", body: ["code": link.code, "secret": link.secret]) { [weak self] status, obj in
+        request("/functions/v1/tv-link", body: ["code": link.code, "secret": link.secret, "v": 2]) { [weak self] status, obj in
             guard let self = self else { return }
             let o = obj as? [String: Any]
             if status == 200, o?["waiting"] as? Bool == true { return done(.waiting) }
+            // the server made the TV's login (approved by your phone, which already did 2FA: no code needed here)
+            if status == 200, let s = o?["session"] as? [String: Any] {
+                guard self.take(s, username: o?["username"] as? String) else { return done(.failed("The sign-in didn't work. Try again.")) }
+                self.session?.needCode = false; self.save()
+                return done(.done)
+            }
             if status == 200, let hash = o?["token_hash"] as? String {
                 self.request("/auth/v1/verify", body: ["type": "magiclink", "token_hash": hash]) { st, sess in
                     guard st == 200, let s = sess as? [String: Any], self.take(s, username: o?["username"] as? String) else { return done(.failed("The sign-in didn't work. Try again.")) }
-                    self.checkTwoFactor { done(.done) }
+                    self.session?.needCode = false; self.save(); done(.done)   // (older server: no 2FA screen on the TV either)
                 }
                 return
             }
