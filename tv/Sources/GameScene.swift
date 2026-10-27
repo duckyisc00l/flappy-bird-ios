@@ -214,7 +214,7 @@ final class GameScene: SKScene {
             let w = (y, 40 + CGFloat.random(in: 0..<30), CGFloat.random(in: 0..<(2 * .pi)), (2 * .pi) / (200 * (1.3 + CGFloat.random(in: 0..<0.8))))
             wave = w; y = w.0 + w.1 * sin(w.2)
         }
-        let node = SKNode(); node.zPosition = -2
+        let node = SKNode()   // (the layer itself sits between the sky and the bird)
         let up = SKSpriteNode(texture: tex("PipeUp")), down = SKSpriteNode(texture: tex("PipeDown"))
         for p in [up, down] {
             p.setScale(2)
@@ -314,7 +314,7 @@ final class GameScene: SKScene {
         }
         bird.position = CGPoint(x: birdX, y: birdY); bird.zRotation = rot
         // Darkness: the lantern follows the bird
-        darkness.isHidden = !(mode == "dark" && phase != .title)
+        darkness.isHidden = !(mode == "dark" && (phase == .ready || phase == .playing || phase == .dying))   // the score card stays readable
         if !darkness.isHidden {
             darkness.position = bird.position
             let flick = 1 + 0.03 * sin(time * 9) + 0.025 * sin(time * 23)

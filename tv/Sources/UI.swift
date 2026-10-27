@@ -20,7 +20,7 @@ final class PixelButton: UIButton {
         base = color
         super.init(frame: .zero)
         setTitle(title, for: .normal)
-        titleLabel?.font = Look.pixel(26)
+        titleLabel?.font = Look.pixel(28)
         titleLabel?.numberOfLines = 2
         titleLabel?.textAlignment = .center
         setTitleColor(Look.brown, for: .normal)
@@ -166,7 +166,7 @@ final class BirdsController: PanelController, UITableViewDataSource, UITableView
         for v in [cats, grid!, pickedName] as [UIView] { v.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(v) }
         NSLayoutConstraint.activate([
             cats.leadingAnchor.constraint(equalTo: content.leadingAnchor), cats.topAnchor.constraint(equalTo: content.topAnchor),
-            cats.bottomAnchor.constraint(equalTo: content.bottomAnchor), cats.widthAnchor.constraint(equalToConstant: 420),
+            cats.bottomAnchor.constraint(equalTo: content.bottomAnchor), cats.widthAnchor.constraint(equalToConstant: 470),
             grid.leadingAnchor.constraint(equalTo: cats.trailingAnchor, constant: 24), grid.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             grid.topAnchor.constraint(equalTo: content.topAnchor), grid.bottomAnchor.constraint(equalTo: content.bottomAnchor),
             pickedName.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -50), pickedName.centerYAnchor.constraint(equalTo: heading.centerYAnchor),
@@ -192,7 +192,8 @@ final class BirdsController: PanelController, UITableViewDataSource, UITableView
         let c = t.dequeueReusableCell(withIdentifier: "c", for: ip)
         let n = ip.row == 0 ? Birds.shared.all.count : Birds.shared.birds(in: categoryNames[ip.row]).count
         c.textLabel?.text = categoryNames[ip.row].uppercased() + "  \(n)"
-        c.textLabel?.font = Look.pixel(18); c.textLabel?.textColor = ip.row == catIndex ? Look.orange : Look.brown
+        c.textLabel?.font = Look.pixel(17); c.textLabel?.adjustsFontSizeToFitWidth = true; c.textLabel?.minimumScaleFactor = 0.6
+        c.textLabel?.textColor = ip.row == catIndex ? Look.orange : Look.brown
         c.backgroundColor = .clear
         return c
     }
@@ -266,8 +267,9 @@ final class LeaderboardController: PanelController, UITableViewDataSource {
         modes.selectedSegmentIndex = Modes.all.firstIndex { $0.id == mode } ?? 0
         when.selectedSegmentIndex = 0
         for s in [modes, when] {
-            s.setTitleTextAttributes([.font: Look.pixel(15), .foregroundColor: Look.brown], for: .normal)
-            s.setTitleTextAttributes([.font: Look.pixel(15), .foregroundColor: UIColor.white], for: .selected)
+            s.setTitleTextAttributes([.font: Look.pixel(20), .foregroundColor: Look.brown], for: .normal)
+            s.setTitleTextAttributes([.font: Look.pixel(20), .foregroundColor: UIColor.white], for: .selected)
+            s.setTitleTextAttributes([.font: Look.pixel(20), .foregroundColor: UIColor.white], for: .focused)
             s.addTarget(self, action: #selector(changed), for: .valueChanged)
         }
         table.dataSource = self; table.backgroundColor = .clear; table.rowHeight = 92

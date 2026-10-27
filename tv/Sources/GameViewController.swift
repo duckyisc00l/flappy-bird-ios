@@ -61,6 +61,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
         hint.font = Look.pixel(24); hint.textColor = .white; hint.textAlignment = .center
         hint.layer.shadowColor = UIColor.black.cgColor; hint.layer.shadowOpacity = 0.8; hint.layer.shadowRadius = 0; hint.layer.shadowOffset = CGSize(width: 3, height: 3)
         hint.translatesAutoresizingMaskIntoConstraints = false
+        hint.alpha = 0
         view.addSubview(hint)
         NSLayoutConstraint.activate([hint.centerXAnchor.constraint(equalTo: view.centerXAnchor), hint.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -90)])
 
