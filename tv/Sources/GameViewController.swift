@@ -25,6 +25,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
     private let birdButton = PixelButton("BIRD")
     private let boardButton = PixelButton("LEADERBOARD")
     private let soundButton = PixelButton("SOUND")
+    private let partyButton = PixelButton("PARTY", color: UIColor(red: 0.61, green: 0.42, blue: 0.84, alpha: 1))
     private let pausedLabel = UILabel()
     private let hint = UILabel()
     private var paused = false
@@ -38,9 +39,9 @@ final class GameViewController: UIViewController, GameSceneHUD {
         scene.scaleMode = .aspectFill
         scene.hud = self
 
-        bar.axis = .horizontal; bar.spacing = 44; bar.alignment = .center
+        bar.axis = .horizontal; bar.spacing = 30; bar.alignment = .center
         bar.translatesAutoresizingMaskIntoConstraints = false
-        for b in [playButton, modeButton, birdButton, boardButton, soundButton] { bar.addArrangedSubview(b) }
+        for b in [playButton, partyButton, modeButton, birdButton, boardButton, soundButton] { bar.addArrangedSubview(b) }
         view.addSubview(bar)
         NSLayoutConstraint.activate([bar.centerXAnchor.constraint(equalTo: view.centerXAnchor),
                                      bar.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -70)])
@@ -48,6 +49,8 @@ final class GameViewController: UIViewController, GameSceneHUD {
         playButton.onSelect = { [weak self] in self?.play() }
         modeButton.onSelect = { [weak self] in self?.openModes() }
         birdButton.onSelect = { [weak self] in self?.openBirds() }
+        partyButton.setTitleColor(.white, for: .normal)
+        partyButton.onSelect = { [weak self] in self?.openParty() }
         boardButton.onSelect = { [weak self] in self?.present(LeaderboardController(), animated: true) }
         soundButton.onSelect = { [weak self] in Prefs.sound.toggle(); self?.updateLabels() }
 
@@ -74,7 +77,9 @@ final class GameViewController: UIViewController, GameSceneHUD {
         updateLabels()
         skView.presentScene(scene)
         checkForUpdate()
-        if ProcessInfo.processInfo.arguments.contains("-shots") { Demo.run(self) }
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-shots") { Demo.run(self) }
+        if args.contains("-partyshots") { DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.openParty() } }
     }
 
     // MARK: HUD
@@ -101,6 +106,11 @@ final class GameViewController: UIViewController, GameSceneHUD {
 
     // MARK: actions
     func play() { scene.getReadyScreen() }
+    func openParty() {
+        let args = ProcessInfo.processInfo.arguments
+        let code = args.firstIndex(of: "-partycode").flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }
+        present(PartyController(code: code), animated: true)
+    }
     func openModes() { let c = ModesController(); c.onDone = { [weak self] in self?.choicesChanged() }; present(c, animated: true) }
     func openBirds() { let c = BirdsController(); c.onDone = { [weak self] in self?.choicesChanged() }; present(c, animated: true) }
     private func choicesChanged() { scene.refreshChoices(); updateLabels() }
