@@ -135,7 +135,7 @@ final class PartyScene: SKScene {
         phase = .count; countLeft = 3
         for (i, p) in players.enumerated() {
             p.inRound = true; p.alive = true; p.landed = false; p.score = 0; p.vy = 0; p.rot = 0; p.speed = 1
-            p.x = W / 2.5 - CGFloat(i % 4) * 6; p.y = H / 2 + CGFloat(i) * 6 - 20
+            let n = CGFloat(players.count); p.x = W / 2.5 - CGFloat(i % 2) * 22; p.y = H / 2 + (CGFloat(i) - (n - 1) / 2) * 34   // spread out so names don't overlap
         }
         moving = 1; windAy = 0; windTarget = 0
         sound(sSwoosh)

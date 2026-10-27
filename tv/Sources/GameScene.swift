@@ -172,6 +172,7 @@ final class GameScene: SKScene {
 
     private func startRound() {
         phase = .playing
+        roundStart = time
         getReady.run(.fadeOut(withDuration: 0.2)); tapTap.run(.fadeOut(withDuration: 0.2))
         getReady.run(.sequence([.wait(forDuration: 0.2), .run { [weak self] in self?.getReady.isHidden = true; self?.getReady.alpha = 1 }]))
         tapTap.run(.sequence([.wait(forDuration: 0.2), .run { [weak self] in self?.tapTap.isHidden = true; self?.tapTap.alpha = 1 }]))
@@ -362,8 +363,10 @@ final class GameScene: SKScene {
         run(.sequence([.wait(forDuration: 0.8), .run { [weak self] in self?.birdSpeed = 0 }, .wait(forDuration: 0.2), .run { [weak self] in self?.showResults() }]))
     }
 
+    private var roundStart: TimeInterval = 0
     private func showResults() {
         sound(sSwoosh)
+        if !autopilot { Account.shared.roundFinished(mode: mode, score: score, bird: birdId, seconds: time - roundStart) }   // signed in: the leaderboard + your stats
         let prev = Prefs.best(mode)
         Prefs.setBest(mode, score)
         board.show(score: score, previousBest: prev)

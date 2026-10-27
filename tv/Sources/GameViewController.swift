@@ -26,6 +26,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
     private let boardButton = PixelButton("LEADERBOARD")
     private let soundButton = PixelButton("SOUND")
     private let partyButton = PixelButton("PARTY", color: UIColor(red: 0.61, green: 0.42, blue: 0.84, alpha: 1))
+    private let accountButton = PixelButton("SIGN IN")
     private let pausedLabel = UILabel()
     private let hint = UILabel()
     private var paused = false
@@ -41,16 +42,18 @@ final class GameViewController: UIViewController, GameSceneHUD {
 
         bar.axis = .horizontal; bar.spacing = 30; bar.alignment = .center
         bar.translatesAutoresizingMaskIntoConstraints = false
-        for b in [playButton, partyButton, modeButton, birdButton, boardButton, soundButton] { bar.addArrangedSubview(b) }
+        for b in [playButton, partyButton, modeButton, birdButton, boardButton, accountButton, soundButton] { bar.addArrangedSubview(b) }
         view.addSubview(bar)
         NSLayoutConstraint.activate([bar.centerXAnchor.constraint(equalTo: view.centerXAnchor),
                                      bar.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -70)])
-        playButton.titleLabel?.font = Look.pixel(34)
+        playButton.titleLabel?.font = Look.pixel(30)
         playButton.onSelect = { [weak self] in self?.play() }
         modeButton.onSelect = { [weak self] in self?.openModes() }
         birdButton.onSelect = { [weak self] in self?.openBirds() }
         partyButton.setTitleColor(.white, for: .normal)
         partyButton.onSelect = { [weak self] in self?.openParty() }
+        accountButton.onSelect = { [weak self] in self?.present(SignInController(), animated: true) }
+        NotificationCenter.default.addObserver(forName: .accountChanged, object: nil, queue: .main) { [weak self] _ in self?.updateLabels() }
         boardButton.onSelect = { [weak self] in self?.present(LeaderboardController(), animated: true) }
         soundButton.onSelect = { [weak self] in Prefs.sound.toggle(); self?.updateLabels() }
 
@@ -102,6 +105,8 @@ final class GameViewController: UIViewController, GameSceneHUD {
         let b = Prefs.bird
         birdButton.setTitle("BIRD\n" + (b == "random" ? "RANDOM" : (Birds.shared.info(b)?.name.uppercased() ?? "RANDOM")), for: .normal)
         soundButton.setTitle("SOUND\n" + (Prefs.sound ? "ON" : "OFF"), for: .normal)
+        let acc = Account.shared
+        accountButton.setTitle(acc.signedIn ? "ME\n" + acc.username.uppercased() : "SIGN IN", for: .normal)
     }
 
     // MARK: actions
@@ -182,6 +187,8 @@ enum Demo {
         at(5) { vc.dismiss(animated: true) }
         at(2) { vc.present(LeaderboardController(), animated: true); print("DEMO leaderboard") }
         at(7) { vc.dismiss(animated: true) }
+        at(2) { vc.present(SignInController(), animated: true); print("DEMO signin") }
+        at(6) { vc.dismiss(animated: true) }
         for (i, m) in ["normal", "flipped", "dark", "windy", "wavy", "hard"].enumerated() {
             at(2) { Prefs.mode = m; s.refreshChoices(); s.autopilot = true; vc.play(); print("DEMO ready \(m)") }
             at(2) { s.primaryAction(); print("DEMO play \(m)") }

@@ -20,7 +20,7 @@ final class PixelButton: UIButton {
         base = color
         super.init(frame: .zero)
         setTitle(title, for: .normal)
-        titleLabel?.font = Look.pixel(28)
+        titleLabel?.font = Look.pixel(24)
         titleLabel?.numberOfLines = 2
         titleLabel?.textAlignment = .center
         setTitleColor(Look.brown, for: .normal)
@@ -333,6 +333,9 @@ final class ScoreRow: UITableViewCell {
     }
     required init?(coder: NSCoder) { fatalError() }
     func set(rank r: Int, row: Online.Row) {
+        let mine = Account.shared.signedIn && row.userId == Account.shared.userId
+        (backgroundView)?.backgroundColor = mine ? UIColor(red: 1, green: 0.965, blue: 0.784, alpha: 1) : Look.light
+        (backgroundView)?.layer.borderColor = (mine ? Look.orange : UIColor(red: 0.77, green: 0.74, blue: 0.48, alpha: 1)).cgColor
         rank.text = r == 1 ? "1ST" : r == 2 ? "2ND" : r == 3 ? "3RD" : "\(r)"
         name.text = row.name.uppercased(); score.text = "\(row.score)"
         pic.image = Birds.shared.image(row.avatar ?? row.bird, scale: 2)
