@@ -83,6 +83,7 @@ final class GameScene: SKScene {
     private let sDie = SKAction.playSoundFileNamed("sfx_die.caf", waitForCompletion: false)
     private let sSwoosh = SKAction.playSoundFileNamed("sfx_swooshing.caf", waitForCompletion: false)
     func sound(_ a: SKAction) { if Prefs.sound { run(a) } }
+    var swoosh: SKAction { sSwoosh }
 
     override init(size: CGSize) { super.init(size: size) }
     convenience override init() { self.init(size: CGSize(width: 1024, height: 768)) }
@@ -359,7 +360,7 @@ final class GameScene: SKScene {
     private func addPoint() {
         score += 1
         trail.point(birdX, birdY)
-        sound(sPoint)
+        sound(sPoint); Rumble.point()
         for l in [scoreLabel, scoreInside] { l.run(.sequence([.scale(to: 1.5, duration: 0.1), .scale(to: 1, duration: 0.1)])) }
     }
 
@@ -370,7 +371,7 @@ final class GameScene: SKScene {
         phase = .dying
         flash.size = size; flash.run(.sequence([.fadeAlpha(to: 0.9, duration: 0.1), .fadeAlpha(to: 0, duration: 0.25)]))
         landOnly = true
-        sound(sHit)
+        sound(sHit); Rumble.crash()
         run(.sequence([.wait(forDuration: 0.2), .run { [weak self] in if let s = self { s.sound(s.sDie) } }]))
         gameOverNode.isHidden = false; gameOverNode.setScale(0)
         run(.sequence([.wait(forDuration: 0.1), .run { [weak self] in

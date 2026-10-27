@@ -1,77 +1,151 @@
 import UIKit
 
-/// The game's look for Apple TV menus: cream panels, dark brown outlines, the pixel font.
+/// Colours from the game, plus fonts. Menus use Apple's system font like other Apple TV apps;
+/// the pixel fonts stay inside the game itself.
 enum Look {
     static let cream = UIColor(red: 0.871, green: 0.847, blue: 0.584, alpha: 1)      // #ded895
     static let light = UIColor(red: 0.937, green: 0.918, blue: 0.663, alpha: 1)      // #efeaa9
     static let brown = UIColor(red: 0.325, green: 0.220, blue: 0.275, alpha: 1)      // #533846
     static let orange = UIColor(red: 0.988, green: 0.471, blue: 0.345, alpha: 1)     // #fc7858
     static let green = UIColor(red: 0.498, green: 0.812, blue: 0.353, alpha: 1)      // #7fcf5a
+    static let sky = UIColor(red: 0.306, green: 0.753, blue: 0.792, alpha: 1)        // #4ec0ca
+    static let dim = UIColor(white: 1, alpha: 0.6)
     static func pixel(_ size: CGFloat) -> UIFont { UIFont(name: "KongtextRegular", size: size) ?? .systemFont(ofSize: size, weight: .heavy) }
     static func title(_ size: CGFloat) -> UIFont { UIFont(name: "04b19", size: size) ?? .systemFont(ofSize: size, weight: .black) }
+    static func font(_ size: CGFloat, _ w: UIFont.Weight = .regular) -> UIFont { .systemFont(ofSize: size, weight: w) }
+    static func rgb(_ v: UInt32) -> UIColor { UIColor(red: CGFloat((v >> 16) & 255) / 255, green: CGFloat((v >> 8) & 255) / 255, blue: CGFloat(v & 255) / 255, alpha: 1) }
 }
 
-/// A big focusable button in the game's style. Grows and turns orange when the remote is on it.
-final class PixelButton: UIButton {
+/// A standard Apple TV button: it turns white, lifts and tilts under your thumb like Apple's own.
+final class TVButton: UIButton {
     var onSelect: (() -> Void)?
-    private let base: UIColor
-
-    init(_ title: String, color: UIColor = Look.light) {
-        base = color
-        super.init(frame: .zero)
-        setTitle(title, for: .normal)
-        titleLabel?.font = Look.pixel(21)
-        titleLabel?.numberOfLines = 2
-        titleLabel?.textAlignment = .center
-        setTitleColor(Look.brown, for: .normal)
-        setTitleColor(.white, for: .focused)
-        backgroundColor = color
-        layer.cornerRadius = 22
-        layer.borderWidth = 6
-        layer.borderColor = Look.brown.cgColor
-        contentEdgeInsets = UIEdgeInsets(top: 20, left: 24, bottom: 20, right: 24)
-        addTarget(self, action: #selector(tapped), for: .primaryActionTriggered)
+    static func make(_ title: String) -> TVButton {
+        let b = TVButton(type: .system)
+        b.setTitle(title, for: .normal)
+        b.titleLabel?.font = Look.font(36, .medium)
+        b.addTarget(b, action: #selector(tapped), for: .primaryActionTriggered)
+        return b
     }
-    required init?(coder: NSCoder) { fatalError() }
     @objc private func tapped() { onSelect?() }
-
-    override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
-        coordinator.addCoordinatedAnimations({
-            let f = self.isFocused
-            self.transform = f ? CGAffineTransform(scaleX: 1.1, y: 1.1) : .identity
-            self.backgroundColor = f ? Look.orange : self.base
-            self.layer.shadowColor = UIColor.black.cgColor
-            self.layer.shadowOpacity = f ? 0.45 : 0
-            self.layer.shadowRadius = 18; self.layer.shadowOffset = CGSize(width: 0, height: 12)
-        })
-    }
 }
 
-/// A cream card with a title, used by every menu screen.
+/// Every menu screen: the game stays behind a frosted-glass blur, with a big title like Apple's apps.
 class PanelController: UIViewController {
     let panel = UIView()
     let heading = UILabel()
     let content = UIView()
 
+    override init(nibName: String?, bundle: Bundle?) {
+        super.init(nibName: nibName, bundle: bundle)
+        modalPresentationStyle = .blurOverFullScreen
+    }
+    required init?(coder: NSCoder) { fatalError() }
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.black.withAlphaComponent(0.55)
-        panel.backgroundColor = Look.cream
-        panel.layer.cornerRadius = 36; panel.layer.borderWidth = 10; panel.layer.borderColor = Look.brown.cgColor
+        view.backgroundColor = .clear
         panel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(panel)
-        heading.font = Look.title(64); heading.textColor = .white
-        heading.layer.shadowColor = Look.brown.cgColor; heading.layer.shadowOpacity = 1; heading.layer.shadowRadius = 0; heading.layer.shadowOffset = CGSize(width: 4, height: 4)
+        heading.font = Look.font(66, .bold); heading.textColor = .white
         heading.translatesAutoresizingMaskIntoConstraints = false
         content.translatesAutoresizingMaskIntoConstraints = false
         panel.addSubview(heading); panel.addSubview(content)
+        let g = view.safeAreaLayoutGuide
         NSLayoutConstraint.activate([
-            panel.centerXAnchor.constraint(equalTo: view.centerXAnchor), panel.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            panel.widthAnchor.constraint(equalTo: view.widthAnchor, multiplier: 0.86), panel.heightAnchor.constraint(equalTo: view.heightAnchor, multiplier: 0.84),
-            heading.topAnchor.constraint(equalTo: panel.topAnchor, constant: 34), heading.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 50),
-            content.topAnchor.constraint(equalTo: heading.bottomAnchor, constant: 24), content.leadingAnchor.constraint(equalTo: panel.leadingAnchor, constant: 40),
-            content.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -40), content.bottomAnchor.constraint(equalTo: panel.bottomAnchor, constant: -34),
+            panel.leadingAnchor.constraint(equalTo: g.leadingAnchor), panel.trailingAnchor.constraint(equalTo: g.trailingAnchor),
+            panel.topAnchor.constraint(equalTo: g.topAnchor), panel.bottomAnchor.constraint(equalTo: g.bottomAnchor),
+            heading.topAnchor.constraint(equalTo: panel.topAnchor), heading.leadingAnchor.constraint(equalTo: panel.leadingAnchor),
+            content.topAnchor.constraint(equalTo: heading.bottomAnchor, constant: 30), content.leadingAnchor.constraint(equalTo: panel.leadingAnchor),
+            content.trailingAnchor.constraint(equalTo: panel.trailingAnchor), content.bottomAnchor.constraint(equalTo: panel.bottomAnchor),
         ])
+    }
+
+    /// a standard Apple TV table (rows turn white and lift when focused)
+    func makeTable(rowHeight: CGFloat) -> UITableView {
+        let t = UITableView(frame: .zero, style: .plain)
+        t.backgroundColor = .clear; t.rowHeight = rowHeight; t.remembersLastFocusedIndexPath = true
+        t.translatesAutoresizingMaskIntoConstraints = false
+        return t
+    }
+    static func cell(_ t: UITableView, _ style: UITableViewCell.CellStyle, _ id: String) -> UITableViewCell {
+        let c = t.dequeueReusableCell(withIdentifier: id) ?? UITableViewCell(style: style, reuseIdentifier: id)
+        c.textLabel?.font = Look.font(36, .medium); c.detailTextLabel?.font = Look.font(27)
+        c.detailTextLabel?.numberOfLines = 2
+        return c
+    }
+}
+
+// MARK: - pictures for cards (made here from the game's pixel art)
+
+enum Cards {
+    static func render(_ size: CGSize, radius: CGFloat = 14, _ draw: (CGContext, CGRect) -> Void) -> UIImage {
+        UIGraphicsImageRenderer(size: size).image { ctx in
+            let r = CGRect(origin: .zero, size: size)
+            UIBezierPath(roundedRect: r, cornerRadius: radius).addClip()
+            ctx.cgContext.interpolationQuality = .none
+            draw(ctx.cgContext, r)
+        }
+    }
+    static func gradient(_ g: CGContext, _ r: CGRect, _ a: UIColor, _ b: UIColor) {
+        let gr = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [a.cgColor, b.cgColor] as CFArray, locations: [0, 1])!
+        g.drawLinearGradient(gr, start: CGPoint(x: 0, y: 0), end: CGPoint(x: 0, y: r.height), options: [])
+    }
+    static func symbol(_ name: String, _ size: CGFloat, at c: CGPoint, color: UIColor = .white) {
+        let cfg = UIImage.SymbolConfiguration(pointSize: size, weight: .bold)
+        guard let s = UIImage(systemName: name, withConfiguration: cfg)?.withTintColor(color, renderingMode: .alwaysOriginal) else { return }
+        s.draw(in: CGRect(x: c.x - s.size.width / 2, y: c.y - s.size.height / 2, width: s.size.width, height: s.size.height))
+    }
+    /// a pixel bird, scaled by a whole number so its pixels stay square
+    static func bird(_ id: String, height: CGFloat, at c: CGPoint, flip: Bool = false) {
+        guard let im = Birds.shared.image(id, scale: 1) else { return }
+        let k = max(1, (height / im.size.height).rounded()), w = im.size.width * k, h = im.size.height * k
+        let r = CGRect(x: (c.x - w / 2).rounded(), y: (c.y - h / 2).rounded(), width: w, height: h)
+        if flip, let g = UIGraphicsGetCurrentContext() { g.saveGState(); g.translateBy(x: r.midX, y: 0); g.scaleBy(x: -1, y: 1); g.translateBy(x: -r.midX, y: 0); im.draw(in: r); g.restoreGState() }
+        else { im.draw(in: r) }
+    }
+    /// sky, a green hill and the ground stripe, like the game
+    static func scenery(_ g: CGContext, _ r: CGRect) {
+        gradient(g, r, Look.rgb(0x4ec0ca), Look.rgb(0x9fe3e8))
+        Look.rgb(0x5ee270).setFill(); g.fill(CGRect(x: 0, y: r.height * 0.72, width: r.width, height: r.height))
+        Look.rgb(0xe8fcd9).setFill(); g.fill(CGRect(x: 0, y: r.height * 0.70, width: r.width, height: 4))
+        Look.rgb(0x73bf2e).setFill(); g.fill(CGRect(x: 0, y: r.height * 0.86, width: r.width, height: r.height))
+        Look.rgb(0xded895).setFill(); g.fill(CGRect(x: 0, y: r.height * 0.93, width: r.width, height: r.height))
+    }
+    private static var cache: [String: UIImage] = [:]
+    /// a bird / trail tile for the pickers: a coloured card with the pixel art in the middle
+    static func tile(key: String, size: CGSize, bg: UIColor, picked: Bool, _ draw: @escaping (CGRect) -> Void) -> UIImage {
+        let k = key + (picked ? "+" : "") + "\(size)"
+        if let im = cache[k] { return im }
+        let im = render(size) { g, r in
+            gradient(g, r, bg, bg.withAlphaComponent(0.75))
+            draw(r)
+            if picked { symbol("checkmark.circle.fill", 30, at: CGPoint(x: r.maxX - 26, y: 26)) }
+        }
+        cache[k] = im
+        return im
+    }
+}
+
+/// A picture card that lifts and tilts when focused (Apple's own effect), with its name underneath.
+final class CardCell: UICollectionViewCell {
+    let pic = UIImageView(), label = UILabel()
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        pic.adjustsImageWhenAncestorFocused = true
+        pic.translatesAutoresizingMaskIntoConstraints = false
+        label.font = Look.font(24, .medium); label.textColor = Look.dim; label.textAlignment = .center; label.numberOfLines = 2
+        label.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(pic); contentView.addSubview(label)
+        NSLayoutConstraint.activate([
+            pic.topAnchor.constraint(equalTo: contentView.topAnchor), pic.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            pic.trailingAnchor.constraint(equalTo: contentView.trailingAnchor), pic.heightAnchor.constraint(equalTo: pic.widthAnchor, multiplier: 0.7),
+            label.topAnchor.constraint(equalTo: pic.focusedFrameGuide.bottomAnchor, constant: 10),
+            label.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: -16), label.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 16),
+        ])
+    }
+    required init?(coder: NSCoder) { fatalError() }
+    override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
+        coordinator.addCoordinatedAnimations({ self.label.textColor = self.isFocused ? .white : Look.dim; self.label.font = Look.font(24, self.isFocused ? .bold : .medium) })
     }
 }
 
@@ -79,25 +153,24 @@ class PanelController: UIViewController {
 
 final class ModesController: PanelController, UITableViewDataSource, UITableViewDelegate {
     var onDone: (() -> Void)?
-    private let table = UITableView(frame: .zero, style: .plain)
+    private lazy var table = makeTable(rowHeight: 116)
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        heading.text = "Modes"
-        table.dataSource = self; table.delegate = self; table.backgroundColor = .clear; table.remembersLastFocusedIndexPath = true
-        table.register(ModeCell.self, forCellReuseIdentifier: "m"); table.rowHeight = 112
-        table.translatesAutoresizingMaskIntoConstraints = false
+        heading.text = "Mode"
+        table.dataSource = self; table.delegate = self
         content.addSubview(table)
         NSLayoutConstraint.activate([table.topAnchor.constraint(equalTo: content.topAnchor), table.bottomAnchor.constraint(equalTo: content.bottomAnchor),
-                                     table.leadingAnchor.constraint(equalTo: content.leadingAnchor), table.trailingAnchor.constraint(equalTo: content.trailingAnchor)])
+                                     table.centerXAnchor.constraint(equalTo: content.centerXAnchor), table.widthAnchor.constraint(equalToConstant: 1200)])
     }
     override var preferredFocusEnvironments: [UIFocusEnvironment] { [table] }
     func indexPathForPreferredFocusedView(in tableView: UITableView) -> IndexPath? { IndexPath(row: Modes.all.firstIndex { $0.id == Prefs.mode } ?? 0, section: 0) }
     func tableView(_ t: UITableView, numberOfRowsInSection s: Int) -> Int { Modes.all.count }
     func tableView(_ t: UITableView, cellForRowAt ip: IndexPath) -> UITableViewCell {
-        let c = t.dequeueReusableCell(withIdentifier: "m", for: ip) as! ModeCell
-        let m = Modes.all[ip.row]
-        c.set(m, on: m.id == Prefs.mode, best: Prefs.best(m.id))
+        let c = Self.cell(t, .subtitle, "m"), m = Modes.all[ip.row], b = Prefs.best(m.id)
+        c.textLabel?.text = m.title
+        c.detailTextLabel?.text = m.desc + (b > 0 ? "   Best: \(b)" : "")
+        c.accessoryType = m.id == Prefs.mode ? .checkmark : .none
         return c
     }
     func tableView(_ t: UITableView, didSelectRowAt ip: IndexPath) {
@@ -106,78 +179,42 @@ final class ModesController: PanelController, UITableViewDataSource, UITableView
     }
 }
 
-final class ModeCell: UITableViewCell {
-    private let name = UILabel(), desc = UILabel(), best = UILabel()
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
-        backgroundColor = .clear
-        let box = UIView(); box.backgroundColor = Look.light; box.layer.cornerRadius = 16; box.layer.borderWidth = 4; box.layer.borderColor = Look.brown.cgColor
-        backgroundView = box
-        let sel = UIView(); sel.backgroundColor = Look.orange; sel.layer.cornerRadius = 16; sel.layer.borderWidth = 4; sel.layer.borderColor = Look.brown.cgColor
-        selectedBackgroundView = sel
-        name.font = Look.pixel(28); desc.font = Look.pixel(19); best.font = Look.pixel(24)
-        for l in [name, desc, best] { l.textColor = Look.brown; l.translatesAutoresizingMaskIntoConstraints = false; contentView.addSubview(l) }
-        desc.numberOfLines = 2; best.textAlignment = .right
-        NSLayoutConstraint.activate([
-            name.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 28), name.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 18),
-            desc.leadingAnchor.constraint(equalTo: name.leadingAnchor), desc.topAnchor.constraint(equalTo: name.bottomAnchor, constant: 10),
-            desc.trailingAnchor.constraint(equalTo: best.leadingAnchor, constant: -20),
-            best.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -28), best.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            best.widthAnchor.constraint(equalToConstant: 220),
-        ])
-    }
-    required init?(coder: NSCoder) { fatalError() }
-    func set(_ m: GameMode, on: Bool, best b: Int) {
-        name.text = (on ? "\u{2713} " : "") + m.title.uppercased(); desc.text = m.desc.uppercased(); best.text = b > 0 ? "BEST \(b)" : ""
-    }
-    override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
-        coordinator.addCoordinatedAnimations({
-            let f = self.isFocused
-            (self.backgroundView)?.backgroundColor = f ? Look.orange : Look.light
-            for l in [self.name, self.desc, self.best] { l.textColor = f ? .white : Look.brown }
-            self.transform = f ? CGAffineTransform(scaleX: 1.02, y: 1.02) : .identity
-        })
-    }
-}
-
 // MARK: - Birds
 
 final class BirdsController: PanelController, UITableViewDataSource, UITableViewDelegate, UICollectionViewDataSource, UICollectionViewDelegate {
     var onDone: (() -> Void)?
-    private let cats = UITableView(frame: .zero, style: .plain)
+    private lazy var cats = makeTable(rowHeight: 70)
     private var grid: UICollectionView!
     private var shown: [BirdInfo] = []
     private var catIndex = 0
-    private let preview = UIImageView(), pickedName = UILabel()
-    private var categoryNames: [String] { ["All birds"] + Birds.shared.categories }
+    private let pickedName = UILabel()
+    private var categoryNames: [String] { ["All Birds"] + Birds.shared.categories }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         heading.text = "Birds"
         let layout = UICollectionViewFlowLayout()
-        layout.itemSize = CGSize(width: 170, height: 190); layout.minimumInteritemSpacing = 22; layout.minimumLineSpacing = 34
-        layout.sectionInset = UIEdgeInsets(top: 20, left: 20, bottom: 40, right: 20)
+        layout.itemSize = CGSize(width: 200, height: 200); layout.minimumInteritemSpacing = 40; layout.minimumLineSpacing = 60
+        layout.sectionInset = UIEdgeInsets(top: 30, left: 40, bottom: 60, right: 40)
         grid = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        grid.backgroundColor = .clear; grid.dataSource = self; grid.delegate = self; grid.remembersLastFocusedIndexPath = true
-        grid.register(BirdCell.self, forCellWithReuseIdentifier: "b")
-        cats.dataSource = self; cats.delegate = self; cats.backgroundColor = .clear; cats.rowHeight = 66; cats.remembersLastFocusedIndexPath = true
-        cats.register(UITableViewCell.self, forCellReuseIdentifier: "c")
-        pickedName.font = Look.pixel(20); pickedName.textColor = Look.brown; pickedName.textAlignment = .right
+        grid.backgroundColor = .clear; grid.dataSource = self; grid.delegate = self; grid.remembersLastFocusedIndexPath = true; grid.clipsToBounds = false
+        grid.register(CardCell.self, forCellWithReuseIdentifier: "b")
+        cats.dataSource = self; cats.delegate = self
+        pickedName.font = Look.font(30); pickedName.textColor = Look.dim; pickedName.textAlignment = .right
         for v in [cats, grid!, pickedName] as [UIView] { v.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(v) }
         NSLayoutConstraint.activate([
             cats.leadingAnchor.constraint(equalTo: content.leadingAnchor), cats.topAnchor.constraint(equalTo: content.topAnchor),
             cats.bottomAnchor.constraint(equalTo: content.bottomAnchor), cats.widthAnchor.constraint(equalToConstant: 470),
-            grid.leadingAnchor.constraint(equalTo: cats.trailingAnchor, constant: 24), grid.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            grid.leadingAnchor.constraint(equalTo: cats.trailingAnchor, constant: 40), grid.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             grid.topAnchor.constraint(equalTo: content.topAnchor), grid.bottomAnchor.constraint(equalTo: content.bottomAnchor),
-            pickedName.trailingAnchor.constraint(equalTo: panel.trailingAnchor, constant: -50), pickedName.centerYAnchor.constraint(equalTo: heading.centerYAnchor),
-            pickedName.leadingAnchor.constraint(equalTo: heading.trailingAnchor, constant: 30),
+            pickedName.trailingAnchor.constraint(equalTo: panel.trailingAnchor), pickedName.lastBaselineAnchor.constraint(equalTo: heading.lastBaselineAnchor),
         ])
         updatePicked()
         load(0)
     }
     private func updatePicked() {
         let id = Prefs.bird
-        pickedName.text = "NOW: " + (id == "random" ? "RANDOM" : (Birds.shared.info(id)?.name.uppercased() ?? "RANDOM"))
+        pickedName.text = "Now: " + (id == "random" ? "Random" : (Birds.shared.info(id)?.name ?? "Random"))
     }
     private func load(_ i: Int) {
         catIndex = i
@@ -189,27 +226,33 @@ final class BirdsController: PanelController, UITableViewDataSource, UITableView
     // categories
     func tableView(_ t: UITableView, numberOfRowsInSection s: Int) -> Int { categoryNames.count }
     func tableView(_ t: UITableView, cellForRowAt ip: IndexPath) -> UITableViewCell {
-        let c = t.dequeueReusableCell(withIdentifier: "c", for: ip)
+        let c = Self.cell(t, .value1, "c")
         let n = ip.row == 0 ? Birds.shared.all.count : Birds.shared.birds(in: categoryNames[ip.row]).count
-        c.textLabel?.text = categoryNames[ip.row].uppercased() + "  \(n)"
-        c.textLabel?.font = Look.pixel(17); c.textLabel?.adjustsFontSizeToFitWidth = true; c.textLabel?.minimumScaleFactor = 0.6
-        c.textLabel?.textColor = ip.row == catIndex ? Look.orange : Look.brown
-        c.backgroundColor = .clear
+        c.textLabel?.text = categoryNames[ip.row]; c.textLabel?.font = Look.font(28, ip.row == catIndex ? .bold : .regular)
+        c.textLabel?.adjustsFontSizeToFitWidth = true; c.textLabel?.minimumScaleFactor = 0.7
+        c.detailTextLabel?.text = "\(n)"; c.detailTextLabel?.font = Look.font(24)
         return c
     }
     func tableView(_ t: UITableView, didUpdateFocusIn context: UITableViewFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
-        if let ip = context.nextFocusedIndexPath, ip.row != catIndex { load(ip.row); recolor(t) }
+        if let ip = context.nextFocusedIndexPath, ip.row != catIndex { load(ip.row); restyle(t) }
     }
-    func tableView(_ t: UITableView, didSelectRowAt ip: IndexPath) { load(ip.row); recolor(t); setNeedsFocusUpdate() }
-    private func recolor(_ t: UITableView) { for c in t.visibleCells { if let ip = t.indexPath(for: c) { c.textLabel?.textColor = ip.row == catIndex ? Look.orange : Look.brown } } }
+    func tableView(_ t: UITableView, didSelectRowAt ip: IndexPath) { load(ip.row); restyle(t); setNeedsFocusUpdate() }
+    private func restyle(_ t: UITableView) { for c in t.visibleCells { if let ip = t.indexPath(for: c) { c.textLabel?.font = Look.font(28, ip.row == catIndex ? .bold : .regular) } } }
 
-    // birds (the first cell of "All birds" is Random)
+    // birds (the first card of "All Birds" is Random)
     private var offset: Int { catIndex == 0 ? 1 : 0 }
     func collectionView(_ c: UICollectionView, numberOfItemsInSection s: Int) -> Int { shown.count + offset }
     func collectionView(_ c: UICollectionView, cellForItemAt ip: IndexPath) -> UICollectionViewCell {
-        let cell = c.dequeueReusableCell(withReuseIdentifier: "b", for: ip) as! BirdCell
-        if ip.item < offset { cell.set(image: nil, name: "RANDOM", on: Prefs.bird == "random") }
-        else { let b = shown[ip.item - offset]; cell.set(image: Birds.shared.image(b.id), name: b.name, on: Prefs.bird == b.id) }
+        let cell = c.dequeueReusableCell(withReuseIdentifier: "b", for: ip) as! CardCell
+        let size = CGSize(width: 200, height: 140)
+        if ip.item < offset {
+            cell.pic.image = Cards.tile(key: "random", size: size, bg: Look.rgb(0x9b6bd6), picked: Prefs.bird == "random") { r in Cards.symbol("shuffle", 54, at: CGPoint(x: r.midX, y: r.midY)) }
+            cell.label.text = "Random"
+        } else {
+            let b = shown[ip.item - offset]
+            cell.pic.image = Cards.tile(key: "b:" + b.id, size: size, bg: Look.sky, picked: Prefs.bird == b.id) { r in Cards.bird(b.id, height: 100, at: CGPoint(x: r.midX, y: r.midY)) }
+            cell.label.text = b.name
+        }
         return cell
     }
     func collectionView(_ c: UICollectionView, didSelectItemAt ip: IndexPath) {
@@ -218,46 +261,12 @@ final class BirdsController: PanelController, UITableViewDataSource, UITableView
     }
 }
 
-final class BirdCell: UICollectionViewCell {
-    private let pic = UIImageView(), label = UILabel(), box = UIView()
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        box.backgroundColor = UIColor(red: 0.306, green: 0.753, blue: 0.792, alpha: 1)
-        box.layer.cornerRadius = 18; box.layer.borderWidth = 5; box.layer.borderColor = Look.brown.cgColor
-        pic.contentMode = .scaleAspectFit; pic.layer.magnificationFilter = .nearest
-        label.font = Look.pixel(13); label.textColor = Look.brown; label.textAlignment = .center; label.numberOfLines = 2
-        for v in [box, pic, label] { v.translatesAutoresizingMaskIntoConstraints = false; contentView.addSubview(v) }
-        NSLayoutConstraint.activate([
-            box.topAnchor.constraint(equalTo: contentView.topAnchor), box.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            box.trailingAnchor.constraint(equalTo: contentView.trailingAnchor), box.heightAnchor.constraint(equalToConstant: 140),
-            pic.centerXAnchor.constraint(equalTo: box.centerXAnchor), pic.centerYAnchor.constraint(equalTo: box.centerYAnchor),
-            pic.widthAnchor.constraint(equalToConstant: 126), pic.heightAnchor.constraint(equalToConstant: 120),
-            label.topAnchor.constraint(equalTo: box.bottomAnchor, constant: 6), label.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: -10),
-            label.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 10),
-        ])
-    }
-    required init?(coder: NSCoder) { fatalError() }
-    func set(image: UIImage?, name: String, on: Bool) {
-        pic.image = image ?? UIImage(systemName: "shuffle")
-        pic.tintColor = .white
-        label.text = name.uppercased()
-        box.layer.borderColor = (on ? Look.orange : Look.brown).cgColor
-    }
-    override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
-        coordinator.addCoordinatedAnimations({
-            self.transform = self.isFocused ? CGAffineTransform(scaleX: 1.18, y: 1.18) : .identity
-            self.box.backgroundColor = self.isFocused ? Look.orange : UIColor(red: 0.306, green: 0.753, blue: 0.792, alpha: 1)
-            self.layer.zPosition = self.isFocused ? 1 : 0
-        })
-    }
-}
-
 // MARK: - Leaderboard (the same online board as the phone and the website)
 
 final class LeaderboardController: PanelController, UITableViewDataSource {
-    private let modes = UISegmentedControl(items: Modes.all.map { $0.title.uppercased() })
-    private let when = UISegmentedControl(items: ["ALL TIME", "THIS WEEK"])
-    private let table = UITableView(frame: .zero, style: .plain)
+    private let modes = UISegmentedControl(items: Modes.all.map { $0.title })
+    private let when = UISegmentedControl(items: ["All Time", "This Week"])
+    private lazy var table = makeTable(rowHeight: 100)
     private let note = UILabel()
     private var rows: [Online.Row] = []
     private var mode = Prefs.mode
@@ -267,22 +276,17 @@ final class LeaderboardController: PanelController, UITableViewDataSource {
         heading.text = "Leaderboard"
         modes.selectedSegmentIndex = Modes.all.firstIndex { $0.id == mode } ?? 0
         when.selectedSegmentIndex = 0
-        for s in [modes, when] {
-            s.setTitleTextAttributes([.font: Look.pixel(20), .foregroundColor: Look.brown], for: .normal)
-            s.setTitleTextAttributes([.font: Look.pixel(20), .foregroundColor: UIColor.white], for: .selected)
-            s.setTitleTextAttributes([.font: Look.pixel(20), .foregroundColor: UIColor.white], for: .focused)
-            s.addTarget(self, action: #selector(changed), for: .valueChanged)
-        }
-        table.dataSource = self; table.backgroundColor = .clear; table.rowHeight = 92
+        for s in [modes, when] { s.addTarget(self, action: #selector(changed), for: .valueChanged) }
+        table.dataSource = self
         table.register(ScoreRow.self, forCellReuseIdentifier: "r")
-        note.font = Look.pixel(22); note.textColor = Look.brown; note.textAlignment = .center; note.numberOfLines = 0
+        note.font = Look.font(32); note.textColor = Look.dim; note.textAlignment = .center; note.numberOfLines = 0
         for v in [modes, when, table, note] as [UIView] { v.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(v) }
         NSLayoutConstraint.activate([
             modes.topAnchor.constraint(equalTo: content.topAnchor), modes.centerXAnchor.constraint(equalTo: content.centerXAnchor),
             modes.widthAnchor.constraint(lessThanOrEqualTo: content.widthAnchor),
-            when.topAnchor.constraint(equalTo: modes.bottomAnchor, constant: 18), when.centerXAnchor.constraint(equalTo: content.centerXAnchor),
-            table.topAnchor.constraint(equalTo: when.bottomAnchor, constant: 24), table.centerXAnchor.constraint(equalTo: content.centerXAnchor),
-            table.widthAnchor.constraint(equalToConstant: 900), table.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+            when.topAnchor.constraint(equalTo: modes.bottomAnchor, constant: 24), when.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+            table.topAnchor.constraint(equalTo: when.bottomAnchor, constant: 30), table.centerXAnchor.constraint(equalTo: content.centerXAnchor),
+            table.widthAnchor.constraint(equalToConstant: 1100), table.bottomAnchor.constraint(equalTo: content.bottomAnchor),
             note.centerXAnchor.constraint(equalTo: table.centerXAnchor), note.centerYAnchor.constraint(equalTo: table.centerYAnchor),
             note.widthAnchor.constraint(equalTo: table.widthAnchor),
         ])
@@ -290,13 +294,13 @@ final class LeaderboardController: PanelController, UITableViewDataSource {
     }
     @objc private func changed() { mode = Modes.all[modes.selectedSegmentIndex].id; fetch() }
     private func fetch() {
-        note.text = "LOADING..."; rows = []; table.reloadData()
+        note.text = "Loading..."; rows = []; table.reloadData()
         let m = mode, week = when.selectedSegmentIndex == 1
         Online.leaderboard(mode: m, week: week) { [weak self] result in
             guard let s = self, s.mode == m else { return }
             switch result {
-            case .success(let r): s.rows = Array(r.prefix(50)); s.note.text = r.isEmpty ? "NO SCORES YET. BE THE FIRST ON YOUR PHONE OR ONLINE!" : ""
-            case .failure: s.note.text = "COULDN'T REACH THE LEADERBOARD. CHECK THE INTERNET."
+            case .success(let r): s.rows = Array(r.prefix(50)); s.note.text = r.isEmpty ? "No scores yet. Be the first!" : ""
+            case .failure: s.note.text = "Couldn't reach the leaderboard. Check the internet."
             }
             s.table.reloadData()
         }
@@ -311,36 +315,40 @@ final class LeaderboardController: PanelController, UITableViewDataSource {
 
 final class ScoreRow: UITableViewCell {
     private let rank = UILabel(), pic = UIImageView(), name = UILabel(), score = UILabel()
+    private var mine = false
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        backgroundColor = .clear
-        let box = UIView(); box.backgroundColor = Look.light; box.layer.cornerRadius = 14; box.layer.borderWidth = 4; box.layer.borderColor = UIColor(red: 0.77, green: 0.74, blue: 0.48, alpha: 1).cgColor
-        backgroundView = box
-        let fb = UIView(); fb.backgroundColor = Look.orange; fb.layer.cornerRadius = 14; selectedBackgroundView = fb
-        rank.font = Look.pixel(22); rank.textColor = Look.orange; rank.textAlignment = .center
-        name.font = Look.pixel(24); name.textColor = Look.brown
-        score.font = Look.pixel(34); score.textColor = Look.brown; score.textAlignment = .right   // (the big title font's numbers got cut off at the top)
-        pic.layer.magnificationFilter = .nearest; pic.layer.cornerRadius = 10; pic.clipsToBounds = true
+        rank.font = Look.font(30, .bold); rank.textAlignment = .center
+        name.font = Look.font(34, .medium)
+        score.font = UIFont.monospacedDigitSystemFont(ofSize: 40, weight: .bold); score.textAlignment = .right
+        pic.layer.magnificationFilter = .nearest; pic.layer.cornerRadius = 12; pic.clipsToBounds = true
         for v in [rank, pic, name, score] { v.translatesAutoresizingMaskIntoConstraints = false; contentView.addSubview(v) }
         NSLayoutConstraint.activate([
-            rank.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12), rank.widthAnchor.constraint(equalToConstant: 90),
+            rank.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 14), rank.widthAnchor.constraint(equalToConstant: 80),
             rank.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            pic.leadingAnchor.constraint(equalTo: rank.trailingAnchor, constant: 8), pic.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            pic.leadingAnchor.constraint(equalTo: rank.trailingAnchor, constant: 10), pic.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             pic.widthAnchor.constraint(equalToConstant: 84), pic.heightAnchor.constraint(equalToConstant: 70),
-            name.leadingAnchor.constraint(equalTo: pic.trailingAnchor, constant: 24), name.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            score.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -28), score.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            name.leadingAnchor.constraint(equalTo: pic.trailingAnchor, constant: 26), name.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+            score.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -30), score.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
             name.trailingAnchor.constraint(lessThanOrEqualTo: score.leadingAnchor, constant: -20),
         ])
     }
     required init?(coder: NSCoder) { fatalError() }
     func set(rank r: Int, row: Online.Row) {
-        let mine = Account.shared.signedIn && row.userId == Account.shared.userId
-        (backgroundView)?.backgroundColor = mine ? UIColor(red: 1, green: 0.965, blue: 0.784, alpha: 1) : Look.light
-        (backgroundView)?.layer.borderColor = (mine ? Look.orange : UIColor(red: 0.77, green: 0.74, blue: 0.48, alpha: 1)).cgColor
-        rank.text = r == 1 ? "1ST" : r == 2 ? "2ND" : r == 3 ? "3RD" : "\(r)"
-        name.text = row.name.uppercased(); score.text = "\(row.score)"
+        mine = Account.shared.signedIn && row.userId == Account.shared.userId
+        rank.text = r == 1 ? "1st" : r == 2 ? "2nd" : r == 3 ? "3rd" : "\(r)"
+        name.text = row.name + (mine ? "  (you)" : ""); score.text = "\(row.score)"
         pic.image = Birds.shared.image(row.avatar ?? row.bird, scale: 2)
         pic.backgroundColor = Online.color(row.avatarBg)
+        recolor(isFocused)
+    }
+    private func recolor(_ f: Bool) {
+        name.textColor = f ? .black : .white; score.textColor = f ? .black : .white
+        rank.textColor = f ? .black : (mine ? Look.orange : Look.rgb(0xf5c542))
+    }
+    override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
+        super.didUpdateFocus(in: context, with: coordinator)
+        coordinator.addCoordinatedAnimations({ self.recolor(self.isFocused) })
     }
 }
 
@@ -348,30 +356,28 @@ final class ScoreRow: UITableViewCell {
 
 final class SettingsController: PanelController, UITableViewDataSource, UITableViewDelegate {
     var onDone: (() -> Void)?
-    private let table = UITableView(frame: .zero, style: .plain)
+    private lazy var table = makeTable(rowHeight: 100)
     override func viewDidLoad() {
         super.viewDidLoad()
         heading.text = "Settings"
-        table.dataSource = self; table.delegate = self; table.backgroundColor = .clear; table.rowHeight = 120
-        table.register(ModeCell.self, forCellReuseIdentifier: "s")
-        table.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(table)
+        table.dataSource = self; table.delegate = self; content.addSubview(table)
         NSLayoutConstraint.activate([table.topAnchor.constraint(equalTo: content.topAnchor), table.bottomAnchor.constraint(equalTo: content.bottomAnchor),
-                                     table.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 160), table.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -160)])
+                                     table.centerXAnchor.constraint(equalTo: content.centerXAnchor), table.widthAnchor.constraint(equalToConstant: 1100)])
     }
     override func viewWillAppear(_ animated: Bool) { super.viewWillAppear(animated); table.reloadData() }
     func tableView(_ t: UITableView, numberOfRowsInSection s: Int) -> Int { 3 }
     func tableView(_ t: UITableView, cellForRowAt ip: IndexPath) -> UITableViewCell {
-        let c = t.dequeueReusableCell(withIdentifier: "s", for: ip) as! ModeCell
+        let c = Self.cell(t, .value1, "s")
         switch ip.row {
-        case 0: c.set(GameMode(id: "", title: "Sound: " + (Prefs.sound ? "On" : "Off"), desc: "Flaps, points and crashes."), on: false, best: 0)
-        case 1: c.set(GameMode(id: "", title: "Trail: " + (Trails.shared.def(Prefs.trail)?.name ?? "None"), desc: "100 trails and effects that follow your bird."), on: false, best: 0)
-        default: c.set(GameMode(id: "", title: "Season: " + Seasons.title(Prefs.season), desc: "Halloween, Christmas, spring... Auto picks by the date."), on: false, best: 0)
+        case 0: c.textLabel?.text = "Sound"; c.detailTextLabel?.text = Prefs.sound ? "On" : "Off"; c.accessoryType = .none
+        case 1: c.textLabel?.text = "Trail"; c.detailTextLabel?.text = Trails.shared.def(Prefs.trail)?.name ?? "None"; c.accessoryType = .disclosureIndicator
+        default: c.textLabel?.text = "Season"; c.detailTextLabel?.text = Seasons.title(Prefs.season); c.accessoryType = .disclosureIndicator
         }
         return c
     }
     func tableView(_ t: UITableView, didSelectRowAt ip: IndexPath) {
         switch ip.row {
-        case 0: Prefs.sound.toggle(); t.reloadData(); onDone?()
+        case 0: Prefs.sound.toggle(); t.reloadRows(at: [ip], with: .none); onDone?()
         case 1: let c = TrailsController(); c.onDone = { [weak self] in self?.table.reloadData(); self?.onDone?() }; present(c, animated: true)
         default: let c = SeasonsController(); c.onDone = { [weak self] in self?.table.reloadData(); self?.onDone?() }; present(c, animated: true)
         }
@@ -380,21 +386,21 @@ final class SettingsController: PanelController, UITableViewDataSource, UITableV
 
 final class SeasonsController: PanelController, UITableViewDataSource, UITableViewDelegate {
     var onDone: (() -> Void)?
-    private let table = UITableView(frame: .zero, style: .plain)
+    private lazy var table = makeTable(rowHeight: 96)
     override func viewDidLoad() {
         super.viewDidLoad()
-        heading.text = "Seasons"
-        table.dataSource = self; table.delegate = self; table.backgroundColor = .clear; table.rowHeight = 96
-        table.register(ModeCell.self, forCellReuseIdentifier: "s")
-        table.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(table)
+        heading.text = "Season"
+        table.dataSource = self; table.delegate = self; content.addSubview(table)
         NSLayoutConstraint.activate([table.topAnchor.constraint(equalTo: content.topAnchor), table.bottomAnchor.constraint(equalTo: content.bottomAnchor),
-                                     table.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 200), table.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -200)])
+                                     table.centerXAnchor.constraint(equalTo: content.centerXAnchor), table.widthAnchor.constraint(equalToConstant: 1100)])
     }
+    func indexPathForPreferredFocusedView(in tableView: UITableView) -> IndexPath? { IndexPath(row: Seasons.all.firstIndex { $0.id == Prefs.season } ?? 0, section: 0) }
     func tableView(_ t: UITableView, numberOfRowsInSection s: Int) -> Int { Seasons.all.count }
     func tableView(_ t: UITableView, cellForRowAt ip: IndexPath) -> UITableViewCell {
-        let c = t.dequeueReusableCell(withIdentifier: "s", for: ip) as! ModeCell
-        let s = Seasons.all[ip.row]
-        c.set(GameMode(id: s.id, title: s.title, desc: s.id == "auto" ? "Right now: " + Seasons.title(Seasons.byDate()) : ""), on: s.id == Prefs.season, best: 0)
+        let c = Self.cell(t, .subtitle, "s"), s = Seasons.all[ip.row]
+        c.textLabel?.text = s.title
+        c.detailTextLabel?.text = s.id == "auto" ? "Right now: " + Seasons.title(Seasons.byDate()) : nil
+        c.accessoryType = s.id == Prefs.season ? .checkmark : .none
         return c
     }
     func tableView(_ t: UITableView, didSelectRowAt ip: IndexPath) { Prefs.season = Seasons.all[ip.row].id; onDone?(); dismiss(animated: true) }
@@ -402,47 +408,57 @@ final class SeasonsController: PanelController, UITableViewDataSource, UITableVi
 
 final class TrailsController: PanelController, UITableViewDataSource, UITableViewDelegate, UICollectionViewDataSource, UICollectionViewDelegate {
     var onDone: (() -> Void)?
-    private let cats = UITableView(frame: .zero, style: .plain)
+    private lazy var cats = makeTable(rowHeight: 70)
     private var grid: UICollectionView!
     private var catIndex = 0
-    private var names: [String] { ["All trails"] + Trails.shared.categories }
+    private var names: [String] { ["All Trails"] + Trails.shared.categories }
     private var shown: [TrailDef] { catIndex == 0 ? Trails.shared.all : Trails.shared.all.filter { $0.cat == names[catIndex] } }
     override func viewDidLoad() {
         super.viewDidLoad()
         heading.text = "Trails"
         let layout = UICollectionViewFlowLayout()
-        layout.itemSize = CGSize(width: 190, height: 190); layout.minimumInteritemSpacing = 22; layout.minimumLineSpacing = 34
-        layout.sectionInset = UIEdgeInsets(top: 20, left: 20, bottom: 40, right: 20)
+        layout.itemSize = CGSize(width: 220, height: 210); layout.minimumInteritemSpacing = 40; layout.minimumLineSpacing = 60
+        layout.sectionInset = UIEdgeInsets(top: 30, left: 40, bottom: 60, right: 40)
         grid = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        grid.backgroundColor = .clear; grid.dataSource = self; grid.delegate = self
-        grid.register(BirdCell.self, forCellWithReuseIdentifier: "t")
-        cats.dataSource = self; cats.delegate = self; cats.backgroundColor = .clear; cats.rowHeight = 66
-        cats.register(UITableViewCell.self, forCellReuseIdentifier: "c")
+        grid.backgroundColor = .clear; grid.dataSource = self; grid.delegate = self; grid.clipsToBounds = false
+        grid.register(CardCell.self, forCellWithReuseIdentifier: "t")
+        cats.dataSource = self; cats.delegate = self
         for v in [cats, grid!] as [UIView] { v.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(v) }
         NSLayoutConstraint.activate([
             cats.leadingAnchor.constraint(equalTo: content.leadingAnchor), cats.topAnchor.constraint(equalTo: content.topAnchor),
             cats.bottomAnchor.constraint(equalTo: content.bottomAnchor), cats.widthAnchor.constraint(equalToConstant: 420),
-            grid.leadingAnchor.constraint(equalTo: cats.trailingAnchor, constant: 24), grid.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            grid.leadingAnchor.constraint(equalTo: cats.trailingAnchor, constant: 40), grid.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             grid.topAnchor.constraint(equalTo: content.topAnchor), grid.bottomAnchor.constraint(equalTo: content.bottomAnchor),
         ])
     }
     override var preferredFocusEnvironments: [UIFocusEnvironment] { [grid] }
     func tableView(_ t: UITableView, numberOfRowsInSection s: Int) -> Int { names.count }
     func tableView(_ t: UITableView, cellForRowAt ip: IndexPath) -> UITableViewCell {
-        let c = t.dequeueReusableCell(withIdentifier: "c", for: ip)
-        c.textLabel?.text = names[ip.row].uppercased(); c.textLabel?.font = Look.pixel(17); c.textLabel?.adjustsFontSizeToFitWidth = true
-        c.textLabel?.textColor = ip.row == catIndex ? Look.orange : Look.brown; c.backgroundColor = .clear
+        let c = Self.cell(t, .default, "c")
+        c.textLabel?.text = names[ip.row]; c.textLabel?.font = Look.font(28, ip.row == catIndex ? .bold : .regular); c.textLabel?.adjustsFontSizeToFitWidth = true
         return c
     }
     func tableView(_ t: UITableView, didUpdateFocusIn context: UITableViewFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
-        if let ip = context.nextFocusedIndexPath, ip.row != catIndex { catIndex = ip.row; grid.reloadData(); for c in t.visibleCells { if let i = t.indexPath(for: c) { c.textLabel?.textColor = i.row == catIndex ? Look.orange : Look.brown } } }
+        if let ip = context.nextFocusedIndexPath, ip.row != catIndex {
+            catIndex = ip.row; grid.reloadData()
+            for c in t.visibleCells { if let i = t.indexPath(for: c) { c.textLabel?.font = Look.font(28, i.row == catIndex ? .bold : .regular) } }
+        }
     }
     private var offset: Int { catIndex == 0 ? 1 : 0 }
     func collectionView(_ c: UICollectionView, numberOfItemsInSection s: Int) -> Int { shown.count + offset }
     func collectionView(_ c: UICollectionView, cellForItemAt ip: IndexPath) -> UICollectionViewCell {
-        let cell = c.dequeueReusableCell(withReuseIdentifier: "t", for: ip) as! BirdCell
-        if ip.item < offset { cell.set(image: Birds.shared.image("yellow"), name: "NONE", on: Prefs.trail == "none") }
-        else { let t = shown[ip.item - offset]; cell.set(image: Trails.shared.icon(t), name: t.name, on: Prefs.trail == t.id) }
+        let cell = c.dequeueReusableCell(withReuseIdentifier: "t", for: ip) as! CardCell
+        let size = CGSize(width: 220, height: 154)
+        if ip.item < offset {
+            cell.pic.image = Cards.tile(key: "trail:none", size: size, bg: Look.rgb(0x3a3f4a), picked: Prefs.trail == "none") { r in Cards.symbol("nosign", 50, at: CGPoint(x: r.midX, y: r.midY)) }
+            cell.label.text = "None"
+        } else {
+            let t = shown[ip.item - offset]
+            cell.pic.image = Cards.tile(key: "trail:" + t.id, size: size, bg: Look.rgb(0x26345e), picked: Prefs.trail == t.id) { r in
+                if let icon = Trails.shared.icon(t) { icon.draw(in: CGRect(x: r.midX - 70, y: r.midY - 50, width: 140, height: 100)) }
+            }
+            cell.label.text = t.name
+        }
         return cell
     }
     func collectionView(_ c: UICollectionView, didSelectItemAt ip: IndexPath) {

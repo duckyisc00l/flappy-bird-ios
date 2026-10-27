@@ -84,26 +84,26 @@ final class PartyController: UIViewController, PartySceneDelegate {
 
     // MARK: overlay
     private func card(_ v: UIView) {
-        v.backgroundColor = Look.cream; v.layer.cornerRadius = 30; v.layer.borderWidth = 8; v.layer.borderColor = Look.brown.cgColor
+        v.backgroundColor = UIColor(white: 0.06, alpha: 0.72); v.layer.cornerRadius = 36
         v.translatesAutoresizingMaskIntoConstraints = false; view.addSubview(v)
     }
-    private func label(_ l: UILabel, _ f: UIFont, _ c: UIColor = Look.brown) { l.font = f; l.textColor = c; l.numberOfLines = 0; l.textAlignment = .center; l.translatesAutoresizingMaskIntoConstraints = false }
+    private func label(_ l: UILabel, _ f: UIFont, _ c: UIColor = .white) { l.font = f; l.textColor = c; l.numberOfLines = 0; l.textAlignment = .center; l.translatesAutoresizingMaskIntoConstraints = false }
 
     private func buildOverlay() {
         card(joinCard); card(listCard)
-        label(joinTitle, Look.title(60), Look.orange); joinTitle.text = "Party!"
-        label(joinText, Look.pixel(17)); joinText.text = "SCAN WITH YOUR PHONE CAMERA\nOR GO TO\nDUCKYISC00L.GITHUB.IO/FLAPPY-BIRD\nAND TYPE THIS CODE IN SETTINGS"
-        label(codeLabel, Look.pixel(64)); codeLabel.text = code
-        label(status, Look.pixel(16))
+        label(joinTitle, Look.font(64, .bold)); joinTitle.text = "Party"
+        label(joinText, Look.font(26), Look.dim); joinText.text = "Scan with your phone's camera, or go to\nduckyisc00l.github.io/flappy-bird\nand type this code in Settings:"
+        label(codeLabel, UIFont.monospacedSystemFont(ofSize: 76, weight: .bold)); codeLabel.text = code
+        label(status, Look.font(24, .medium))
         qr.image = makeQR(Self.site + "#party=" + code); qr.layer.magnificationFilter = .nearest; qr.translatesAutoresizingMaskIntoConstraints = false
         qr.backgroundColor = .white; qr.layer.cornerRadius = 14; qr.clipsToBounds = true
         for v in [joinTitle, qr, joinText, codeLabel, status] { joinCard.addSubview(v) }
-        label(listTitle, Look.title(52), Look.orange)
+        label(listTitle, Look.font(52, .bold))
         list.axis = .vertical; list.spacing = 14; list.translatesAutoresizingMaskIntoConstraints = false
         listCard.addSubview(listTitle); listCard.addSubview(list)
-        label(hint, Look.pixel(26), .white)
+        label(hint, Look.font(32, .semibold), .white)
         hint.layer.shadowColor = UIColor.black.cgColor; hint.layer.shadowOpacity = 0.9; hint.layer.shadowRadius = 0; hint.layer.shadowOffset = CGSize(width: 3, height: 3)
-        label(corner, Look.pixel(22), .white); corner.backgroundColor = Look.brown.withAlphaComponent(0.85); corner.layer.cornerRadius = 14; corner.clipsToBounds = true
+        label(corner, Look.font(30, .semibold), .white); corner.backgroundColor = UIColor.black.withAlphaComponent(0.6); corner.layer.cornerRadius = 14; corner.clipsToBounds = true
         for v in [hint, corner] { view.addSubview(v) }
         NSLayoutConstraint.activate([
             joinCard.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 90), joinCard.topAnchor.constraint(equalTo: view.topAnchor, constant: 70),
@@ -131,33 +131,33 @@ final class PartyController: UIViewController, PartySceneDelegate {
         joinCard.isHidden = playing || ph == .over
         listCard.isHidden = false
         corner.isHidden = !playing
-        corner.text = "   JOIN NEXT ROUND: \(code)   "
-        status.text = online ? "\u{25CF} ROOM OPEN - \(Modes.info(Prefs.mode).title.uppercased()) MODE" : "CONNECTING..."
-        status.textColor = online ? UIColor(red: 0.25, green: 0.55, blue: 0.15, alpha: 1) : Look.brown
+        corner.text = "     Join the next round: \(code)     "
+        status.text = online ? "\u{25CF}  Room open  \u{00B7}  \(Modes.info(Prefs.mode).title) mode" : "Connecting..."
+        status.textColor = online ? Look.rgb(0x7fe07a) : Look.dim
         listTitle.text = ph == .over ? (scene.winners.count == 1 ? scene.winners[0] + " wins!" : "Tie!") : playing ? "Scores" : "Players \(scene.players.count)/8"
-        listTitle.font = Look.title(ph == .over ? 44 : 52)
+        listTitle.font = Look.font(ph == .over ? 48 : 52, .bold)
         list.arrangedSubviews.forEach { $0.removeFromSuperview() }
         let rows = playing || ph == .over ? scene.players.sorted { $0.score != $1.score ? $0.score > $1.score : $0.diedAt > $1.diedAt } : scene.players
         if rows.isEmpty {
-            let l = UILabel(); label(l, Look.pixel(20)); l.text = "WAITING FOR PHONES...\n\nEVERYONE SCANS THE CODE\nAND TAPS THEIR PHONE TO FLAP"; list.addArrangedSubview(l)
+            let l = UILabel(); label(l, Look.font(30), Look.dim); l.text = "Waiting for phones...\n\nEveryone scans the code\nand taps their phone to flap."; list.addArrangedSubview(l)
         }
         for (i, p) in rows.enumerated() {
             let row = UIStackView(); row.axis = .horizontal; row.spacing = 16; row.alignment = .center
             let pic = UIImageView(image: Birds.shared.image(p.birdId, scale: 2)); pic.layer.magnificationFilter = .nearest
             pic.backgroundColor = UIColor(red: 0.306, green: 0.753, blue: 0.792, alpha: 1); pic.layer.cornerRadius = 10; pic.clipsToBounds = true
             pic.widthAnchor.constraint(equalToConstant: 84).isActive = true; pic.heightAnchor.constraint(equalToConstant: 70).isActive = true
-            let n = UILabel(); n.font = Look.pixel(24); n.textColor = Look.brown; n.text = (playing || ph == .over ? "\(i + 1). " : "") + p.name
-            let s = UILabel(); s.font = Look.pixel(34); s.textColor = Look.brown; s.textAlignment = .right
+            let n = UILabel(); n.font = Look.font(34, .medium); n.textColor = .white; n.text = (playing || ph == .over ? "\(i + 1). " : "") + p.name
+            let s = UILabel(); s.font = UIFont.monospacedDigitSystemFont(ofSize: 40, weight: .bold); s.textColor = .white; s.textAlignment = .right
             s.text = playing || ph == .over ? "\(p.score)" : ""
-            if playing && p.inRound && !p.alive { n.textColor = Look.brown.withAlphaComponent(0.45); n.text = (n.text ?? "") + "  X" }
-            if playing && !p.inRound { n.text = (n.text ?? "") + "  (NEXT ROUND)" }
+            if playing && p.inRound && !p.alive { n.textColor = UIColor(white: 1, alpha: 0.4); n.text = (n.text ?? "") + "  \u{2715}" }
+            if playing && !p.inRound { n.text = (n.text ?? "") + "  (next round)" }
             row.addArrangedSubview(pic); row.addArrangedSubview(n); row.addArrangedSubview(UIView()); row.addArrangedSubview(s)
             list.addArrangedSubview(row)
         }
         switch ph {
-        case .lobby: hint.text = scene.players.isEmpty ? "MENU TO GO BACK" : "PRESS PLAY ON THE REMOTE TO START"
+        case .lobby: hint.text = scene.players.isEmpty ? "Press Menu to go back" : "Press Play on the remote to start"
         case .count, .play: hint.text = ""
-        case .over: hint.text = "PLAY = ANOTHER ROUND      MENU = LOBBY"
+        case .over: hint.text = "Play: another round      Menu: back to the lobby"
         }
     }
 

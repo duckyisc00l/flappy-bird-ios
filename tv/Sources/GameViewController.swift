@@ -13,23 +13,22 @@ final class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 }
 
-/// The TV screen: the game (SpriteKit) full screen, a row of big buttons on the title and Game Over screens.
-/// Siri Remote: click (or tap the touch surface) to flap, Play/Pause or Menu pauses, Menu on the title leaves the app.
-/// Game controllers work the same way (A = click, B / Menu = back).
-final class GameViewController: UIViewController, GameSceneHUD {
+/// The TV screen: the game (SpriteKit) full screen. On the title and Game Over screens a row of big picture cards
+/// (like Apple TV's own Home screen and Apple Arcade games): Play, Party, Mode, Bird, Leaderboard, Account, Settings.
+/// Siri Remote: click to flap, Play/Pause pauses, Menu goes back (on the title it leaves the app).
+/// Get Ready screen: swipe left / right to change mode, up / down to change bird.
+/// Game controllers work the same way (A = click, B / Menu = back) and rumble when you crash.
+final class GameViewController: UIViewController, GameSceneHUD, UICollectionViewDataSource, UICollectionViewDelegate {
     private let skView = SKView()
     private let scene = GameScene(size: CGSize(width: 1024, height: 768))
-    private let bar = UIStackView()
-    private let playButton = PixelButton("PLAY", color: Look.green)
-    private let modeButton = PixelButton("MODE")
-    private let birdButton = PixelButton("BIRD")
-    private let boardButton = PixelButton("LEADERBOARD")
-    private let soundButton = PixelButton("SETTINGS")
-    private let partyButton = PixelButton("PARTY", color: UIColor(red: 0.61, green: 0.42, blue: 0.84, alpha: 1))
-    private let accountButton = PixelButton("SIGN IN")
-    private let pausedLabel = UILabel()
-    private let hint = UILabel()
+    private var shelf: UICollectionView!
+    private let shade = UIView(), shadeLayer = CAGradientLayer()
+    private let pausedView = UIVisualEffectView(effect: UIBlurEffect(style: .dark)), pausedLabel = UILabel()
+    private let hint = UILabel(), toast = UILabel()
     private var paused = false
+    private var focusPlay = true
+
+    private enum Card: Int, CaseIterable { case play, party, mode, bird, board, account, settings }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -40,19 +39,28 @@ final class GameViewController: UIViewController, GameSceneHUD {
         scene.scaleMode = .aspectFill
         scene.hud = self
 
-        bar.axis = .horizontal; bar.spacing = 18; bar.alignment = .center
-        bar.translatesAutoresizingMaskIntoConstraints = false
-        for b in [playButton, partyButton, modeButton, birdButton, boardButton, accountButton, soundButton] { bar.addArrangedSubview(b) }
-        view.addSubview(bar)
-        NSLayoutConstraint.activate([bar.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-                                     bar.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -70)])
-        playButton.titleLabel?.font = Look.pixel(26)
-        playButton.onSelect = { [weak self] in self?.play() }
-        modeButton.onSelect = { [weak self] in self?.openModes() }
-        birdButton.onSelect = { [weak self] in self?.openBirds() }
-        partyButton.setTitleColor(.white, for: .normal)
-        partyButton.onSelect = { [weak self] in self?.openParty() }
-        accountButton.onSelect = { [weak self] in self?.present(SignInController(), animated: true) }
+        // a dark fade at the bottom so the cards stand out over the game
+        shadeLayer.colors = [UIColor.black.withAlphaComponent(0).cgColor, UIColor.black.withAlphaComponent(0.65).cgColor]
+        shade.layer.addSublayer(shadeLayer); shade.isUserInteractionEnabled = false
+        shade.translatesAutoresizingMaskIntoConstraints = false; view.addSubview(shade)
+
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.itemSize = CGSize(width: 300, height: 290); layout.minimumLineSpacing = 50
+        layout.sectionInset = UIEdgeInsets(top: 20, left: 90, bottom: 0, right: 90)
+        shelf = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        shelf.backgroundColor = .clear; shelf.clipsToBounds = false; shelf.showsHorizontalScrollIndicator = false
+        shelf.dataSource = self; shelf.delegate = self; shelf.remembersLastFocusedIndexPath = true
+        shelf.register(CardCell.self, forCellWithReuseIdentifier: "c")
+        shelf.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(shelf)
+        NSLayoutConstraint.activate([
+            shelf.leadingAnchor.constraint(equalTo: view.leadingAnchor), shelf.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            shelf.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -30), shelf.heightAnchor.constraint(equalToConstant: 330),
+            shade.leadingAnchor.constraint(equalTo: view.leadingAnchor), shade.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            shade.bottomAnchor.constraint(equalTo: view.bottomAnchor), shade.heightAnchor.constraint(equalToConstant: 470),
+        ])
+
         NotificationCenter.default.addObserver(forName: .accountChanged, object: nil, queue: .main) { [weak self] _ in self?.updateLabels() }
         // leaving the app (TV button, screen saver) in the middle of a round pauses it
         NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
@@ -63,55 +71,125 @@ final class GameViewController: UIViewController, GameSceneHUD {
             guard let s = self, s.paused else { return }
             s.skView.isPaused = true; s.scene.isPaused = true   // (tvOS un-pauses the view by itself; stay paused until you click)
         }
-        boardButton.onSelect = { [weak self] in self?.present(LeaderboardController(), animated: true) }
-        soundButton.onSelect = { [weak self] in let c = SettingsController(); c.onDone = { self?.choicesChanged() }; self?.present(c, animated: true) }
 
-        pausedLabel.text = "PAUSED\n\nCLICK TO KEEP GOING\nMENU TO QUIT"
-        pausedLabel.numberOfLines = 0; pausedLabel.textAlignment = .center; pausedLabel.font = Look.pixel(40); pausedLabel.textColor = .white
-        pausedLabel.backgroundColor = UIColor.black.withAlphaComponent(0.6); pausedLabel.isHidden = true
-        pausedLabel.frame = view.bounds; pausedLabel.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        view.addSubview(pausedLabel)
+        pausedView.frame = view.bounds; pausedView.autoresizingMask = [.flexibleWidth, .flexibleHeight]; pausedView.isHidden = true
+        let pt = NSMutableAttributedString(string: "Paused\n", attributes: [.font: Look.font(76, .bold), .foregroundColor: UIColor.white])
+        pt.append(NSAttributedString(string: "\nClick to keep going.   Menu to quit.", attributes: [.font: Look.font(34), .foregroundColor: Look.dim]))
+        pausedLabel.attributedText = pt; pausedLabel.numberOfLines = 0; pausedLabel.textAlignment = .center
+        pausedLabel.frame = pausedView.bounds; pausedLabel.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        pausedView.contentView.addSubview(pausedLabel)
+        view.addSubview(pausedView)
 
-        hint.text = "PRESS THE REMOTE TO FLAP"
-        hint.font = Look.pixel(24); hint.textColor = .white; hint.textAlignment = .center
-        hint.layer.shadowColor = UIColor.black.cgColor; hint.layer.shadowOpacity = 0.8; hint.layer.shadowRadius = 0; hint.layer.shadowOffset = CGSize(width: 3, height: 3)
-        hint.translatesAutoresizingMaskIntoConstraints = false
-        hint.alpha = 0
-        view.addSubview(hint)
-        NSLayoutConstraint.activate([hint.centerXAnchor.constraint(equalTo: view.centerXAnchor), hint.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -90)])
+        for l in [hint, toast] {
+            l.textColor = .white; l.textAlignment = .center; l.alpha = 0
+            l.layer.shadowColor = UIColor.black.cgColor; l.layer.shadowOpacity = 0.7; l.layer.shadowRadius = 6; l.layer.shadowOffset = CGSize(width: 0, height: 3)
+            l.translatesAutoresizingMaskIntoConstraints = false; view.addSubview(l)
+        }
+        hint.font = Look.font(30, .semibold); hint.numberOfLines = 0
+        hint.text = "Press the remote to flap\nSwipe \u{2190} \u{2192} to change mode     Swipe \u{2191} \u{2193} to change bird"
+        toast.font = Look.font(48, .bold)
+        NSLayoutConstraint.activate([hint.centerXAnchor.constraint(equalTo: view.centerXAnchor), hint.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -60),
+                                     toast.centerXAnchor.constraint(equalTo: view.centerXAnchor), toast.topAnchor.constraint(equalTo: view.topAnchor, constant: 70)])
 
-        // (only a real press flaps: a light tap on the remote's touch surface does nothing, so you can't flap by accident)
+        // swipes on the Get Ready screen
+        for (d, f) in [(UISwipeGestureRecognizer.Direction.left, -1), (.right, 1), (.up, -2), (.down, 2)] as [(UISwipeGestureRecognizer.Direction, Int)] {
+            let g = UISwipeGestureRecognizer(target: self, action: #selector(swiped(_:))); g.direction = d; g.name = "\(f)"; view.addGestureRecognizer(g)
+        }
 
-        updateLabels()
         skView.presentScene(scene)
         checkForUpdate()
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-shots") { Demo.run(self) }
         if args.contains("-partyshots") { DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.openParty() } }
     }
+    override func viewDidLayoutSubviews() { super.viewDidLayoutSubviews(); shadeLayer.frame = shade.bounds }
 
     // MARK: HUD
     func phaseChanged(_ phase: GameScene.Phase) {
         let menu = phase == .title || phase == .over
-        UIView.animate(withDuration: 0.2) {
-            self.bar.alpha = menu ? 1 : 0
+        UIView.animate(withDuration: 0.25) {
+            self.shelf.alpha = menu ? 1 : 0; self.shade.alpha = menu ? 1 : 0
             self.hint.alpha = phase == .ready ? 1 : 0
         }
-        bar.isUserInteractionEnabled = menu
-        playButton.setTitle(phase == .over ? "PLAY AGAIN" : "PLAY", for: .normal)
+        shelf.isUserInteractionEnabled = menu
         updateNote.isHidden = phase != .title
-        updateLabels()
+        if menu { focusPlay = true; updateLabels(); shelf.scrollToItem(at: IndexPath(item: 0, section: 0), at: .left, animated: false) }
         setNeedsFocusUpdate(); updateFocusIfNeeded()
     }
-    override var preferredFocusEnvironments: [UIFocusEnvironment] { [playButton] }
+    override var preferredFocusEnvironments: [UIFocusEnvironment] { [shelf] }
+    func indexPathForPreferredFocusedView(in collectionView: UICollectionView) -> IndexPath? { focusPlay ? IndexPath(item: 0, section: 0) : nil }
+    func collectionView(_ c: UICollectionView, didUpdateFocusIn context: UICollectionViewFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) { focusPlay = false }
 
-    private func updateLabels() {
-        modeButton.setTitle("MODE\n" + Modes.info(Prefs.mode).title.uppercased(), for: .normal)
-        let b = Prefs.bird
-        birdButton.setTitle("BIRD\n" + (b == "random" ? "RANDOM" : (Birds.shared.info(b)?.name.uppercased() ?? "RANDOM")), for: .normal)
-        soundButton.setTitle("SETTINGS", for: .normal)
-        let acc = Account.shared
-        accountButton.setTitle(acc.signedIn ? "ME\n" + acc.username.uppercased() : "SIGN IN", for: .normal)
+    private func updateLabels() { shelf?.reloadData() }
+
+    // MARK: the cards
+    func collectionView(_ c: UICollectionView, numberOfItemsInSection s: Int) -> Int { Card.allCases.count }
+    func collectionView(_ c: UICollectionView, cellForItemAt ip: IndexPath) -> UICollectionViewCell {
+        let cell = c.dequeueReusableCell(withReuseIdentifier: "c", for: ip) as! CardCell
+        let card = Card(rawValue: ip.item)!
+        let (title, image) = art(card)
+        cell.label.text = title; cell.pic.image = image
+        return cell
+    }
+    func collectionView(_ c: UICollectionView, didSelectItemAt ip: IndexPath) {
+        switch Card(rawValue: ip.item)! {
+        case .play: play()
+        case .party: openParty()
+        case .mode: openModes()
+        case .bird: openBirds()
+        case .board: present(LeaderboardController(), animated: true)
+        case .account: present(SignInController(), animated: true)
+        case .settings: let s = SettingsController(); s.onDone = { [weak self] in self?.choicesChanged() }; present(s, animated: true)
+        }
+    }
+    private func art(_ card: Card) -> (String, UIImage) {
+        let size = CGSize(width: 300, height: 210)
+        let mode = Prefs.mode, bird = Prefs.bird, acc = Account.shared
+        let birdName = bird == "random" ? "Random" : (Birds.shared.info(bird)?.name ?? "Random")
+        switch card {
+        case .play:
+            return (scene.phase == .over ? "Play Again" : "Play", Cards.render(size) { g, r in
+                Cards.scenery(g, r)
+                Cards.bird(bird == "random" ? "yellow" : bird, height: 80, at: CGPoint(x: r.width * 0.36, y: r.height * 0.46))
+                UIColor.white.withAlphaComponent(0.92).setFill(); g.fillEllipse(in: CGRect(x: r.width * 0.62, y: r.height * 0.24, width: 84, height: 84))
+                Cards.symbol("play.fill", 38, at: CGPoint(x: r.width * 0.62 + 46, y: r.height * 0.24 + 42), color: Look.rgb(0x4ec0ca))
+            })
+        case .party:
+            return ("Party", Cards.render(size) { g, r in
+                Cards.gradient(g, r, Look.rgb(0x9b6bd6), Look.rgb(0x5b3a9a))
+                for (i, b) in ["robin", "blue", "yellow", "red"].enumerated() { Cards.bird(b, height: 40, at: CGPoint(x: r.width * (0.2 + 0.2 * CGFloat(i)), y: r.height * (i % 2 == 0 ? 0.36 : 0.5))) }
+                Cards.symbol("iphone", 34, at: CGPoint(x: r.width * 0.5, y: r.height * 0.8), color: UIColor.white.withAlphaComponent(0.85))
+            })
+        case .mode:
+            let sym = ["normal": "flag.fill", "hard": "flame.fill", "wavy": "water.waves", "flipped": "arrow.up.arrow.down", "tiny": "arrow.down.right.and.arrow.up.left",
+                       "turbo": "hare.fill", "windy": "wind", "dark": "moon.stars.fill"][mode] ?? "flag.fill"
+            return ("Mode: " + Modes.info(mode).title, Cards.render(size) { g, r in
+                Cards.gradient(g, r, Look.rgb(0xfc9a58), Look.rgb(0xe0563a))
+                Cards.symbol(sym, 74, at: CGPoint(x: r.midX, y: r.midY))
+            })
+        case .bird:
+            return ("Bird: " + birdName, Cards.render(size) { g, r in
+                Cards.gradient(g, r, Look.rgb(0x4ec0ca), Look.rgb(0x2f8f9a))
+                if bird == "random" { Cards.symbol("shuffle", 70, at: CGPoint(x: r.midX, y: r.midY)) }
+                else { Cards.bird(bird, height: 120, at: CGPoint(x: r.midX, y: r.midY)) }
+            })
+        case .board:
+            return ("Leaderboard", Cards.render(size) { g, r in
+                Cards.gradient(g, r, Look.rgb(0xf5c542), Look.rgb(0xd4921a))
+                Cards.symbol("trophy.fill", 76, at: CGPoint(x: r.midX, y: r.midY))
+            })
+        case .account:
+            return (acc.signedIn ? acc.username : (acc.session?.needCode == true ? "Finish Signing In" : "Sign In"), Cards.render(size) { g, r in
+                Cards.gradient(g, r, Look.rgb(0x7fcf5a), Look.rgb(0x3f9a3a))
+                if acc.signedIn { Cards.bird(bird == "random" ? "yellow" : bird, height: 100, at: CGPoint(x: r.midX, y: r.midY)) }
+                else { Cards.symbol("person.crop.circle.fill", 80, at: CGPoint(x: r.midX, y: r.midY)) }
+            })
+        case .settings:
+            return ("Settings", Cards.render(size) { g, r in
+                Cards.gradient(g, r, Look.rgb(0x6b7280), Look.rgb(0x3a3f4a))
+                Cards.symbol("gearshape.fill", 76, at: CGPoint(x: r.midX, y: r.midY))
+            })
+        }
     }
 
     // MARK: actions
@@ -125,9 +203,31 @@ final class GameViewController: UIViewController, GameSceneHUD {
     func openBirds() { let c = BirdsController(); c.onDone = { [weak self] in self?.choicesChanged() }; present(c, animated: true) }
     private func choicesChanged() { scene.refreshChoices(); updateLabels() }
 
+    /// Get Ready: swipe left / right = mode, up / down = bird
+    @objc private func swiped(_ g: UISwipeGestureRecognizer) {
+        guard presentedViewController == nil, scene.phase == .ready, let f = Int(g.name ?? "") else { return }
+        if abs(f) == 1 {
+            let all = Modes.all, i = all.firstIndex { $0.id == Prefs.mode } ?? 0
+            Prefs.mode = all[(i + f + all.count) % all.count].id
+            show(toast: "Mode: " + Modes.info(Prefs.mode).title)
+        } else {
+            let cur = Prefs.bird
+            let list = Birds.shared.birds(in: Birds.shared.info(cur)?.category ?? (Birds.shared.categories.first ?? "Classic"))
+            guard !list.isEmpty else { return }
+            let i = list.firstIndex { $0.id == cur } ?? -1
+            Prefs.bird = list[(i + f / 2 + list.count) % list.count].id
+            show(toast: "Bird: " + (Birds.shared.info(Prefs.bird)?.name ?? ""))
+        }
+        scene.refreshChoices(); scene.sound(scene.swoosh)
+    }
+    private func show(toast text: String) {
+        toast.text = text; toast.layer.removeAllAnimations()
+        toast.alpha = 1
+        UIView.animate(withDuration: 0.4, delay: 1.2, options: [.beginFromCurrentState]) { self.toast.alpha = 0 }
+    }
 
     private func setPaused(_ p: Bool) {
-        paused = p; skView.isPaused = p; scene.isPaused = p; pausedLabel.isHidden = !p
+        paused = p; skView.isPaused = p; scene.isPaused = p; pausedView.isHidden = !p
     }
 
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
@@ -163,9 +263,9 @@ final class GameViewController: UIViewController, GameSceneHUD {
         }.resume()
     }
     private func showUpdateNote() {
-        updateNote.text = "  A NEW VERSION OF THE APPLE TV APP IS OUT. INSTALL THE NEW FILE TO GET IT.  "
-        updateNote.font = Look.pixel(20); updateNote.textColor = Look.brown; updateNote.backgroundColor = Look.light
-        updateNote.layer.cornerRadius = 14; updateNote.layer.borderWidth = 5; updateNote.layer.borderColor = Look.brown.cgColor; updateNote.clipsToBounds = true
+        updateNote.text = "     A new version of the Apple TV app is out. Install the new file to get it.     "
+        updateNote.font = Look.font(28, .medium); updateNote.textColor = .white; updateNote.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+        updateNote.layer.cornerRadius = 32; updateNote.clipsToBounds = true
         updateNote.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(updateNote)
         NSLayoutConstraint.activate([updateNote.centerXAnchor.constraint(equalTo: view.centerXAnchor), updateNote.topAnchor.constraint(equalTo: view.topAnchor, constant: 50),

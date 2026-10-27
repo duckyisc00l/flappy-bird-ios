@@ -6,8 +6,8 @@ import UIKit
 final class SignInController: PanelController {
     private let qr = UIImageView(), info = UILabel(), codeLabel = UILabel(), status = UILabel()
     private let codeField = UITextField()
-    private let mainButton = PixelButton("SIGN OUT")
-    private let cancelButton = PixelButton("CANCEL")
+    private let mainButton = TVButton.make("Sign Out")
+    private let cancelButton = TVButton.make("Cancel")
     private var link: Account.Link?
     private var pollTimer: Timer?
     private var busy = false
@@ -16,10 +16,10 @@ final class SignInController: PanelController {
         super.viewDidLoad()
         heading.text = "Account"
         qr.layer.magnificationFilter = .nearest; qr.backgroundColor = .white; qr.layer.cornerRadius = 16; qr.clipsToBounds = true
-        for l in [info, codeLabel, status] { l.numberOfLines = 0; l.textAlignment = .center; l.textColor = Look.brown }
-        info.font = Look.pixel(24); codeLabel.font = Look.pixel(56); status.font = Look.pixel(20)
-        codeField.font = Look.pixel(40); codeField.textAlignment = .center; codeField.keyboardType = .numberPad
-        codeField.placeholder = "6-DIGIT CODE"; codeField.backgroundColor = Look.light
+        for l in [info, codeLabel, status] { l.numberOfLines = 0; l.textAlignment = .center; l.textColor = .white }
+        info.font = Look.font(36, .medium); codeLabel.font = UIFont.monospacedSystemFont(ofSize: 84, weight: .bold); status.font = Look.font(28); status.textColor = Look.dim
+        codeField.font = UIFont.monospacedDigitSystemFont(ofSize: 48, weight: .semibold); codeField.textAlignment = .center; codeField.keyboardType = .numberPad
+        codeField.placeholder = "6-digit code"
         mainButton.onSelect = { [weak self] in self?.mainTapped() }
         cancelButton.onSelect = { [weak self] in Account.shared.signOut(); self?.link = nil; self?.refresh() }
         for v in [qr, info, codeLabel, status, codeField, mainButton, cancelButton] as [UIView] { v.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(v) }
@@ -47,18 +47,18 @@ final class SignInController: PanelController {
         if a.signedIn {
             pollTimer?.invalidate(); link = nil
             qr.image = Birds.shared.image(Prefs.bird == "random" ? "yellow" : Prefs.bird, scale: 12); qr.backgroundColor = UIColor(red: 0.306, green: 0.753, blue: 0.792, alpha: 1)
-            info.text = "SIGNED IN AS"; codeLabel.text = a.username.uppercased()
-            status.text = "YOUR SCORES ON THIS TV GO ON THE ONLINE LEADERBOARD,\nAND YOUR GAMES ADD UP ON YOUR PROFILE."
-            mainButton.setTitle("SIGN OUT", for: .normal); mainButton.isHidden = false
+            info.text = "Signed in as"; codeLabel.text = a.username; codeLabel.font = Look.font(80, .bold)
+            status.text = "Your scores on this TV go on the online leaderboard,\nand your games add up on your profile."
+            mainButton.setTitle("Sign Out", for: .normal); mainButton.isHidden = false
         } else if a.session?.needCode == true {
             pollTimer?.invalidate()
             qr.image = nil; qr.isHidden = true; codeLabel.isHidden = true; codeField.isHidden = false
-            info.text = "YOUR ACCOUNT USES 2FA.\nTYPE THE 6-DIGIT CODE FROM YOUR AUTHENTICATOR APP:"
+            info.text = "Your account uses two-factor authentication.\nType the 6-digit code from your authenticator app."
             status.text = ""
-            mainButton.setTitle("VERIFY", for: .normal); mainButton.isHidden = false; cancelButton.isHidden = false
+            mainButton.setTitle("Verify", for: .normal); mainButton.isHidden = false; cancelButton.isHidden = false
         } else {
             qr.backgroundColor = .white
-            info.text = "SCAN THIS WITH YOUR PHONE CAMERA,\nTHEN TAP APPROVE ON YOUR PHONE.\n\nYOUR PHONE NEEDS TO BE SIGNED IN\nTO FLAPPY BIRD."
+            info.text = "Scan this with your phone's camera,\nthen tap Approve on your phone.\n\nYour phone needs to be signed in to Flappy Bird."; codeLabel.font = UIFont.monospacedSystemFont(ofSize: 84, weight: .bold)
             mainButton.isHidden = true
             if link == nil { newCode() }
         }
@@ -66,14 +66,14 @@ final class SignInController: PanelController {
     }
 
     private func newCode() {
-        codeLabel.text = "..."; status.text = "GETTING A CODE..."; qr.image = nil
+        codeLabel.text = "..."; status.text = "Getting a code..."; qr.image = nil
         Account.shared.startLink { [weak self] l in
             guard let self = self else { return }
-            guard let l = l else { self.status.text = "COULDN'T REACH THE SERVER.\nCHECK THE INTERNET."; DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in self?.newCode() }; return }
+            guard let l = l else { self.status.text = "Couldn't reach the server.\nCheck the internet."; DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in self?.newCode() }; return }
             self.link = l
             self.qr.image = Self.qrImage(PartyController.site + "#tv=" + l.code)
             self.codeLabel.text = String(l.code.prefix(4)) + " " + String(l.code.suffix(4))
-            self.status.text = "WAITING FOR YOUR PHONE..."
+            self.status.text = "Waiting for your phone..."
             self.pollTimer?.invalidate()
             self.pollTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: true) { [weak self] _ in self?.poll() }
         }
@@ -88,7 +88,7 @@ final class SignInController: PanelController {
             case .waiting: break
             case .done: self.link = nil; self.refresh()
             case .failed(let m):
-                self.status.text = m.uppercased()
+                self.status.text = m
                 if m.contains("ran out") || m.contains("already used") { self.link = nil; self.pollTimer?.invalidate(); DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in self?.newCode() } }
                 else if m.contains("set up") { self.pollTimer?.invalidate() }
             }
@@ -99,9 +99,9 @@ final class SignInController: PanelController {
         if a.signedIn { a.signOut(); refresh(); return }
         if a.session?.needCode == true {
             let c = (codeField.text ?? "").filter { $0.isNumber }
-            guard c.count == 6 else { status.text = "TYPE ALL 6 NUMBERS"; return }
-            status.text = "CHECKING..."
-            a.verifyCode(c) { [weak self] ok in self?.status.text = ok ? "" : "WRONG CODE. TRY THE NEWEST ONE."; if ok { self?.refresh() } }
+            guard c.count == 6 else { status.text = "Type all 6 numbers."; return }
+            status.text = "Checking..."
+            a.verifyCode(c) { [weak self] ok in self?.status.text = ok ? "" : "Wrong code. Try the newest one."; if ok { self?.refresh() } }
         }
     }
 
