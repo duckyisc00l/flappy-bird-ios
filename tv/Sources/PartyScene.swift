@@ -302,10 +302,18 @@ final class PartyScene: SKScene {
     func botsThink() {
         guard phase == .play else { return }
         for p in players where botIds.contains(p.id) && p.alive {
-            let next = pipes.first { $0.gx + pipeW / 2 + R > p.x - 5 }
-            let target = next.map { groupY + $0.y + pipeH / 2 + $0.gap / 2 - 8 } ?? H / 2
-            let wobble = CGFloat(p.slot) * 7 - 14
-            if p.y < target - 30 + wobble && p.vy <= 0 && CGFloat.random(in: 0..<1) < 0.985 { flap(p.id) }
+            var target: CGFloat = H / 2
+            for q in pipes {
+                let right: CGFloat = q.gx + pipeW / 2 + R
+                if right > p.x - 5 {
+                    let mid: CGFloat = groupY + q.y + pipeH / 2
+                    target = mid + q.gap / 2 - 8
+                    break
+                }
+            }
+            let wobble: CGFloat = CGFloat(p.slot) * 7 - 14
+            let low: Bool = p.y < target - 30 + wobble
+            if low && p.vy <= 0 && Double.random(in: 0..<1) < 0.985 { flap(p.id) }
         }
     }
 }
