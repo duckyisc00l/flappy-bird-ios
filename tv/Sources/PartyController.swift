@@ -92,8 +92,8 @@ final class PartyController: UIViewController, PartySceneDelegate {
     private func buildOverlay() {
         card(joinCard); card(listCard)
         label(joinTitle, Look.title(60), Look.orange); joinTitle.text = "Party!"
-        label(joinText, Look.pixel(20)); joinText.text = "SCAN WITH YOUR PHONE CAMERA\nOR GO TO\nDUCKYISC00L.GITHUB.IO/FLAPPY-BIRD\nAND TYPE THIS CODE IN SETTINGS"
-        label(codeLabel, Look.title(96)); codeLabel.text = code
+        label(joinText, Look.pixel(17)); joinText.text = "SCAN WITH YOUR PHONE CAMERA\nOR GO TO\nDUCKYISC00L.GITHUB.IO/FLAPPY-BIRD\nAND TYPE THIS CODE IN SETTINGS"
+        label(codeLabel, Look.pixel(64)); codeLabel.text = code
         label(status, Look.pixel(16))
         qr.image = makeQR(Self.site + "#party=" + code); qr.layer.magnificationFilter = .nearest; qr.translatesAutoresizingMaskIntoConstraints = false
         qr.backgroundColor = .white; qr.layer.cornerRadius = 14; qr.clipsToBounds = true
@@ -107,16 +107,16 @@ final class PartyController: UIViewController, PartySceneDelegate {
         for v in [hint, corner] { view.addSubview(v) }
         NSLayoutConstraint.activate([
             joinCard.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 90), joinCard.topAnchor.constraint(equalTo: view.topAnchor, constant: 70),
-            joinCard.widthAnchor.constraint(equalToConstant: 620), joinCard.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -170),
+            joinCard.widthAnchor.constraint(equalToConstant: 520), joinCard.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -170),
             joinTitle.topAnchor.constraint(equalTo: joinCard.topAnchor, constant: 26), joinTitle.centerXAnchor.constraint(equalTo: joinCard.centerXAnchor),
             qr.topAnchor.constraint(equalTo: joinTitle.bottomAnchor, constant: 18), qr.centerXAnchor.constraint(equalTo: joinCard.centerXAnchor),
-            qr.widthAnchor.constraint(equalToConstant: 330), qr.heightAnchor.constraint(equalToConstant: 330),
+            qr.widthAnchor.constraint(equalToConstant: 300), qr.heightAnchor.constraint(equalToConstant: 300),
             joinText.topAnchor.constraint(equalTo: qr.bottomAnchor, constant: 22), joinText.leadingAnchor.constraint(equalTo: joinCard.leadingAnchor, constant: 20),
             joinText.trailingAnchor.constraint(equalTo: joinCard.trailingAnchor, constant: -20),
             codeLabel.topAnchor.constraint(equalTo: joinText.bottomAnchor, constant: 10), codeLabel.centerXAnchor.constraint(equalTo: joinCard.centerXAnchor),
             status.bottomAnchor.constraint(equalTo: joinCard.bottomAnchor, constant: -18), status.centerXAnchor.constraint(equalTo: joinCard.centerXAnchor),
             listCard.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -90), listCard.topAnchor.constraint(equalTo: view.topAnchor, constant: 70),
-            listCard.widthAnchor.constraint(equalToConstant: 560),
+            listCard.widthAnchor.constraint(equalToConstant: 480),
             listTitle.topAnchor.constraint(equalTo: listCard.topAnchor, constant: 24), listTitle.centerXAnchor.constraint(equalTo: listCard.centerXAnchor),
             list.topAnchor.constraint(equalTo: listTitle.bottomAnchor, constant: 18), list.leadingAnchor.constraint(equalTo: listCard.leadingAnchor, constant: 26),
             list.trailingAnchor.constraint(equalTo: listCard.trailingAnchor, constant: -26), list.bottomAnchor.constraint(equalTo: listCard.bottomAnchor, constant: -26),

@@ -124,7 +124,7 @@ final class PartyScene: SKScene {
         guard phase == .lobby || phase == .over else { return }
         let n = max(players.count, 1)
         for (i, p) in players.enumerated() where !(phase == .over && p.inRound) {
-            p.x = W / 2 + (CGFloat(i) - CGFloat(n - 1) / 2) * 90; p.y = H / 2 + 40; p.rot = 0
+            p.x = W / 2 + (CGFloat(i) - CGFloat(n - 1) / 2) * 50; p.y = H / 2 - 40 + CGFloat(i % 2) * 34; p.rot = 0
         }
     }
     func startCountdown() {
@@ -169,7 +169,7 @@ final class PartyScene: SKScene {
         run(.sequence([.wait(forDuration: 1.4), .run { [weak self] in
             guard let s = self else { return }
             s.phase = .over
-            s.setBig(s.winners.count == 1 ? s.winners[0] + " WINS!" : s.winners.isEmpty ? "" : "TIE!")
+            s.setBig("")
             s.sound(s.sSwoosh); s.party?.partyChanged()
         }]))
     }
@@ -199,7 +199,7 @@ final class PartyScene: SKScene {
         let fdt = CGFloat(dt)
         if phase == .count {
             countLeft -= dt
-            setBig(countLeft > 0 ? "\(Int(ceil(countLeft)))" : "GO!")
+            setBig(countLeft > 0 ? "\(Int(ceil(countLeft)))" : "")   // (the number font has no letters)
             if countLeft <= 0 { beginRound() }
         }
         // the world scrolls
