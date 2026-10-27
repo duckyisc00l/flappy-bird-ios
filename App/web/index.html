@@ -287,6 +287,11 @@ a.mk-btn.mk-save { color: #fff; }
 .fg-race { flex: none; font-size: 7px !important; padding: 6px 8px !important; }
 .fg-row.sel .fg-race { background: #78d850; color: #fff; }
 .fg-del { flex: none; width: 24px; height: 24px; border: 2px solid #533846; border-radius: 6px; background: #fff; font: 11px system-ui; padding: 0; }
+/* v133: Race a Friend button on the score card */
+.fg-card-btn { display: flex !important; flex-direction: column; align-items: center; gap: 3px; width: 100%; margin-top: 6px; padding: 7px 8px !important;
+  background: #8a7ae0 !important; color: #fff !important; box-shadow: inset 0 -3px 0 #6a5ac0 !important; flex: none; }
+.fg-card-btn span { font-size: 9px; text-shadow: 0 2px #4a3a90; }
+.fg-card-btn small { font-size: 6px; opacity: .9; text-transform: uppercase; }
 </style>
 </head>
 <body>
@@ -9634,7 +9639,7 @@ function buildFriendsPage(page) {
     let code = '';
     myGhostCode(gameMode).then(c => { code = c || ''; area.value = code || "Couldn't make a code"; });
     cp.addEventListener('click', () => { if (!code) return; copyText(code, area); cp.textContent = 'Copied!'; playSound('point'); setTimeout(() => { cp.textContent = 'Copy'; }, 1500); });
-    if (navigator.share) sh.addEventListener('click', () => { if (code) navigator.share({ text: 'Race my Flappy Bird ghost! I got ' + best + ' in ' + mi.title + '. Paste this in Settings > Friends\' Ghosts:\n' + code }).catch(() => {}); });
+    if (navigator.share) sh.addEventListener('click', () => { if (code) navigator.share({ text: 'Race my Flappy Bird ghost! I got ' + best + ' in ' + mi.title + '. After a game over, tap Share, then Race a Friend, and paste this:\n' + code }).catch(() => {}); });
     else sh.remove();
   } else box.appendChild(el('div', 'pk-note', 'Play a round in ' + mi.title + ' first (with no autoplay). Your best run becomes your ghost.'));
   // add a friend's
@@ -9671,26 +9676,30 @@ function buildFriendsPage(page) {
   page.appendChild(box);
 }
 {
-  const _bs = buildSettingsPage;
-  buildSettingsPage = function (page) {
-    _bs(page);
-    const list = page.querySelector('.st-list'); if (!list) return;
-    const b = el('button', 'st-row'), t = el('div', 'st-rt');
-    const f = friendList.find(q => q.id === raceId);
-    t.append(el('div', 'st-rn', "Friends' Ghosts"), el('div', 'st-rs', f ? 'Racing ' + f.name : 'Race a friend\'s best run'));
-    b.append(t, el('span', 'st-tval', f ? 'Racing ' + f.name : (friendList.length ? friendList.length + ' saved' : '')), el('span', 'st-arrow', '›'));
+  // v133: Race a Friend lives on the Score Card (game over > Share), not in Settings
+  const _bc = buildCardPage;
+  buildCardPage = function (page) {
+    _bc(page);
+    const b = el('button', 'mk-btn fg-card-btn'), f = friendList.find(q => q.id === raceId);
+    b.append(el('span', '', 'Race a Friend'), el('small', '', f ? 'Racing ' + f.name : 'Send your ghost or race theirs'));
     b.addEventListener('click', () => { playSound('swoosh'); haptic(); showPage('friends'); });
-    const rows = [...list.querySelectorAll('.st-row')], ghostRow = rows.find(r => r.textContent.includes('Ghost') && !r.textContent.includes('Friends'));
-    list.insertBefore(b, ghostRow ? ghostRow.nextSibling : null);
+    page.appendChild(b);
   };
   const _sp = showPage;
   showPage = function (kind, first) {
     if (kind !== 'friends') return _sp(kind, first);
+    const fromCard = PK.kind === 'card' || (PK.kind === 'friends' && PK.friendsFromCard);
     _sp('weather', first);
     PK.kind = 'friends';
     PK.root.className = 'pk-root pk-friends' + (first ? '' : ' pk-in');
     const page = PK.panel.querySelector('.pk-page');
-    page.querySelector('.pk-title').textContent = 'Friends';
+    page.querySelector('.pk-title').textContent = 'Race a Friend';
+    if (fromCard && !page.querySelector('.pk-back')) {   // back to the score card
+      const back = el('button', 'pk-back', '\u2039'); back.setAttribute('aria-label', 'Back');
+      back.addEventListener('click', () => { playSound('swoosh'); showPage('card'); });
+      const head = page.querySelector('.pk-head'); head.insertBefore(back, head.firstChild);
+    }
+    PK.friendsFromCard = fromCard || PK.friendsFromCard;
     while (page.children.length > 1) page.removeChild(page.lastChild);
     clearPageTimers();
     buildFriendsPage(page);
