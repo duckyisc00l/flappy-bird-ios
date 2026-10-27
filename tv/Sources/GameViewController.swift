@@ -144,7 +144,7 @@ final class GameViewController: UIViewController, GameSceneHUD {
         }.resume()
     }
     private func showUpdateNote() {
-        updateNote.text = "  A NEW VERSION OF THE APPLE TV APP IS OUT. INSTALL IT AGAIN FROM XCODE TO GET IT.  "
+        updateNote.text = "  A NEW VERSION OF THE APPLE TV APP IS OUT. INSTALL THE NEW FILE TO GET IT.  "
         updateNote.font = Look.pixel(20); updateNote.textColor = Look.brown; updateNote.backgroundColor = Look.light
         updateNote.layer.cornerRadius = 14; updateNote.layer.borderWidth = 5; updateNote.layer.borderColor = Look.brown.cgColor; updateNote.clipsToBounds = true
         updateNote.translatesAutoresizingMaskIntoConstraints = false
