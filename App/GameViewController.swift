@@ -1,5 +1,6 @@
 import UIKit
 import WebKit
+import AuthenticationServices
 
 /// Serves the game from the app bundle under its own address (flappy://game/...),
 /// so saved data (best scores, your birds, settings) is kept between launches.
@@ -108,6 +109,38 @@ final class HapticBridge: NSObject, WKScriptMessageHandler {
     }
 }
 
+/// "Sign in with Safari": the game posts { url } to window.webkit.messageHandlers.signin.
+/// The website's sign-in page opens in a Safari sheet, where the Passwords app can fill and save your password
+/// (a sideloaded app's own web view isn't allowed to). The page sends the login back as
+/// flappybird-auth://done#a=ACCESS&r=REFRESH, and the game signs in with it.
+final class SignInBridge: NSObject, WKScriptMessageHandler, ASWebAuthenticationPresentationContextProviding {
+    weak var webView: WKWebView?
+    private var session: ASWebAuthenticationSession?
+
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard session == nil, let body = message.body as? [String: Any], let s = body["url"] as? String,
+              let url = URL(string: s), url.scheme == "https", url.host == "duckyisc00l.github.io" else { return }
+        let auth = ASWebAuthenticationSession(url: url, callbackURLScheme: "flappybird-auth") { [weak self] callback, _ in
+            guard let self = self else { return }
+            self.session = nil
+            guard let callback = callback, let frag = URLComponents(string: "x://y?" + (callback.fragment ?? ""))?.queryItems else { return }
+            var out: [String: String] = [:]
+            for q in frag where q.name == "a" || q.name == "r" { out[q.name] = q.value ?? "" }
+            guard out["a"] != nil, out["r"] != nil, let json = try? JSONSerialization.data(withJSONObject: out),
+                  let text = String(data: json, encoding: .utf8) else { return }
+            DispatchQueue.main.async { self.webView?.evaluateJavaScript("window.fbAppSignedIn && window.fbAppSignedIn(\(text))") }
+        }
+        auth.presentationContextProvider = self
+        auth.prefersEphemeralWebBrowserSession = false   // the real Safari, with your saved passwords
+        session = auth
+        if !auth.start() { session = nil }
+    }
+
+    func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        webView?.window ?? UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.windows.first }.first ?? ASPresentationAnchor()
+    }
+}
+
 final class GameViewController: UIViewController, WKUIDelegate, WKNavigationDelegate, WKDownloadDelegate {
     private var webView: WKWebView!
     private var downloadFile: URL?
@@ -126,6 +159,8 @@ final class GameViewController: UIViewController, WKUIDelegate, WKNavigationDele
         config.userContentController.add(HapticBridge(), name: "haptic")
         let updater = UpdateBridge()
         config.userContentController.add(updater, name: "update")
+        let signer = SignInBridge()
+        config.userContentController.add(signer, name: "signin")
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false
@@ -138,6 +173,7 @@ final class GameViewController: UIViewController, WKUIDelegate, WKNavigationDele
         webView.uiDelegate = self
         webView.navigationDelegate = self
         updater.webView = webView
+        signer.webView = webView
         view = webView
     }
 
