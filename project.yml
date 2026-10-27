@@ -20,7 +20,7 @@ targets:
       properties:
         CFBundleDisplayName: Flappy Bird
         CFBundleShortVersionString: "5.3"
-        CFBundleVersion: "143"
+        CFBundleVersion: "144"
         UILaunchScreen:
           UIColorName: ""
         UIRequiresFullScreen: true
