@@ -29,6 +29,32 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
     func webView(_ webView: WKWebView, stop task: WKURLSchemeTask) {}
 }
 
+/// Haptics for the app only: the game posts "flap", "light", "medium", "heavy" or "error"
+/// to window.webkit.messageHandlers.haptic and the phone's Taptic Engine plays it.
+final class HapticBridge: NSObject, WKScriptMessageHandler {
+    private let soft = UIImpactFeedbackGenerator(style: .soft)
+    private let light = UIImpactFeedbackGenerator(style: .light)
+    private let medium = UIImpactFeedbackGenerator(style: .medium)
+    private let heavy = UIImpactFeedbackGenerator(style: .heavy)
+    private let notice = UINotificationFeedbackGenerator()
+
+    override init() {
+        super.init()
+        [soft, light, medium, heavy].forEach { $0.prepare() }
+        notice.prepare()
+    }
+
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        switch message.body as? String ?? "" {
+        case "flap": soft.impactOccurred(intensity: 0.7); soft.prepare()
+        case "medium": medium.impactOccurred(); medium.prepare()
+        case "heavy": heavy.impactOccurred(); heavy.prepare()
+        case "error": notice.notificationOccurred(.error); notice.prepare()
+        default: light.impactOccurred(); light.prepare()
+        }
+    }
+}
+
 final class GameViewController: UIViewController, WKUIDelegate, WKNavigationDelegate, WKDownloadDelegate {
     private var webView: WKWebView!
     private var downloadFile: URL?
@@ -44,6 +70,7 @@ final class GameViewController: UIViewController, WKUIDelegate, WKNavigationDele
         config.mediaTypesRequiringUserActionForPlayback = []
         config.websiteDataStore = .default()
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
+        config.userContentController.add(HapticBridge(), name: "haptic")
 
         webView = WKWebView(frame: .zero, configuration: config)
         webView.isOpaque = false

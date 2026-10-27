@@ -266,6 +266,12 @@ a.mk-btn.mk-save { color: #fff; }
 .rp-cv { width: 100%; max-width: 280px; aspect-ratio: 1; border: 3px solid #533846; border-radius: 8px; background: #000; image-rendering: pixelated; }
 .rp-bar { width: 100%; margin: 0 0 6px; accent-color: #fc7858; touch-action: pan-x !important; }
 .rp-ctl { display: flex; gap: 5px; margin-bottom: 6px; }
+/* v129: trails page */
+.pk-trails .pk-panel { height: min(68%, 560px); }
+.pk-tgrid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+.pk-tgrid .pk-cell canvas { width: 66px; height: 55px; border-radius: 4px; }
+.pk-tsec { grid-column: 1 / -1; font-size: 8px; color: #fc7858; text-transform: uppercase; text-shadow: 0 2px #fff6c8; padding: 6px 2px 1px; }
+.st-tval { font-size: 6px; text-transform: uppercase; opacity: .75; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>
 </head>
 <body>
@@ -4709,6 +4715,7 @@ function flapBird() {
   bird.vy = 0;
   bird.vy += C.flapImpulse / BIRD_MASS;  // applyImpulse(dy: 22)
   if (playSounds) rawPlay('wing');
+  trailFlap(); appHaptic('flap');
 }
 function updateBirdRotation(dt) {
   if (!bird.dynamic) return;
@@ -4727,6 +4734,7 @@ function handleScore() {
   if (afterlife >= 2) return;    // the -1 run never scores
   if (haunted) { score -= 1; haptic(); playSound('point'); scaleTwice(scoreLabel, 1.5, 0.1, 1, 0.1); return; }  // after the ending it only counts down
   score += 1;
+  trailScore();
   strangerWave(score);
   // (the gold super bird at 1000 is turned off: you keep your own bird)
   haptic();
@@ -4925,6 +4933,7 @@ function update(dt) {
   if (shakeT < 5) shakeT += dt;
   armyBuzzSync();
   const md = (ending.frozen || afterlife >= 3 ? 0 : dt) * moving.speed * speedMul() * (afterlife === 2 ? al.speed : 1);
+  trailScroll = md > 0 ? md / C.pipeMoveSpeed : 0;   // how far the world moved this step (trails drift with it)
   if (md > 0) {
     const groundWidth = 336 * 2;
     groundX -= md / C.groundMoveSpeed; while (groundX <= -groundWidth) groundX += groundWidth;
@@ -5038,7 +5047,9 @@ function render() {
   drawStrangers();
   drawGhost();
   // bird (z -1)
+  drawTrail(0);                        // trail / effect behind the bird
   if (bird.added) spr(birdFrame(), bird.x, bird.y, bird.scale, bird.scale, bird.rot);
+  drawTrail(1);                        // ... and the parts in front of it
 
   // land (z 0): 3 tiles, scale 2, spaced width-1
   const landW = 336 * 2;
@@ -5893,7 +5904,7 @@ function botDecide(now, lag) {
   }
   if (flap) { botLastFlap = now; runUsedBot = true; flapBird(); }
 }
-const APP_VERSION = '4.5'; // MARKETING_VERSION in project.pbxproj
+const APP_VERSION = '4.6'; // MARKETING_VERSION in project.pbxproj
 
 // ---------- Loop / input wiring ----------
 // LoadingViewController (Main.storyboard initial VC): black view, DotGears 240x128 aspect-fit at centre,
@@ -9479,6 +9490,399 @@ NBX('Food & Drink', [
   { id: 'bubblewaffle', name: 'Bubble Waffle', pal: g(['#f0c060', '#d8a848', '#f8d888']), paint: (x, y, t) => isBody(t) && x % 2 === 0 && y % 2 === 0 ? '#f8e0a0' : undefined, acc: [A(6, -3, ['.PP.', 'PWWP', 'CCCC'], { P: '#f8a0c0', W: '#ffffff', C: '#f0c060' })] },
 ]);
 }
+
+// ===================== v129: Trails & effects (100) + app haptics =====================
+// A trail is one or more layers drawn behind / in front of the bird, all in the game's pixel style:
+//   P  particles that spawn behind the bird (and/or burst on a flap or a point) and drift with the world
+//   R  a ribbon of coloured bands that follows the bird's path
+//   O  pixel shapes orbiting the bird        A  a soft glow / ring around the bird        H  a halo above the head
+var trailScroll = 0;
+let trailPick = loadStr('trail', 'none');
+// ---- pixel shapes: '#' main colour, 'o' second colour, w white, k dark, r red, y yellow, g green, b blue, p pink, n brown
+const TSHAPE = {
+  sq: ['#'], sq2: ['##', '##'], plus: ['.#.', '###', '.#.'], xx: ['#.#', '.#.', '#.#'],
+  star: ['..#..', '..#..', '#####', '.###.', '.#.#.'], dia: ['..#..', '.###.', '#####', '.###.', '..#..'], spark: ['.#.', '#w#', '.#.'],
+  heart: ['.#.#.', '#####', '#####', '.###.', '..#..'], heartS: ['#.#', '###', '.#.'], ring: ['.##.', '#..#', '#..#', '.##.'],
+  bubble: ['.##.', '#w.#', '#..#', '.##.'], drop: ['..#..', '.###.', '#####', '#####', '.###.'], note: ['..##', '..#.', '..#.', '###.', '##..'],
+  note2: ['.####', '.#..#', '.#..#', '##.##', '##.##'], leaf: ['..##', '.###', '###.', '##..'], petal: ['.#', '##'], flake: ['#.#.#', '.###.', '##.##', '.###.', '#.#.#'],
+  bolt: ['..##', '.##.', '####', '.##.', '##..'], skull: ['.###.', '#####', '#k#k#', '#####', '.#.#.'], ghost: ['.###.', '#####', '#k#k#', '#####', '#.#.#'],
+  bat: ['#...#', '##.##', '#####', '.#.#.'], zz: ['###', '..#', '.#.', '###'], feather: ['...##', '..##.', '.#o..', '#o...', '#....'],
+  cloud: ['.##..', '####.', '#####'], seed: ['#.#.#', '.###.', '..#..', '..#..'], flower: ['.o.', 'o#o', '.o.'], clover: ['.#.#.', '#####', '.###.', '..#..'],
+  bee: ['.w.w.', 'y#k#y', '.ykyk'], fly: ['#...#', '##.##', '.#k#.', '##.##', '#...#'], pizza: ['ooooo', '.#r#.', '..#..'],
+  donut: ['.###.', '#y.b#', '#...#', '#b.p#', '.###.'], candy: ['o.###.o', 'oo###oo', 'o.###.o'], popcorn: ['.ww.', 'wwyw', '.ww.'],
+  cookie: ['.###.', '#k##k', '###k#', '.###.'], cheese: ['#....', '##...', '#o#..', '####.'], lemon: ['.###.', '#o#o#', '##o##', '#o#o#', '.###.'],
+  gum: ['.##.', '#w##', '####', '.##.'], moon: ['.##', '#..', '#..', '.##'], planet: ['..##..', '.####.', 'oooooo', '.####.', '..##..'],
+  runeA: ['###', '#.#', '#.#'], runeB: ['#.#', '###', '#.#'], runeC: ['##.', '#.#', '.##'], coin: ['.##.', '#oo#', '#oo#', '.##.'], gem: ['.###.', '#####', '.###.', '..#..'],
+  bone: ['#...#', '.###.', '#...#'], pumpkin: ['..g..', '.###.', '#####', '.###.'], balloon: ['.##.', '####', '####', '.##.', '..k.', '..k.'],
+  line5: ['#####'], line9: ['#########'], dot3: ['.#.', '###', '.#.'], orb: ['.##.', '#ww#', '####', '.##.'], cross: ['.#.', '###', '.#.', '.#.'],
+  shell: ['.#.', '###', '#.#'], key: ['##...', '#####', '##.#.'], sword: ['....#', '...#.', '#.#..', '.#...', '#.#..'], paw: ['#.#', '...', '.#.', '###'],
+};
+const TPAL = { w: '#ffffff', k: '#1e1e24', r: '#e8281e', y: '#ffd23c', g: '#4ab83a', b: '#3a8ae0', p: '#ff6aa8', n: '#8a5a2a' };
+const tCache = new Map();
+function tImg(shape, c1, c2) {
+  const key = shape + '|' + c1 + '|' + c2; let im = tCache.get(key); if (im) return im;
+  const rows = TSHAPE[shape] || TSHAPE.sq, cv = document.createElement('canvas');
+  cv.width = Math.max(...rows.map(r => r.length)); cv.height = rows.length;
+  const g = cv.getContext('2d');
+  rows.forEach((r, y) => { for (let x = 0; x < r.length; x++) { const ch = r[x]; if (ch === '.') continue; g.fillStyle = ch === '#' ? c1 : ch === 'o' ? (c2 || c1) : (TPAL[ch] || c1); g.fillRect(x, y, 1, 1); } });
+  tCache.set(key, cv); return cv;
+}
+const trr = (v) => Array.isArray(v) ? v[0] + Math.random() * (v[1] - v[0]) : v;
+const tpick = (a) => a[Math.floor(Math.random() * a.length)];
+// layer builders (defaults chosen so a short spec still looks good)
+const TLP = (shape, cols, o) => Object.assign({ type: 'p', shape, cols, rate: 26, s: [2, 2], life: [0.5, 0.9], vx: [-30, 0], vy: [-15, 15], g: 0, drag: 0, spin: 0, fade: 1, shrink: 0, wob: 0,
+  dx: -14, dy: [-5, 5], flap: 0, fsp: [60, 150], score: 0, layer: 0, glow: 0, twinkle: 0, around: 0, inward: 0 }, o || {});
+const TLR = (bands, o) => Object.assign({ type: 'r', bands, w: 2, len: 26, wave: 0, wsp: 8, fade: 1, glow: 0, dash: 0 }, o || {});
+const TLO = (shape, cols, o) => Object.assign({ type: 'o', shape, cols, n: 3, r: 26, ry: 0.55, sp: 3, s: 2, bob: 0 }, o || {});
+const TLA = (col, o) => Object.assign({ type: 'a', col, r: 30, pulse: 0.12, ring: 0 }, o || {});
+const TLH = (col, o) => Object.assign({ type: 'h', col, w: 18, h: 5, y: 20 }, o || {});
+const TRAILS = [];
+let tCat = '';
+function TDEF(id, name, ...layers) { TRAILS.push({ id, name, cat: tCat, layers }); }
+const RAINBOW = ['#e8281e', '#f0801e', '#ffd23c', '#4ab83a', '#3a8ae0', '#8a3ab8'];
+const CONF = ['#ff3b3b', '#3bff6b', '#ffd23b', '#3bb0ff', '#ff6bf0', '#ffffff'];
+
+tCat = 'Classic';
+TDEF('sparkles', 'Sparkles', TLP('spark', ['#fff8a0', '#ffffff', '#ffe060'], { rate: 22, life: [0.4, 0.8], twinkle: 1, flap: 6 }));
+TDEF('rainbow', 'Rainbow', TLR(RAINBOW, { w: 2, len: 30 }));
+TDEF('smoke', 'Smoke Puffs', TLP('cloud', ['#e8e8ec', '#d0d0d8', '#ffffff'], { rate: 14, s: [1, 2], life: [0.6, 1.1], vy: [10, 30], grow: 1, fade: 1, flap: 3 }));
+TDEF('bubbles', 'Bubbles', TLP('bubble', ['#a8e0ff', '#c8f0ff'], { rate: 12, s: [1, 2], life: [0.9, 1.6], vy: [20, 50], wob: 18, flap: 4 }));
+TDEF('confetti', 'Confetti', TLP('sq2', CONF, { rate: 30, life: [0.8, 1.3], g: -160, vy: [20, 80], spin: 8, flap: 10 }));
+TDEF('stars', 'Stars', TLP('star', ['#ffd23c', '#fff08a'], { rate: 10, s: [1, 2], life: [0.6, 1], spin: 3, flap: 4 }));
+TDEF('hearts', 'Hearts', TLP('heart', ['#ff3a6a', '#ff8ab0', '#e8281e'], { rate: 10, s: [1, 1.5], life: [0.8, 1.3], vy: [15, 40], wob: 10, flap: 3 }));
+TDEF('pixeldust', 'Pixel Dust', TLP('sq', ['#ffffff', '#fff6c8', '#e8e0b0'], { rate: 50, s: [2, 3], life: [0.3, 0.7], vy: [-20, 20] }));
+TDEF('comet', 'Comet Tail', TLR(['#fff8c0', '#ffd23c', '#ff8a1e'], { w: 2, len: 20 }), TLP('sq', ['#fff8c0', '#ffd23c'], { rate: 30, life: [0.3, 0.5], s: [2, 3] }));
+TDEF('glittertrail', 'Glitter Trail', TLP('sq', ['#ff6ad0', '#ffd23c', '#7af0ff', '#ffffff'], { rate: 45, s: [2, 2], life: [0.4, 0.9], twinkle: 1, g: -60 }));
+
+tCat = 'Elements';
+TDEF('fire', 'Fire', TLP('sq2', ['#ffd23c', '#ff8a1e', '#e8281e'], { rate: 50, s: [1.5, 2.5], life: [0.25, 0.5], vy: [20, 70], shrink: 1, glow: 1, flap: 8 }));
+TDEF('blueflame', 'Blue Flame', TLP('sq2', ['#e8f8ff', '#7ad0ff', '#2a6ae0'], { rate: 50, s: [1.5, 2.5], life: [0.25, 0.5], vy: [20, 70], shrink: 1, glow: 1, flap: 8 }));
+TDEF('icecrystals', 'Ice Crystals', TLP('dia', ['#e8f8ff', '#a8e0ff', '#ffffff'], { rate: 16, s: [1, 1.5], life: [0.6, 1], g: -80, spin: 2, twinkle: 1 }));
+TDEF('snowflakes', 'Snowflakes', TLP('flake', ['#ffffff', '#e8f4ff'], { rate: 10, s: [1, 1.5], life: [1, 1.6], g: -40, vy: [-10, 10], wob: 14, spin: 1 }));
+TDEF('sparks', 'Lightning Sparks', TLP('bolt', ['#ffe04a', '#ffffff'], { rate: 12, s: [1, 1.5], life: [0.15, 0.3], vy: [-40, 40], glow: 1, flap: 5 }), TLP('sq', ['#fff8a0'], { rate: 30, life: [0.1, 0.25], vx: [-90, 30], vy: [-90, 90] }));
+TDEF('splash', 'Water Splash', TLP('drop', ['#5ab0ff', '#a8e0ff', '#3a8ae0'], { rate: 18, s: [0.8, 1.2], life: [0.5, 0.8], g: -500, vy: [60, 160], flap: 8 }));
+TDEF('steam', 'Steam', TLP('cloud', ['#ffffff', '#e8f0f4'], { rate: 12, s: [1, 1.5], life: [0.7, 1.2], vy: [30, 60], wob: 20, grow: 1 }));
+TDEF('lavadrips', 'Lava Drips', TLP('drop', ['#ff6a1e', '#e8281e', '#ffb01e'], { rate: 14, s: [0.8, 1.2], life: [0.6, 1], g: -450, vy: [-20, 10], glow: 1 }));
+TDEF('sand', 'Sand', TLP('sq', ['#e8c880', '#d0a860', '#f8e0a8'], { rate: 60, s: [2, 2], life: [0.4, 0.8], g: -200, vy: [-10, 40] }));
+TDEF('windstreaks', 'Wind Streaks', TLP('line9', ['#ffffff', '#e8f4ff'], { rate: 10, s: [2, 2], life: [0.3, 0.5], vx: [-120, -60], dy: [-14, 14], fade: 1 }));
+TDEF('embers', 'Embers', TLP('sq', ['#ffb01e', '#ff6a1e', '#ffe060'], { rate: 26, s: [2, 3], life: [0.7, 1.3], vy: [30, 70], wob: 25, glow: 1, twinkle: 1 }));
+TDEF('frostmist', 'Frost Mist', TLP('cloud', ['#d8f0ff', '#c0e4f8'], { rate: 14, s: [1, 2], life: [0.8, 1.2], vy: [-10, 10], grow: 1, fade: 1 }), TLP('sq', ['#ffffff'], { rate: 20, life: [0.4, 0.8], twinkle: 1 }));
+
+tCat = 'Nature';
+TDEF('leaves', 'Leaves', TLP('leaf', ['#4ab83a', '#3a9a2a', '#7ad05a'], { rate: 9, s: [1, 1.5], life: [1, 1.6], g: -50, wob: 22, spin: 3 }));
+TDEF('blossoms', 'Cherry Blossoms', TLP('petal', ['#ffc2d8', '#ffd6e6', '#ff9ec4'], { rate: 16, s: [1.5, 2], life: [1, 1.6], g: -40, wob: 24, spin: 4 }));
+TDEF('petals', 'Flower Petals', TLP('flower', ['#ffd23c', '#ffffff'], { rate: 8, s: [1.5, 2], life: [1, 1.5], g: -30, wob: 18, spin: 2, c2: ['#ff6aa8', '#8a3ab8', '#3a8ae0'] }));
+TDEF('fireflies', 'Fireflies', TLP('sq2', ['#e8ff6a', '#c8f04a'], { rate: 6, s: [1, 1.5], life: [1.4, 2.2], vx: [-20, 10], vy: [-15, 15], wob: 30, glow: 1, twinkle: 1 }));
+TDEF('butterflies', 'Butterflies', TLP('fly', ['#ff8a1e', '#3a8ae0', '#ff6aa8', '#ffd23c'], { rate: 3, s: [1, 1.2], life: [1.4, 2], vy: [10, 30], wob: 30, flap: 2 }));
+TDEF('feathers', 'Feathers', TLP('feather', ['#ffffff', '#f0ece0'], { rate: 5, s: [1, 1.5], life: [1.2, 1.8], g: -40, wob: 26, spin: 2, flap: 3, c2: ['#c8c0b0'] }));
+TDEF('dandelion', 'Dandelion Seeds', TLP('seed', ['#ffffff', '#f4f4f0'], { rate: 6, s: [1, 1.2], life: [1.4, 2], vy: [10, 30], wob: 20 }));
+TDEF('raindrops', 'Raindrops', TLP('drop', ['#7ab8ff', '#a8d8ff'], { rate: 20, s: [0.6, 0.9], life: [0.4, 0.7], g: -700, vy: [-40, 0] }));
+TDEF('clovers', 'Clovers', TLP('clover', ['#3aa83a', '#5ac85a'], { rate: 7, s: [1, 1.5], life: [1, 1.4], g: -60, spin: 2, wob: 10 }));
+TDEF('bees', 'Bees', TLO('bee', ['#ffd23c'], { n: 3, r: 24, sp: 5, s: 1.5, bob: 4 }), TLP('sq', ['#ffd23c'], { rate: 8, life: [0.3, 0.6] }));
+TDEF('autumnmix', 'Autumn Mix', TLP('leaf', ['#e8742a', '#c8401e', '#f0b030', '#a85a20'], { rate: 10, s: [1, 1.5], life: [1, 1.6], g: -50, wob: 22, spin: 3 }));
+TDEF('pollen', 'Pollen', TLP('sq', ['#ffe060', '#fff08a', '#f8d040'], { rate: 30, s: [2, 2], life: [0.8, 1.4], vy: [-10, 20], wob: 16, twinkle: 1 }));
+
+tCat = 'Magic';
+TDEF('fairydust', 'Fairy Dust', TLP('spark', ['#ffc8f8', '#c8f8ff', '#ffffff'], { rate: 30, s: [1, 1.5], life: [0.5, 1], g: -60, twinkle: 1, glow: 1, flap: 8 }));
+TDEF('magicwand', 'Magic Wand', TLP('star', ['#ffd23c', '#ffffff'], { rate: 10, s: [1, 1.5], life: [0.5, 0.8], spin: 4, flap: 6 }), TLP('sq', ['#fff8a0', '#ff6ad0'], { rate: 30, life: [0.3, 0.6], twinkle: 1 }));
+TDEF('runes', 'Arcane Runes', TLP('runeA', ['#7af0ff', '#3ae0f0'], { rate: 5, s: [1.5, 2], life: [0.8, 1.1], vy: [10, 30], glow: 1 }), TLP('runeB', ['#a8f8ff'], { rate: 4, s: [1.5, 2], life: [0.8, 1.1], vy: [10, 30], glow: 1 }), TLP('runeC', ['#5ad0f0'], { rate: 4, s: [1.5, 2], life: [0.8, 1.1], vy: [10, 30], glow: 1 }));
+TDEF('rainbowsparkle', 'Rainbow Sparkle', TLP('spark', RAINBOW, { rate: 40, s: [1, 1.5], life: [0.4, 0.8], twinkle: 1, flap: 10 }));
+TDEF('wishingstars', 'Wishing Stars', TLP('star', ['#fff8c0', '#ffe060'], { rate: 5, s: [1.5, 2], life: [0.9, 1.3], vx: [-60, -20], vy: [-40, -10], glow: 1 }), TLP('sq', ['#fff8c0'], { rate: 30, life: [0.3, 0.6], twinkle: 1 }));
+TDEF('unicorn', 'Unicorn Swirl', TLR(['#ffb8e0', '#c8b8ff', '#b8f0ff', '#c8ffd8'], { w: 2, len: 30, wave: 3 }), TLP('star', ['#ffffff'], { rate: 6, s: [1, 1], life: [0.5, 0.9], twinkle: 1 }));
+TDEF('potion', 'Potion Bubbles', TLP('bubble', ['#7af04a', '#b0ff7a', '#4ad02a'], { rate: 14, s: [1, 1.5], life: [0.7, 1.2], vy: [20, 50], wob: 14, glow: 1 }));
+TDEF('enchanted', 'Enchanted', TLA('rgba(170,90,255,0.35)', { r: 30 }), TLP('spark', ['#c8a0ff', '#e8d8ff'], { rate: 22, life: [0.5, 0.9], around: 22, twinkle: 1, glow: 1 }));
+TDEF('goldenaura', 'Golden Aura', TLA('rgba(255,210,60,0.4)', { r: 32 }), TLP('sq', ['#ffe060', '#fff8c0'], { rate: 26, life: [0.6, 1], around: 20, vy: [20, 50], twinkle: 1 }));
+TDEF('holylight', 'Holy Light', TLH('#fff4a0', { w: 18, h: 5, y: 22 }), TLA('rgba(255,250,210,0.35)', { r: 34 }), TLP('sq', ['#ffffff', '#fff8c0'], { rate: 16, life: [0.6, 1], vy: [30, 60], around: 18 }));
+TDEF('manaorbs', 'Mana Orbs', TLO('orb', ['#3a8ae0', '#7ab0ff'], { n: 4, r: 26, sp: 2.5, s: 1.5 }), TLP('sq', ['#7ab0ff'], { rate: 18, life: [0.3, 0.6], glow: 1 }));
+TDEF('pixieglow', 'Pixie Glow', TLA('rgba(120,255,200,0.3)', { r: 26, pulse: 0.25 }), TLP('sq', ['#a8ffe0', '#ffffff', '#ffc8f0'], { rate: 30, life: [0.5, 1], g: -40, twinkle: 1 }));
+
+tCat = 'Space';
+TDEF('stardust', 'Stardust', TLP('sq', ['#ffffff', '#c8d8ff', '#fff0c0'], { rate: 40, s: [2, 2], life: [0.6, 1.2], vy: [-10, 10], twinkle: 1 }), TLP('plus', ['#ffffff'], { rate: 4, life: [0.5, 0.9], twinkle: 1 }));
+TDEF('galaxyribbon', 'Galaxy Ribbon', TLR(['#3a1a6a', '#6a3ab8', '#c870f0', '#6a3ab8', '#3a1a6a'], { w: 2, len: 32 }), TLP('sq', ['#ffffff'], { rate: 20, life: [0.4, 0.8], twinkle: 1 }));
+TDEF('rocket', 'Rocket Exhaust', TLP('sq2', ['#ffffff', '#ffe060', '#ff8a1e'], { rate: 60, s: [1.5, 2.5], life: [0.15, 0.35], vx: [-160, -80], vy: [-25, 25], shrink: 1, glow: 1 }), TLP('cloud', ['#c8c8d0', '#a8a8b0'], { rate: 10, s: [1, 1.5], life: [0.6, 1], vx: [-60, -20], grow: 1 }));
+TDEF('meteorshower', 'Meteor Shower', TLP('dia', ['#ff8a1e', '#ffd23c'], { rate: 6, s: [0.8, 1.2], life: [0.6, 0.9], vx: [-120, -60], vy: [-120, -60], dy: [10, 40], glow: 1 }), TLP('sq', ['#ffe060'], { rate: 30, life: [0.2, 0.4] }));
+TDEF('plasma', 'Plasma', TLR(['#ff3ad8', '#ffffff', '#3affd8'], { w: 2, len: 22, wave: 4, wsp: 18, glow: 1 }));
+TDEF('nebula', 'Nebula Cloud', TLP('cloud', ['#c870f0', '#ff6aa8', '#7a5ae0', '#3ae0f0'], { rate: 12, s: [1.5, 2.5], life: [0.8, 1.3], grow: 1, fade: 1, glow: 1 }));
+TDEF('moons', 'Orbiting Moons', TLO('moon', ['#fff8c0', '#e8e0b0'], { n: 2, r: 28, sp: 2, s: 2 }), TLO('sq2', ['#c8c8d0'], { n: 3, r: 18, sp: -3.5, s: 2 }));
+TDEF('warp', 'Warp Speed', TLP('line9', ['#ffffff', '#a8e0ff', '#c8a8ff'], { rate: 30, s: [2, 3], life: [0.15, 0.3], vx: [-400, -250], dy: [-30, 30], dx: [-40, 40] }));
+TDEF('blackhole', 'Black Hole', TLA('rgba(40,0,80,0.55)', { r: 30, ring: 1 }), TLP('sq', ['#c8a0ff', '#ffffff', '#7a5ae0'], { rate: 40, life: [0.4, 0.7], around: 34, inward: 1 }));
+TDEF('satellites', 'Satellite Orbit', TLO('plus', ['#c8ccd8'], { n: 2, r: 30, sp: 2.2, s: 2 }), TLO('sq', ['#ff3a3a'], { n: 2, r: 30, sp: 2.2, s: 2 }));
+
+tCat = 'Party';
+TDEF('partyconfetti', 'Party Confetti', TLP('sq2', CONF, { rate: 22, life: [0.8, 1.3], g: -180, vy: [40, 120], spin: 9 }), TLP('star', CONF, { rate: 6, life: [0.8, 1.2], g: -150, vy: [40, 100], spin: 5, s: [1, 1] }), TLP('heartS', CONF, { rate: 6, life: [0.8, 1.2], g: -150, vy: [40, 100], s: [1.5, 1.5] }));
+TDEF('streamers', 'Streamers', TLR(['#ff3b3b', '#ffd23b'], { w: 2, len: 30, wave: 6, wsp: 10 }), TLR(['#3bb0ff', '#ff6bf0'], { w: 2, len: 26, wave: -6, wsp: 12 }));
+TDEF('balloons', 'Balloons', TLP('balloon', ['#ff3b3b', '#3bb0ff', '#ffd23b', '#3bff6b', '#ff6bf0'], { rate: 3, s: [1.5, 1.8], life: [1.4, 2], vy: [40, 70], wob: 10, flap: 1 }));
+TDEF('fireworks', 'Fireworks', TLP('sq2', CONF, { rate: 0, s: [1, 1.5], life: [0.5, 0.9], g: -120, flap: 18, fsp: [80, 200], glow: 1, score: 30 }), TLP('sq', ['#ffffff'], { rate: 20, life: [0.2, 0.4] }));
+TDEF('disco', 'Disco Lights', TLO('sq2', ['#ff3ad8', '#3ae0ff', '#ffe03a', '#7aff3a'], { n: 8, r: 30, ry: 0.4, sp: 4, s: 2 }), TLP('spark', ['#ffffff'], { rate: 10, life: [0.3, 0.5], around: 26, twinkle: 1 }));
+TDEF('glowsticks', 'Glow Sticks', TLR(['#3aff7a'], { w: 3, len: 24, glow: 1 }), TLR(['#ff3ad8'], { w: 3, len: 24, glow: 1, wave: 5, wsp: 9 }));
+TDEF('bubblegum', 'Bubblegum Bubbles', TLP('ring', ['#ff8ac8', '#ffb0d8'], { rate: 10, s: [1.5, 2.5], life: [0.6, 1], vy: [10, 40], grow: 1, flap: 3 }));
+TDEF('musicnotes', 'Music Notes', TLP('note', ['#1e1e24', '#3a3a8a'], { rate: 5, s: [1.5, 2], life: [1, 1.4], vy: [20, 45], wob: 16 }), TLP('note2', ['#e8281e', '#3a6ae0'], { rate: 3, s: [1.2, 1.5], life: [1, 1.4], vy: [20, 45], wob: 16 }));
+TDEF('sprinkles', 'Sprinkles', TLP('line5', ['#ff3b3b', '#3bb0ff', '#ffd23b', '#3bff6b', '#ff6bf0', '#ffffff'], { rate: 30, s: [0.8, 0.8], life: [0.6, 1], g: -260, vy: [20, 90], spin: 10 }));
+TDEF('partypoppers', 'Party Poppers', TLP('line5', CONF, { rate: 4, s: [0.8, 1], life: [0.6, 1], g: -200, spin: 8, flap: 12, fsp: [100, 220] }), TLP('star', ['#ffd23c'], { rate: 0, score: 8, s: [1, 1.5], life: [0.6, 1], fsp: [60, 160] }));
+
+tCat = 'Spooky';
+TDEF('ghosts', 'Ghosts', TLP('ghost', ['#f4f4ff', '#e0e0f0'], { rate: 4, s: [1.5, 2], life: [1, 1.5], vy: [20, 40], wob: 18, fade: 1 }));
+TDEF('bats', 'Bats', TLP('bat', ['#2a1e2a', '#3a2a3a'], { rate: 6, s: [1.5, 2], life: [0.8, 1.3], vy: [20, 70], vx: [-80, -20], wob: 30, flap: 4 }));
+TDEF('skulls', 'Skulls', TLP('skull', ['#f0ece0', '#e0dcd0'], { rate: 5, s: [1.2, 1.6], life: [0.8, 1.2], g: -60, spin: 2 }));
+TDEF('cobweb', 'Cobweb Strands', TLR(['#d8d8e0'], { w: 1, len: 30, wave: 3, dash: 1 }), TLP('flake', ['#e8e8f0'], { rate: 3, s: [1, 1.2], life: [0.9, 1.3], g: -40 }));
+TDEF('poison', 'Poison Drips', TLP('drop', ['#7af01e', '#4ac01a', '#b0ff6a'], { rate: 16, s: [0.8, 1.2], life: [0.6, 1], g: -400, vy: [-20, 10], glow: 1 }), TLP('bubble', ['#7af01e'], { rate: 4, s: [1, 1.2], life: [0.6, 1], vy: [20, 40] }));
+TDEF('witchsparks', 'Witch Sparks', TLP('star', ['#c870f0', '#7af04a'], { rate: 12, s: [1, 1.5], life: [0.5, 0.9], spin: 5, glow: 1 }), TLP('sq', ['#c870f0', '#7af04a', '#ff8a1e'], { rate: 30, life: [0.3, 0.6], twinkle: 1 }));
+TDEF('jackembers', 'Jack Embers', TLP('pumpkin', ['#f0801e'], { rate: 3, s: [1.5, 1.8], life: [0.9, 1.3], g: -120, spin: 2 }), TLP('sq', ['#ffb01e', '#ff6a1e'], { rate: 30, life: [0.4, 0.8], vy: [20, 60], glow: 1 }));
+TDEF('shadowsmoke', 'Shadow Smoke', TLP('cloud', ['#1e1a2a', '#2a2438', '#3a3448'], { rate: 18, s: [1.5, 2.5], life: [0.7, 1.1], vy: [5, 30], grow: 1, fade: 1 }));
+TDEF('cursedflames', 'Cursed Flames', TLP('sq2', ['#c8ffb0', '#5af06a', '#1e8a3a'], { rate: 50, s: [1.5, 2.5], life: [0.25, 0.5], vy: [20, 70], shrink: 1, glow: 1, flap: 8 }));
+TDEF('bones', 'Bones', TLP('bone', ['#f0ece0'], { rate: 6, s: [1.5, 2], life: [0.8, 1.2], g: -260, vy: [40, 120], spin: 8, flap: 4 }));
+
+tCat = 'Food & Fun';
+TDEF('pizzaslices', 'Pizza Slices', TLP('pizza', ['#ffd23c'], { c2: ['#c8883a'], rate: 4, s: [1.5, 2], life: [0.9, 1.3], g: -200, vy: [30, 100], spin: 4, flap: 3 }));
+TDEF('donuts', 'Donuts', TLP('donut', ['#ff8ac8', '#8a5a2a', '#fff0f8'], { rate: 4, s: [1.2, 1.6], life: [0.9, 1.3], g: -200, vy: [30, 100], spin: 4, flap: 3 }));
+TDEF('candies', 'Candy', TLP('candy', ['#ff3b3b', '#3bb0ff', '#3bff6b', '#ffd23b'], { c2: ['#ffffff'], rate: 5, s: [1, 1.4], life: [0.9, 1.3], g: -200, vy: [30, 100], spin: 6 }));
+TDEF('popcorn', 'Popcorn', TLP('popcorn', ['#fff0a0'], { rate: 10, s: [1.2, 1.6], life: [0.6, 1], g: -400, vy: [80, 180], spin: 5, flap: 6 }));
+TDEF('cookies', 'Cookies', TLP('cookie', ['#d8a060'], { rate: 4, s: [1.5, 2], life: [0.9, 1.3], g: -220, vy: [30, 100], spin: 4 }));
+TDEF('icecreamdrips', 'Ice Cream Drips', TLP('drop', ['#ffb8d8', '#fff4e0', '#8a5a3a', '#b8f0c8'], { rate: 14, s: [0.8, 1.2], life: [0.6, 1], g: -380, vy: [-20, 10] }));
+TDEF('coffeesteam', 'Coffee Steam', TLP('cloud', ['#c8a888', '#e8d8c8'], { rate: 10, s: [1, 1.5], life: [0.8, 1.2], vy: [30, 60], wob: 22, grow: 1 }), TLP('sq', ['#6a3a1e'], { rate: 8, life: [0.3, 0.6], g: -300 }));
+TDEF('cheese', 'Cheese', TLP('cheese', ['#ffd23c'], { c2: ['#e8a820'], rate: 5, s: [1.5, 2], life: [0.9, 1.3], g: -200, vy: [30, 100], spin: 3 }));
+TDEF('lemonslices', 'Lemon Slices', TLP('lemon', ['#ffe04a'], { c2: ['#fff8c0'], rate: 4, s: [1.2, 1.6], life: [0.9, 1.3], g: -180, vy: [30, 90], spin: 3 }));
+TDEF('bobapearls', 'Boba Pearls', TLP('sq2', ['#3a2418', '#4a3020'], { rate: 20, s: [1.5, 2], life: [0.6, 1], g: -350, vy: [20, 90] }), TLP('bubble', ['#e8d0b0'], { rate: 5, s: [1, 1.2], life: [0.6, 1], vy: [20, 50] }));
+TDEF('gumballs', 'Gumballs', TLP('gum', ['#ff3b3b', '#3bb0ff', '#ffd23b', '#3bff6b', '#ff6bf0', '#ffffff'], { rate: 8, s: [1.2, 1.6], life: [0.8, 1.2], g: -350, vy: [40, 120], flap: 5 }));
+TDEF('cottoncandy', 'Cotton Candy', TLP('cloud', ['#ffb8e0', '#b8e0ff', '#ffd0ec'], { rate: 14, s: [1.5, 2.5], life: [0.8, 1.2], grow: 1, fade: 1 }));
+
+tCat = 'Ribbons';
+TDEF('neonribbon', 'Neon Ribbon', TLR(['#3affff', '#ffffff', '#3affff'], { w: 2, len: 30, glow: 1 }));
+TDEF('laser', 'Laser', TLR(['#ff1e3a'], { w: 2, len: 40, glow: 1 }), TLR(['#ffffff'], { w: 1, len: 40 }));
+TDEF('fireribbon', 'Fire Ribbon', TLR(['#e8281e', '#ff8a1e', '#ffd23c', '#ff8a1e', '#e8281e'], { w: 2, len: 24, wave: 2, wsp: 20 }), TLP('sq', ['#ffd23c', '#ff8a1e'], { rate: 20, life: [0.3, 0.5], vy: [20, 50] }));
+TDEF('oceanwave', 'Ocean Wave', TLR(['#1e4a98', '#3a8ae0', '#7ac8f0', '#ffffff'], { w: 2, len: 34, wave: 5, wsp: 6 }));
+TDEF('sunsetribbon', 'Sunset Ribbon', TLR(['#8a3ab8', '#e8508a', '#ff8a3a', '#ffd23c'], { w: 2, len: 30 }));
+TDEF('candystripe', 'Candy Stripe', TLR(['#e8281e', '#ffffff', '#e8281e', '#ffffff'], { w: 2, len: 30, dash: 1 }));
+
+tCat = 'Auras';
+TDEF('glow', 'Glow', TLA('rgba(255,255,220,0.45)', { r: 30, pulse: 0.15 }));
+TDEF('shieldbubble', 'Shield Bubble', TLA('rgba(120,200,255,0.18)', { r: 26, ring: 1, pulse: 0.05 }), TLP('sq', ['#c8ecff'], { rate: 10, life: [0.2, 0.4], around: 26 }));
+TDEF('halo', 'Halo', TLH('#ffe060', { w: 18, h: 5, y: 22 }));
+TDEF('electricaura', 'Electric Aura', TLA('rgba(120,200,255,0.25)', { r: 28, pulse: 0.3 }), TLP('bolt', ['#fff8a0', '#a8e0ff'], { rate: 16, s: [1, 1.2], life: [0.08, 0.18], around: 24, layer: 1, glow: 1 }));
+TDEF('shadowaura', 'Shadow Aura', TLA('rgba(20,10,40,0.55)', { r: 32, pulse: 0.1 }), TLP('cloud', ['#1e1a2a', '#2a2438'], { rate: 12, s: [1, 1.5], life: [0.5, 0.8], around: 20, vy: [10, 30] }));
+TDEF('rainbowring', 'Rainbow Ring', TLO('sq2', RAINBOW, { n: 12, r: 28, ry: 0.5, sp: 2.5, s: 2 }));
+TRAILS.forEach(t => { t.layers.forEach(l => { if (!l.c2) return; }); });
+
+// ---- simulation (one state for the game, one per preview tile) ----
+function trailDef(id) { return TRAILS.find(t => t.id === id) || null; }
+function newTrailState() { return { parts: [], ribs: [], t: 0, acc: [], ribT: 0 }; }
+function tSpawn(st, l, bx, by, mode) {
+  if (st.parts.length > 320) return;
+  const c = tpick(l.cols), c2 = l.c2 ? tpick(l.c2) : null;
+  const life = trr(l.life), p = { l, img: tImg(l.shape, c, c2), x: bx + trr(l.dx), y: by + trr(l.dy), vx: trr(l.vx), vy: trr(l.vy), life, max: life, s: trr(l.s), r: 0, vr: l.spin ? (Math.random() - 0.5) * 2 * l.spin : 0, ph: Math.random() * 6.3 };
+  if (mode === 'burst') { const a = Math.random() * Math.PI * 2, v = trr(l.fsp); p.x = bx + trr([-4, 4]); p.y = by + trr([-4, 4]); p.vx = Math.cos(a) * v - 30; p.vy = Math.sin(a) * v; }
+  else if (l.around) { const a = Math.random() * Math.PI * 2; p.x = bx + Math.cos(a) * l.around; p.y = by + Math.sin(a) * l.around * 0.8; if (l.inward) { p.vx = -Math.cos(a) * l.around / life; p.vy = -Math.sin(a) * l.around * 0.8 / life; } }
+  st.parts.push(p);
+}
+function tStep(st, def, dt, bx, by, scroll, spawning) {
+  st.t += dt;
+  if (def && spawning) def.layers.forEach((l, i) => {
+    if (l.type === 'p' && l.rate > 0) { st.acc[i] = (st.acc[i] || 0) + dt * l.rate; while (st.acc[i] >= 1) { st.acc[i] -= 1; tSpawn(st, l, bx, by); } }
+  });
+  for (const p of st.parts) {
+    const l = p.l; p.life -= dt;
+    if (l.drag) { p.vx *= 1 - l.drag * dt; p.vy *= 1 - l.drag * dt; }
+    p.vy += l.g * dt;
+    p.x += p.vx * dt - scroll + (l.wob ? Math.sin(st.t * 5 + p.ph) * l.wob * dt : 0);
+    p.y += p.vy * dt;
+    p.r += p.vr * dt;
+  }
+  st.parts = st.parts.filter(p => p.life > 0);
+  // ribbons: a point every 1/60 s while flying; points drift with the world and drop off the end
+  if (def && def.layers.some(l => l.type === 'r')) {
+    for (const q of st.ribs) q.x -= scroll;
+    st.ribT += dt;
+    if (spawning) { while (st.ribT >= 1 / 60) { st.ribT -= 1 / 60; st.ribs.push({ x: bx - 8, y: by, t: st.t }); } }
+    else { st.ribT = 0; if (st.ribs.length) st.ribs.shift(); }
+    const maxLen = Math.max(...def.layers.filter(l => l.type === 'r').map(l => l.len));
+    while (st.ribs.length > maxLen) st.ribs.shift();
+  } else st.ribs = [];
+}
+function tBurst(st, def, kind, bx, by) {
+  if (!def) return;
+  for (const l of def.layers) if (l.type === 'p') { const n = kind === 'flap' ? l.flap : l.score; for (let i = 0; i < n; i++) tSpawn(st, l, bx, by, 'burst'); }
+}
+function tClear(c) { return c.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)/, 'rgba($1,$2,$3,0)'); }   // same colour, see-through (no grey fringe)
+function tDrawImg(g, im, x, y, s, r) {
+  g.save(); g.translate(x, y); if (r) g.rotate(r); g.scale(s, -s); g.drawImage(im, -im.width / 2, -im.height / 2); g.restore();
+}
+function tDraw(g, st, def, layer, bx, by) {
+  if (!def) return;
+  for (const l of def.layers) {
+    if (l.type === 'a' && layer === 0) {
+      const r = l.r * (1 + Math.sin(st.t * 5) * l.pulse);
+      if (l.ring) {
+        const grd = g.createRadialGradient(bx, by, r * 0.55, bx, by, r);
+        grd.addColorStop(0, tClear(l.col)); grd.addColorStop(0.75, l.col); grd.addColorStop(1, tClear(l.col));
+        g.fillStyle = grd; g.fillRect(bx - r, by - r, r * 2, r * 2);
+      } else {
+        const grd = g.createRadialGradient(bx, by, 0, bx, by, r);
+        grd.addColorStop(0, l.col); grd.addColorStop(1, tClear(l.col));
+        g.fillStyle = grd; g.fillRect(bx - r, by - r, r * 2, r * 2);
+      }
+    }
+    if (l.type === 'h' && layer === 1) {   // a pixel halo floating over the head
+      const y0 = by + l.y + Math.sin(st.t * 3) * 1.5; g.fillStyle = l.col; const hx = bx + 2;   // over the head (the bird faces right)
+      for (let i = -l.w / 2; i < l.w / 2; i += 2) { const e = Math.round(Math.sqrt(Math.max(0, 1 - (2 * i / l.w) ** 2)) * l.h / 2 / 2) * 2; g.fillRect(hx + i, y0 + e, 2, 2); g.fillRect(hx + i, y0 - e, 2, 2); }
+    }
+    if (l.type === 'o') {
+      for (let i = 0; i < l.n; i++) {
+        const a = st.t * l.sp + i * Math.PI * 2 / l.n, front = Math.sin(a) < 0;
+        if ((front ? 1 : 0) !== layer) continue;
+        const im = tImg(l.shape, l.cols[i % l.cols.length]);
+        tDrawImg(g, im, Math.round(bx + Math.cos(a) * l.r), Math.round(by + Math.sin(a) * l.r * l.ry + (l.bob ? Math.sin(st.t * 7 + i) * l.bob : 0)), l.s, 0);
+      }
+    }
+    if (l.type === 'r' && layer === 0 && st.ribs.length > 1) {
+      const pts = st.ribs.slice(-l.len), n = pts.length;
+      for (let i = 0; i < n - 1; i++) {
+        const q = pts[i], q2 = pts[i + 1], f = (i + 1) / n;
+        if (l.dash && Math.floor((q.t * 60) / 3) % 2) continue;
+        g.globalAlpha = l.fade ? Math.min(1, f * 1.4) : 1;
+        const wv = l.wave ? Math.sin(q.t * l.wsp - i * 0.35) * l.wave * (1 - f * 0.5) : 0;
+        const wv2 = l.wave ? Math.sin(q2.t * l.wsp - (i + 1) * 0.35) * l.wave * (1 - (i + 2) / n * 0.5) : 0;
+        const x0 = Math.floor(q.x / 2) * 2, w0 = Math.max(2, Math.ceil((q2.x - q.x) / 2) * 2 + 1);
+        l.bands.forEach((c, j) => {   // each band joins this point to the next one, so fast climbs and dives stay one stripe
+          const off = (l.bands.length / 2 - j - 1) * l.w;
+          const ya = Math.round((q.y + wv + off) / 2) * 2, yb = Math.round((q2.y + wv2 + off) / 2) * 2;
+          const lo = Math.min(ya, yb), hi = Math.max(ya, yb);
+          g.fillStyle = c; g.fillRect(x0, lo, w0, hi - lo + l.w);
+        });
+      }
+      g.globalAlpha = 1;
+    }
+  }
+  for (const p of st.parts) {
+    if ((p.l.layer || 0) !== layer) continue;
+    const l = p.l, k = p.life / p.max;
+    let a = l.fade ? Math.min(1, k * 2) : 1;
+    if (l.twinkle) a *= 0.55 + 0.45 * Math.sin(st.t * 18 + p.ph);
+    let s = p.s;
+    if (l.shrink) s *= 0.35 + 0.65 * k;
+    if (l.grow) s *= 1 + (1 - k) * 0.8;
+    if (a <= 0.02) continue;
+    g.globalAlpha = a;
+    if (l.glow) { g.globalAlpha = a * 0.3; tDrawImg(g, p.img, Math.round(p.x), Math.round(p.y), s * 3.4, p.r); g.globalAlpha = a; }   // a soft halo under glowing bits
+    tDrawImg(g, p.img, Math.round(p.x), Math.round(p.y), s * 2, p.r);
+  }
+  g.globalAlpha = 1;
+}
+
+// ---- the game's trail ----
+const TRS = newTrailState();
+let trailDefNow = trailDef(trailPick);
+function trailLive() {
+  try { return !!trailDefNow && bird.added && weatherOn() && !(typeof RP !== 'undefined' && RP && RP.playing); } catch (e) { return !!trailDefNow && bird.added; }
+}
+function updateTrailGame(dt) {
+  if (!trailDefNow) { TRS.parts.length = 0; TRS.ribs.length = 0; return; }
+  const spawning = trailLive() && moving.speed > 0 && !isGameOver && !isShowingGameOver;
+  tStep(TRS, trailDefNow, dt, bird.x, bird.y, trailScroll, spawning);
+}
+function drawTrail(layer) {
+  if (!trailDefNow || !trailLive()) return;
+  const g = ctx; g.save();
+  try { tDraw(g, TRS, trailDefNow, layer, bird.x, bird.y); } catch (e) {}
+  g.restore();
+}
+function trailFlap() { if (trailDefNow && trailLive()) tBurst(TRS, trailDefNow, 'flap', bird.x, bird.y); }
+function trailScore() { hapScoreNext = true; if (trailDefNow && trailLive()) tBurst(TRS, trailDefNow, 'score', bird.x, bird.y); }
+function setTrail(id) { trailPick = id; saveStr('trail', id); trailDefNow = trailDef(id); TRS.parts.length = 0; TRS.ribs.length = 0; }
+{ const _ue = updateExtras; updateExtras = function (dt) { _ue(dt); try { updateTrailGame(dt); } catch (e) {} }; }
+
+// ---- haptics: only inside the iPhone app (the web version stays silent, as before) ----
+const APP_HAPTICS = (() => { try { return !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.haptic); } catch (e) { return false; } })();
+let hapScoreNext = false;
+function appHaptic(kind) { if (!APP_HAPTICS || !haptics) return; try { window.webkit.messageHandlers.haptic.postMessage(kind); } catch (e) {} }
+if (APP_HAPTICS) {
+  haptics = loadBool('appHaptics', true);
+  hapticPulse = function () { appHaptic(hapScoreNext ? 'medium' : 'light'); hapScoreNext = false; };
+  hapticError = function () { if (!haptics) return; appHaptic('error'); setTimeout(() => appHaptic('heavy'), 90); };
+}
+
+// ---- the Trails page ----
+function drawTrailIcon(cv, id, st, dt) {   // a little scene: the bird bobbing with its trail
+  const g = cv.getContext('2d'), def = trailDef(id);
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height);
+  g.fillStyle = '#4ec0ca'; g.fillRect(0, 0, cv.width, cv.height);
+  const k = cv.height / 100;   // 100 pt of world fit the tile height (the bird is drawn at its game size, 1.5x)
+  g.setTransform(k, 0, 0, -k, 0, cv.height); g.imageSmoothingEnabled = false;
+  const bx = cv.width / k * 0.64, by = 50 + Math.sin(st.t * 3.2) * 8;
+  if (def) {
+    tStep(st, def, dt, bx, by, 170 * dt, true);
+    if (Math.random() < dt * 0.9) tBurst(st, def, 'flap', bx, by);
+    tDraw(g, st, def, 0, bx, by);
+  } else st.t += dt;
+  let im = null; try { im = birdFrame(); } catch (e) {}
+  if (im) { g.save(); g.translate(bx, by); g.rotate(Math.sin(st.t * 3.2 + 1.6) * 0.25); g.scale(1.5, -1.5); g.drawImage(im, -im.width / 2, -im.height / 2); g.restore(); }
+  if (def) tDraw(g, st, def, 1, bx, by);
+}
+function buildTrailPicker(panel) {
+  panel.appendChild(el('div', 'pk-note', '100 trails and effects. They follow you while you fly; some burst when you flap or score.'));
+  const grid = el('div', 'pk-grid pk-tgrid');
+  const cells = [];
+  const add = (id, name) => {
+    const d = el('button', 'pk-cell' + (trailPick === id ? ' sel' : '')), cv = el('canvas'); cv.width = 108; cv.height = 90;
+    d.append(cv, el('span', '', name)); grid.appendChild(d);
+    const st = newTrailState(); cells.push({ cv, id, st, vis: false });
+    d.addEventListener('click', () => {
+      setTrail(id); playSound('swoosh'); haptic();
+      grid.querySelectorAll('.pk-cell').forEach(e => e.classList.toggle('sel', e === d));
+    });
+    return cells[cells.length - 1];
+  };
+  add('none', 'None');
+  let cat = '';
+  for (const t of TRAILS) {
+    if (t.cat !== cat) { cat = t.cat; grid.appendChild(el('div', 'pk-tsec', cat)); }
+    add(t.id, t.name);
+  }
+  panel.appendChild(grid);
+  // only the tiles on screen animate (about 12 frames a second)
+  try {
+    PK.io = new IntersectionObserver((ents) => { for (const e of ents) { const c = cells.find(c => c.cv === e.target); if (c) c.vis = e.isIntersecting; } }, { root: grid });
+    cells.forEach(c => PK.io.observe(c.cv));
+  } catch (e) { cells.forEach(c => c.vis = true); }
+  cells.forEach(c => drawTrailIcon(c.cv, c.id, c.st, 0.01));
+  PK.timers.push(setInterval(() => { for (const c of cells) if (c.vis) drawTrailIcon(c.cv, c.id, c.st, 1 / 12); }, 1000 / 12));
+}
+// settings: a Trail row (and a Haptics switch in the app), and the page itself
+{
+  const _bs = buildSettingsPage;
+  buildSettingsPage = function (page) {
+    _bs(page);
+    const list = page.querySelector('.st-list'); if (!list) return;
+    const first = list.firstChild;
+    const b = el('button', 'st-row'), t = el('div', 'st-rt');
+    const cur = trailDef(trailPick);
+    t.append(el('div', 'st-rn', 'Trail'), el('div', 'st-rs', cur ? cur.name : 'None'));
+    const tag = el('span', 'st-tval', cur ? cur.name : 'None');
+    b.append(t, tag, el('span', 'st-arrow', '›'));
+    b.addEventListener('click', () => { playSound('swoosh'); haptic(); showPage('trails'); });
+    list.insertBefore(b, first);
+    if (APP_HAPTICS) {
+      const h = el('button', 'st-row'), ht = el('div', 'st-rt'), sw = el('span', 'st-sw' + (haptics ? ' on' : ''));
+      ht.append(el('div', 'st-rn', 'Haptics'), el('div', 'st-rs', 'Feel every flap, point and crash'));
+      h.append(ht, sw);
+      h.addEventListener('click', () => { haptics = !haptics; saveBool('appHaptics', haptics); sw.classList.toggle('on', haptics); if (haptics) appHaptic('medium'); playSound('swoosh'); });
+      list.insertBefore(h, b.nextSibling);
+    }
+  };
+  const _sp = showPage;
+  showPage = function (kind, first) {
+    if (kind !== 'trails') return _sp(kind, first);
+    _sp('weather', first);                       // build the frame (head, back, close) the usual way...
+    PK.kind = 'trails';
+    PK.root.className = 'pk-root pk-trails' + (first ? '' : ' pk-in');
+    const page = PK.panel.querySelector('.pk-page');
+    page.querySelector('.pk-title').textContent = 'Trails';
+    while (page.children.length > 1) page.removeChild(page.lastChild);   // ...then swap the weather content for the trails
+    clearPageTimers();
+    buildTrailPicker(page);
+    for (const sc of [PK.panel, ...PK.panel.querySelectorAll('.pk-grid')]) pkScroll(sc);
+  };
+}
+function clearPageTimers() { PK.timers.forEach(t => clearInterval(t)); PK.timers = []; if (PK.io) PK.io.disconnect(); PK.io = null; }
 
 updateSettingsUI();
 function imagesReady() {
