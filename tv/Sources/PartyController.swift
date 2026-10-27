@@ -165,8 +165,15 @@ final class PartyController: UIViewController, PartySceneDelegate {
         guard let f = CIFilter(name: "CIQRCodeGenerator") else { return nil }
         f.setValue(Data(s.utf8), forKey: "inputMessage"); f.setValue("M", forKey: "inputCorrectionLevel")
         guard let out = f.outputImage?.transformed(by: CGAffineTransform(scaleX: 12, y: 12)),
-              let cg = CIContext().createCGImage(out.insetBy(dx: -24, dy: -24), from: out.insetBy(dx: -24, dy: -24).extent) else { return nil }
-        return UIImage(cgImage: cg)
+              let cg = CIContext().createCGImage(out, from: out.extent) else { return nil }
+        // a white border around it (phones read QR codes better with one)
+        let pad: CGFloat = 36, size = CGSize(width: CGFloat(cg.width) + pad * 2, height: CGFloat(cg.height) + pad * 2)
+        let fmt = UIGraphicsImageRendererFormat(); fmt.scale = 1
+        return UIGraphicsImageRenderer(size: size, format: fmt).image { ctx in
+            UIColor.white.setFill(); ctx.fill(CGRect(origin: .zero, size: size))
+            ctx.cgContext.interpolationQuality = .none
+            UIImage(cgImage: cg).draw(in: CGRect(x: pad, y: pad, width: CGFloat(cg.width), height: CGFloat(cg.height)))
+        }
     }
 }
 

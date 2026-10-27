@@ -284,9 +284,17 @@ final class PartyScene: SKScene {
 
     /// what the phones are told (every second, and whenever something changes)
     func stateForPhones() -> [String: Any] {
-        let ranked = players.sorted { a, b in a.score != b.score ? a.score > b.score : a.diedAt > b.diedAt }
-        return ["s": phase.rawValue, "n": round, "c": max(0, Int(ceil(countLeft))), "win": winners, "mode": Modes.info(mode).title,
-                "pl": ranked.map { ["id": $0.id, "name": $0.name, "alive": $0.inRound && $0.alive ? 1 : 0, "in": $0.inRound ? 1 : 0, "score": $0.score] }]
+        let ranked = players.sorted { (a: Player, b: Player) -> Bool in a.score != b.score ? a.score > b.score : a.diedAt > b.diedAt }
+        var list: [[String: Any]] = []
+        for p in ranked {
+            let alive: Int = (p.inRound && p.alive) ? 1 : 0
+            let inRound: Int = p.inRound ? 1 : 0
+            list.append(["id": p.id, "name": p.name, "alive": alive, "in": inRound, "score": p.score])
+        }
+        let count: Int = max(0, Int(ceil(countLeft)))
+        var st: [String: Any] = ["s": phase.rawValue, "n": round, "c": count]
+        st["win"] = winners; st["mode"] = Modes.info(mode).title; st["pl"] = list
+        return st
     }
 
     // MARK: pretend players (for the build's screenshots)
