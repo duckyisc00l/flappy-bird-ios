@@ -7548,6 +7548,56 @@ function buildReplayPage(page) {
   }
 }
 
+// ===================== v118: 20 new birds (original designs) =====================
+const NEW20 = [
+  { id: 'skater', name: 'Skater', pal: { R: '#3cc0b0', D: '#2a9a8c', L: '#7ae3d6', B: '#ffb03c' },
+    acc: [A(5, -2, ['..HHHHHH..', '.HHWHHWHH.'], { H: '#e8323c', W: '#ffffff' }), A(3, 12, ['KKKKKKKKKK', '.w......w.'], { K: '#e8742a', w: '#333333' })] },
+  { id: 'popstar', name: 'Pop Star', pal: { R: '#ff4fa3', D: '#d8307e', L: '#ff9ec4', B: '#ffd23c' },
+    acc: [A(6, -2, ['.Y.Y.Y', 'YYYYYY'], { Y: '#ffe14a' }), A(16, 6, ['MM', 'MM', '.s', '.s'], { M: '#333344', s: '#9a9aaa' })] },
+  { id: 'glacier', name: 'Glacier', pal: { O: '#2a5a7a', R: '#bfe9ff', D: '#8fd0f0', L: '#ffffff', W: '#e8f8ff', G: '#a8dcf5', B: '#6fb0e0' },
+    paint: (x, y, t) => isBody(t) && (x + y) % 3 === 0 ? '#d8f4ff' : (isBody(t) && (x * 2 + y) % 7 === 0 ? '#7ec4e8' : undefined) },
+  { id: 'marshmallow', name: 'Marshmallow', pal: { O: '#6a4a4a', R: '#fff4f8', D: '#f4dce6', L: '#ffffff', W: '#ffffff', G: '#f4e4ea', B: '#f0a0b8' },
+    paint: (x, y, t) => isBody(t) && (x <= 2 || y >= 10) ? '#d8a46a' : (isBody(t) && (x === 3 || y === 9) ? '#ecc89a' : undefined) },
+  { id: 'nacho', name: 'Nacho', pal: { R: '#f0b030', D: '#e0901e', L: '#ffd060', B: '#e85020' },
+    paint: (x, y, t) => isBody(t) && (x * 3 + y) % 5 === 0 ? '#c87018' : undefined,
+    acc: [A(6, -1, ['CCCCCC', 'C.C..C'], { C: '#ffd800' })] },
+  { id: 'gumdrop', name: 'Gumdrop', pal: { R: '#4cd964', D: '#2fbf4f', L: '#9af0a8', W: '#c8ffd0', G: '#8ae89a', B: '#ff6ab0' },
+    paint: (x, y, t) => isBody(t) && (x + 2 * y) % 4 === 0 ? '#ffffff' : undefined },
+  { id: 'baguette', name: 'Baguette', pal: { R: '#d8a050', D: '#c08038', L: '#f0c878', B: '#8a5a2a' },
+    paint: (x, y, t) => isBody(t) && (x - y + 40) % 4 === 0 ? '#f4dca0' : undefined,
+    acc: [A(6, -2, ['....s.', 'BBBBBB'], { B: '#1e1e30', s: '#1e1e30' })] },
+  { id: 'papaya', name: 'Papaya', pal: { R: '#ff8a3c', D: '#ffb070', L: '#ffc898', B: '#3a7a2a' },
+    paint: (x, y, t) => t === 'D' && (x + y) % 2 === 0 ? '#2a1a10' : undefined },
+  { id: 'grapefruit', name: 'Grapefruit', pal: { R: '#ff6a70', D: '#ff9a90', L: '#ffc0b8', B: '#ffd060' },
+    paint: (x, y, t) => isBody(t) && (x === 4 || y === 6 || x - y === -1) ? '#ffe0d8' : undefined },
+  { id: 'anchor', name: 'Sailor', pal: { R: '#1e3a6a', D: '#f2f2f2', L: '#3a5a9a', W: '#ffffff', G: '#d0d8e8', B: '#ffd23c' },
+    paint: (x, y, t) => t === 'D' && y % 2 === 0 ? '#3a5a9a' : undefined,
+    acc: [A(6, -2, ['.WWWW.', 'WWWWWW'], { W: '#ffffff' })] },
+  { id: 'asteroid', name: 'Asteroid', pal: { R: '#7a7470', D: '#5a5450', L: '#9a948e', W: '#8a847e', G: '#6a645e', B: '#c8b8a0' },
+    paint: (x, y, t) => isBody(t) && [[3, 4], [6, 8], [8, 5], [4, 9], [7, 2]].some(([a, b]) => a === x && b === y) ? '#4a4440' : undefined },
+  { id: 'moss', name: 'Moss', pal: { R: '#4a8a3a', D: '#3a6a2a', L: '#7ab85a', W: '#9ad07a', G: '#6aa84a', B: '#c8a060' },
+    paint: (x, y, t) => isBody(t) && (x * 7 + y * 3) % 5 === 0 ? '#5aa048' : undefined,
+    acc: [A(9, -2, ['RR', '.w'], { R: '#e8323c', w: '#f2f2e0' })] },
+  { id: 'bonsai', name: 'Bonsai', pal: { R: '#e8d8b8', D: '#c8b890', L: '#fff4dc', B: '#c86a3a' },
+    acc: [A(4, -4, ['.GGG.GGG.', 'GGGGGGGGG', '....T....', '...T.....'], { G: '#2f7a3a', T: '#6a4020' })] },
+  { id: 'daisy', name: 'Daisy', pal: { R: '#ffe14a', D: '#f0c020', L: '#fff09a', B: '#ff8a1e' },
+    acc: [A(5, -2, ['W.W.W.W', '.WWWWW.'], { W: '#ffffff' })] },
+  { id: 'palm', name: 'Palm', pal: { R: '#2fbf9f', D: '#ffd890', L: '#7ae3c6', B: '#ff7a3c' },
+    acc: [A(6, -4, ['GG..GG', '.GGGG.', '..TT..', '..TT..'], { G: '#3aa83a', T: '#8a5a2a' })] },
+  { id: 'raindrop', name: 'Raindrop', pal: { O: '#1a3a6a', R: '#5ab0ff', D: '#3a8ae0', L: '#b0dcff', W: '#d8eeff', G: '#90c8ff', B: '#2a6ac0' },
+    paint: (x, y, t) => isBody(t) && x === 5 && (y === 3 || y === 4) ? '#ffffff' : undefined },
+  { id: 'lightning', name: 'Lightning', pal: { R: '#3a2a6a', D: '#2a1a4a', L: '#5a4a9a', B: '#ffd23c' },
+    paint: (x, y, t) => isBody(t) && [[8, 1], [7, 2], [8, 2], [7, 3], [6, 4], [7, 4], [8, 4], [8, 5], [7, 6], [8, 6], [7, 7], [6, 8], [7, 8], [6, 9]].some(([a, b]) => a === x && b === y) ? '#ffe14a' : undefined },
+  { id: 'troll', name: 'Troll', pal: { R: '#6ac04a', D: '#4a9a3a', L: '#9ae07a', B: '#e8a08a' },
+    acc: [A(6, -4, ['..P...', '.PPP..', 'PPPPP.', '.PPPP.'], { P: '#ff4fd8' })] },
+  { id: 'mushroom', name: 'Mushroom', pal: { R: '#f2e8d8', D: '#e0d0b8', L: '#ffffff', B: '#c88a5a' },
+    acc: [A(5, -3, ['..RRRR..', '.RwRRwR.', 'RRRRRRRR'], { R: '#e8323c', w: '#ffffff' })] },
+  { id: 'granite', name: 'Granite', pal: { R: '#a89a98', D: '#8a7c7a', L: '#c8bcba', W: '#b8acaa', G: '#988a88', B: '#6a5a58' },
+    paint: (x, y, t) => isBody(t) && (x * 5 + y * 7) % 4 === 0 ? '#e8d8d0' : (isBody(t) && (x * 3 + y * 11) % 5 === 0 ? '#4a3c3a' : undefined) },
+];
+for (const d of NEW20) if (!SKINS2.some(s => s.id === d.id)) { SKINS2.push(d); SKIN_CAT[d.id] = 'New'; }
+CAT_ORDER.splice(1, 0, 'New');
+
 updateSettingsUI();
 function imagesReady() {
   return Promise.all(Object.values(img).map(i => (i.decode ? i.decode().catch(() => {}) : Promise.resolve())));
