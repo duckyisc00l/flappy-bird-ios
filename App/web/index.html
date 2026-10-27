@@ -4558,7 +4558,7 @@ function startGame() {
   pipesNode.scale = 1;
   // Pipes keep scrolling (hidden) during Get Ready, so one can be sitting on the bird when they reappear.
   // Drop any that the bird is inside of, or too close to react to (keeps ~0.8 s of room; fix; the app itself doesn't do this).
-  pipeList = pipeList.filter(p => !(p.gx - 30 < bird.x + BIRD_RADIUS + 160 && p.gx + 30 > bird.x - BIRD_RADIUS - 4));
+  pipeList = pipeList.filter(p => p.gold || p.falling || p.gx - 30 >= bird.x + BIRD_RADIUS + 160);   // v131: also drop the ones already behind the bird (they used to pop into view back there)
   if (afterlife === 1) startAfterlife();
   ghostStart();
   pipeList.filter(p => !p.gold && !p.falling).sort((a, b) => a.gx - b.gx).forEach((p, i) => { p.k = passedCount() + 1 + i; });  // number the pipes from here
