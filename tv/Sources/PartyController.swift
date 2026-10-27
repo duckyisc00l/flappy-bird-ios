@@ -147,7 +147,7 @@ final class PartyController: UIViewController, PartySceneDelegate {
             pic.backgroundColor = UIColor(red: 0.306, green: 0.753, blue: 0.792, alpha: 1); pic.layer.cornerRadius = 10; pic.clipsToBounds = true
             pic.widthAnchor.constraint(equalToConstant: 84).isActive = true; pic.heightAnchor.constraint(equalToConstant: 70).isActive = true
             let n = UILabel(); n.font = Look.pixel(24); n.textColor = Look.brown; n.text = (playing || ph == .over ? "\(i + 1). " : "") + p.name
-            let s = UILabel(); s.font = Look.title(46); s.textColor = Look.brown; s.textAlignment = .right
+            let s = UILabel(); s.font = Look.pixel(34); s.textColor = Look.brown; s.textAlignment = .right
             s.text = playing || ph == .over ? "\(p.score)" : ""
             if playing && p.inRound && !p.alive { n.textColor = Look.brown.withAlphaComponent(0.45); n.text = (n.text ?? "") + "  X" }
             if playing && !p.inRound { n.text = (n.text ?? "") + "  (NEXT ROUND)" }

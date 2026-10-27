@@ -115,7 +115,7 @@ final class ModeCell: UITableViewCell {
         backgroundView = box
         let sel = UIView(); sel.backgroundColor = Look.orange; sel.layer.cornerRadius = 16; sel.layer.borderWidth = 4; sel.layer.borderColor = Look.brown.cgColor
         selectedBackgroundView = sel
-        name.font = Look.pixel(26); desc.font = Look.pixel(16); best.font = Look.pixel(22)
+        name.font = Look.pixel(28); desc.font = Look.pixel(19); best.font = Look.pixel(24)
         for l in [name, desc, best] { l.textColor = Look.brown; l.translatesAutoresizingMaskIntoConstraints = false; contentView.addSubview(l) }
         desc.numberOfLines = 2; best.textAlignment = .right
         NSLayoutConstraint.activate([
@@ -319,7 +319,7 @@ final class ScoreRow: UITableViewCell {
         let fb = UIView(); fb.backgroundColor = Look.orange; fb.layer.cornerRadius = 14; selectedBackgroundView = fb
         rank.font = Look.pixel(22); rank.textColor = Look.orange; rank.textAlignment = .center
         name.font = Look.pixel(24); name.textColor = Look.brown
-        score.font = Look.title(44); score.textColor = Look.brown; score.textAlignment = .right
+        score.font = Look.pixel(34); score.textColor = Look.brown; score.textAlignment = .right   // (the big title font's numbers got cut off at the top)
         pic.layer.magnificationFilter = .nearest; pic.layer.cornerRadius = 10; pic.clipsToBounds = true
         for v in [rank, pic, name, score] { v.translatesAutoresizingMaskIntoConstraints = false; contentView.addSubview(v) }
         NSLayoutConstraint.activate([
