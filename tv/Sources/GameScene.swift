@@ -273,13 +273,13 @@ final class GameScene: SKScene {
             if spawnTimer <= 0 { spawnPipe(); spawnTimer += spawnEvery }
         }
         updateWind(dt)
-        if autopilot { bot() }
         // physics in small steps
         var contactPipe = false, contactGround = false
         var rem = dt
         while rem > 1e-9 {
             let h = CGFloat(min(1.0 / 120, rem)); rem -= Double(h)
             guard dynamic else { break }
+            if autopilot { bot() }   // (checks every physics step, so the demo flies well even at a low frame rate)
             vy += (gravity + windAy) * h
             vy *= 1 / (1 + h * damping)
             birdY += vy * h
