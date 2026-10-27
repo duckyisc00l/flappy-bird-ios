@@ -7163,6 +7163,10 @@ function buildImport(page) {
 // ---------- Score card (Share button on the game over screen) ----------
 const shareButton = makeNode({ scale: 1.2, x: 0, y: 0 });
 let SHARE_BTN = null;
+// true when the copied Settings button really has its dark frame (Safari can hand over a not-yet-decoded image that draws as nothing)
+let btnTries = 0;
+function btnFrameDrawn(c) { if (++btnTries > 240) return true; try { const d = c.getContext('2d').getImageData(0, 0, 62, 36).data; let n = 0; for (let i = 3; i < d.length; i += 4) if (d[i] > 0) n++; return n > 1500; } catch (e) { return true; } }
+try { if (img.settings_button && img.settings_button.decode) img.settings_button.decode().then(() => { SHARE_BTN = null; REPLAY_BTN = null; }).catch(() => {}); } catch (e) {}
 function shareBtnImg() {   // the Settings button with its sliders swapped for a "share" arrow, same colours
   if (SHARE_BTN) return SHARE_BTN;
   const base = img.settings_button; if (!ok(base)) return base;
@@ -7172,6 +7176,7 @@ function shareBtnImg() {   // the Settings button with its sliders swapped for a
   const ICON = ['.....E.....', '....EEE....', '...EEEEE...', '..EE.E.EE..', '.....E.....', '.E...E...E.', '.E...F...E.', '.E.......E.', '.EEEEEEEEE.', '.FFFFFFFFF.'];
   ICON.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '.') return; g.fillStyle = ch === 'E' ? '#bb5f4d' : '#bcbcbc'; g.fillRect(20 + x * 2, 8 + y * 2, 2, 2); }));
   c.complete = true; c.naturalWidth = 62; c.naturalHeight = 36;
+  if (!btnFrameDrawn(c)) return c;   // iPhone: the Settings image wasn't decoded yet, so its frame came out blank. Try again next frame
   return (SHARE_BTN = c);
 }
 function handleShareTap() {
@@ -7455,6 +7460,7 @@ function replayBtnImg() {
   const ICON = ['...EEEEE...', '..E.....E..', '.E..E....E.', 'E...EE....E', 'E...EEE...E', 'E...EE....E', '.E..E....E.', '..E.....E..', '...EEEEE...', '...FFFFF...'];
   ICON.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '.') return; g.fillStyle = ch === 'E' ? '#bb5f4d' : '#bcbcbc'; g.fillRect(20 + x * 2, 8 + y * 2, 2, 2); }));
   c.complete = true; c.naturalWidth = 62; c.naturalHeight = 36;
+  if (!btnFrameDrawn(c)) return c;   // iPhone: the Settings image wasn't decoded yet, so its frame came out blank. Try again next frame
   return (REPLAY_BTN = c);
 }
 function handleReplayTap() {
