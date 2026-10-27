@@ -19,8 +19,8 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Flappy Bird
-        CFBundleShortVersionString: "4.5"
-        CFBundleVersion: "118"
+        CFBundleShortVersionString: "4.6"
+        CFBundleVersion: "128"
         UILaunchScreen:
           UIColorName: ""
         UIRequiresFullScreen: true
