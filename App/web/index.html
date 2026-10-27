@@ -272,6 +272,21 @@ a.mk-btn.mk-save { color: #fff; }
 .pk-tgrid .pk-cell canvas { width: 66px; height: 55px; border-radius: 4px; }
 .pk-tsec { grid-column: 1 / -1; font-size: 8px; color: #fc7858; text-transform: uppercase; text-shadow: 0 2px #fff6c8; padding: 6px 2px 1px; }
 .st-tval { font-size: 6px; text-transform: uppercase; opacity: .75; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* v132: friends' ghosts */
+.pk-friends .pk-panel { max-height: min(78%, 640px); }
+.fg-page { overflow-y: auto; touch-action: pan-y; min-height: 0; padding: 2px; display: flex; flex-direction: column; }
+.fg-page .pk-sec { margin-top: 6px; }
+.fg-page .mk-code { width: 100%; font-size: 8px; }
+.fg-list { display: flex; flex-direction: column; gap: 5px; }
+.fg-row { display: flex; align-items: center; gap: 8px; background: #efeaa9; border: 2px solid #c4bd7a; border-radius: 8px; padding: 4px 6px; }
+.fg-row.sel { border-color: #fc7858; background: #fff6c8; box-shadow: 0 0 0 2px #fc7858; }
+.fg-row canvas { width: 36px; height: 30px; image-rendering: pixelated; background: #4ec0ca; border-radius: 4px; flex: none; }
+.fg-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.fg-t b { font-size: 8px; color: #fc7858; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fg-t span { font-size: 6px; text-transform: uppercase; }
+.fg-race { flex: none; font-size: 7px !important; padding: 6px 8px !important; }
+.fg-row.sel .fg-race { background: #78d850; color: #fff; }
+.fg-del { flex: none; width: 24px; height: 24px; border: 2px solid #533846; border-radius: 6px; background: #fff; font: 11px system-ui; padding: 0; }
 </style>
 </head>
 <body>
@@ -5700,11 +5715,11 @@ function setSpawnerRemaining(rem) {
 function ghostStart() {
   ghostRec = null; ghostPlay = null; courseRng = Math.random;
   if (START_SCORE > 0 || afterlife >= 2) return; // practice / the -1 run: no course replay, nothing recorded
-  const g = ghostOn ? loadGhost(gameMode) : null;
+  const g = friendRaceGhost() || (ghostOn ? loadGhost(gameMode) : null);   // v132: a friend's ghost you're racing comes first
   let seed;
   if (g) {
     // replay the best run's course: same pipes on screen, same spawn timing, same seed
-    pipeList = g.pipes.map(p => Object.assign({ scored: false, touching: false }, p));
+    pipeList = g.pipes.map(p => Object.assign({ scored: false, touching: false }, p)).filter(p => !(p.gx + 30 < bird.x - BIRD_RADIUS));   // (pipes already behind the bird don't come back)
     setSpawnerRemaining(g.phase);
     seed = g.seed;
     ghostPlay = { g, fade: 1 };
@@ -9495,6 +9510,450 @@ NBX('Food & Drink', [
   { id: 'pandancake', name: 'Pandan Cake', pal: g(['#8ad86a', '#6ac04a', '#b8f098']), paint: (x, y, t) => isBody(t) && y <= 1 ? '#c8904a' : isBody(t) && (x * 3 + y * 5) % 9 === 0 ? '#d8f8c8' : undefined, acc: [A(6, -2, ['.WWW.', 'WWWWW'], { W: '#fff8ec' }), A(8, -3, ['L'], { L: '#3a9a2a' })] },
   { id: 'bubblewaffle', name: 'Bubble Waffle', pal: g(['#f0c060', '#d8a848', '#f8d888']), paint: (x, y, t) => isBody(t) && x % 2 === 0 && y % 2 === 0 ? '#f8e0a0' : undefined, acc: [A(6, -3, ['.PP.', 'PWWP', 'CCCC'], { P: '#f8a0c0', W: '#ffffff', C: '#f0c060' })] },
 ]);
+}
+
+// ===================== v132: Friends' ghosts =====================
+// Share a code of your best run; a friend pastes it and races your ghost on the exact same pipes
+// (the code carries the course seed, the pipes already on screen, the spawn timing and your flight path).
+const FG_PREFIX = 'FBGHOST1:';
+let playerName = loadStr('playerName', '');
+let friendList = (() => { try { const v = JSON.parse(localStorage.getItem('fb_friends') || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } })();
+let raceId = loadStr('raceFriend', '');
+let raceInfo = null;            // the race running now: { name, score }
+const fgCache = {};
+function saveFriends() { try { localStorage.setItem('fb_friends', JSON.stringify(friendList)); return true; } catch (e) { return false; } }
+function b64url(u8) { return b64FromBytes(u8).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+function fromB64url(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return bytesFromB64(s); }
+async function fgPack(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  if (typeof CompressionStream === 'function') {
+    try { const buf = await new Response(new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer(); return FG_PREFIX + 'z' + b64url(new Uint8Array(buf)); } catch (e) {}
+  }
+  return FG_PREFIX + 'j' + b64url(bytes);
+}
+async function fgUnpack(text) {
+  let t = String(text || '').replace(/\s+/g, '');
+  const at = t.toUpperCase().indexOf(FG_PREFIX);
+  if (at < 0) throw new Error("That isn't a ghost code (it starts with " + FG_PREFIX + ')');
+  t = t.slice(at + FG_PREFIX.length);
+  const kind = t[0], data = t.slice(1);
+  let bytes;
+  try { bytes = fromB64url(data); } catch (e) { throw new Error('The code is cut off or has a typo'); }
+  if (kind === 'z') {
+    if (typeof DecompressionStream !== 'function') throw new Error("This browser can't open packed codes; update it and try again");
+    try { bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer()); } catch (e) { throw new Error('The code is cut off or has a typo'); }
+  } else if (kind !== 'j') throw new Error('The code is cut off or has a typo');
+  let o; try { o = JSON.parse(new TextDecoder().decode(bytes)); } catch (e) { throw new Error('The code is cut off or has a typo'); }
+  if (!o || !o.g || o.g.v !== 1 || !MODES.some(m => m.id === o.m)) throw new Error('This ghost is from a different version of the game');
+  if (!fgDecode(o.g)) throw new Error('The ghost inside the code is damaged');
+  return o;
+}
+function fgDecode(enc) {   // the stored form (base64 arrays) -> what the ghost player uses
+  try {
+    const o = Object.assign({}, enc);
+    o.y = new Int16Array(bytesFromB64(enc.y).buffer); o.x = new Int16Array(bytesFromB64(enc.x).buffer); o.r = new Int8Array(bytesFromB64(enc.r).buffer);
+    if (!o.y.length || o.x.length !== o.y.length || o.r.length !== o.y.length || !Array.isArray(o.pipes) || typeof o.seed !== 'number') return null;
+    if (!skinExists(o.skin)) o.skin = 'yellow';
+    return o;
+  } catch (e) { return null; }
+}
+async function myGhostCode(mode) {
+  let raw = null; try { raw = localStorage.getItem(ghostKey(mode)); } catch (e) {}
+  if (!raw) return null;
+  let enc; try { enc = JSON.parse(raw); } catch (e) { return null; }
+  if (!enc || enc.v !== 1) return null;
+  return fgPack({ g: enc, m: mode, name: (playerName || 'A friend').slice(0, 14) });
+}
+function friendRaceGhost() {   // used by ghostStart: the friend you're racing replaces your own ghost (same mode only)
+  raceInfo = null;
+  const f = friendList.find(q => q.id === raceId);
+  if (!f || f.m !== gameMode) return null;
+  let g = fgCache[f.id]; if (!g) { g = fgDecode(f.g); if (!g) return null; g.friend = f.name; fgCache[f.id] = g; }
+  raceInfo = { name: f.name, score: g.score };
+  return g;
+}
+function setRace(id) {
+  raceId = id || ''; saveStr('raceFriend', raceId);
+  const f = friendList.find(q => q.id === raceId);
+  if (f && f.m !== gameMode) setGameMode(f.m);   // their course only works in the mode they played
+}
+function fgText(t, x, top, a) {   // panel-font text on a small dark plate, so it reads over any sky
+  const w = panelTextWidth(t);
+  ctx.globalAlpha = 0.8 * (a === undefined ? 1 : a); ctx.fillStyle = '#533846'; ctx.fillRect(x - 6, top - 15, w + 12, 20);
+  ctx.globalAlpha = a === undefined ? 1 : a; drawPanelText(t, x, top); ctx.globalAlpha = 1;
+}
+function fgLabel(name) { return String(name || '').toUpperCase().replace(/[^A-Z0-9 ]/g, '').trim().slice(0, 12) || 'FRIEND'; }
+// their name over their ghost
+{
+  const _dg = drawGhost;
+  drawGhost = function () {
+    _dg();
+    const P = ghostPlay;
+    if (!P || !P.g.friend || !bird.dynamic) return;
+    const g = P.g, t = sceneTime - gameStartTime, fi = t * GHOST_HZ, n = g.y.length;
+    let i0 = Math.floor(fi), f = fi - i0; if (i0 >= n - 1) { i0 = n - 1; f = 0; }
+    const i1 = Math.min(n - 1, i0 + 1);
+    const y = (g.y[i0] + (g.y[i1] - g.y[i0]) * f) / 4, x = (g.x[i0] + (g.x[i1] - g.x[i0]) * f) / 4;
+    const endFade = Math.max(0, Math.min(1, 1 - (fi - (n - 1)) / (GHOST_HZ * 0.5)));
+    const a = endFade * P.fade; if (a <= 0.02) return;
+    const label = fgLabel(g.friend);
+    fgText(label, Math.round(x - panelTextWidth(label) / 2), Math.round(y + 36), 0.9 * a);
+  };
+  const _mt = drawModeTag;
+  drawModeTag = function () {
+    _mt();
+    if (afterlife || (ending && ending.on)) return;
+    const f = friendList.find(q => q.id === raceId);
+    if (getReady.added && getReady.scale > 0 && f && f.m === gameMode) {   // "RACING SAM 42" under Get Ready
+      const t = 'RACING ' + fgLabel(f.name) + ' ' + (fgCache[f.id] || fgDecode(f.g) || { score: 0 }).score;
+      fgText(t, Math.round(getReady.x - panelTextWidth(t) / 2), getReady.y - (gameMode === 'normal' ? 44 : 64));
+    }
+    if (raceInfo && (isGameOver || isShowingGameOver) && gameOverNode.added && gameOverNode.scale > 0.5) {   // who won
+      const n = fgLabel(raceInfo.name), d = score - raceInfo.score;
+      const t = d > 0 ? 'YOU BEAT ' + n + ' BY ' + d : d === 0 ? 'TIE WITH ' + n : n + ' WINS BY ' + (-d);
+      fgText(t, Math.round(gameOverNode.x - panelTextWidth(t) / 2), gameOverNode.y + 52);
+    }
+  };
+}
+// ---- the Friends page ----
+function buildFriendsPage(page) {
+  const box = el('div', 'fg-page');
+  // your name
+  box.appendChild(el('div', 'pk-sec', 'Your name'));
+  const nm = el('input', 'pk-search'); nm.value = playerName; nm.placeholder = 'Shown over your ghost'; nm.maxLength = 14; nm.autocomplete = 'off';
+  nm.addEventListener('input', () => { playerName = nm.value; saveStr('playerName', playerName); });
+  box.appendChild(nm);
+  // share yours
+  const mi = modeInfo(), best = ghostScore(gameMode);
+  box.appendChild(el('div', 'pk-sec', 'Share your best run (' + mi.title + ')'));
+  if (best > 0) {
+    box.appendChild(el('div', 'pk-note', 'Your best ' + mi.title + ' run: ' + best + '. Send this code to a friend; they paste it here to race your ghost on the same pipes.'));
+    const area = el('textarea', 'mk-code'); area.rows = 3; area.readOnly = true; area.value = 'Making your code...'; box.appendChild(area);
+    const foot = el('div', 'mk-foot'), cp = el('button', 'mk-btn', 'Copy'), sh = el('button', 'mk-btn mk-share', 'Share');
+    foot.append(cp, sh); box.appendChild(foot);
+    let code = '';
+    myGhostCode(gameMode).then(c => { code = c || ''; area.value = code || "Couldn't make a code"; });
+    cp.addEventListener('click', () => { if (!code) return; copyText(code, area); cp.textContent = 'Copied!'; playSound('point'); setTimeout(() => { cp.textContent = 'Copy'; }, 1500); });
+    if (navigator.share) sh.addEventListener('click', () => { if (code) navigator.share({ text: 'Race my Flappy Bird ghost! I got ' + best + ' in ' + mi.title + '. Paste this in Settings > Friends\' Ghosts:\n' + code }).catch(() => {}); });
+    else sh.remove();
+  } else box.appendChild(el('div', 'pk-note', 'Play a round in ' + mi.title + ' first (with no autoplay). Your best run becomes your ghost.'));
+  // add a friend's
+  box.appendChild(el('div', 'pk-sec', "Add a friend's run"));
+  const inp = el('textarea', 'mk-code mk-in'); inp.rows = 3; inp.placeholder = FG_PREFIX + '...'; inp.spellcheck = false; inp.autocapitalize = 'off'; box.appendChild(inp);
+  const msg = el('div', 'mk-msg'); box.appendChild(msg);
+  const f2 = el('div', 'mk-foot'), add = el('button', 'mk-btn mk-save', 'Add friend'); f2.appendChild(add); box.appendChild(f2);
+  add.addEventListener('click', async () => {
+    let o; try { o = await fgUnpack(inp.value); } catch (e) { msg.textContent = e.message; playSound('hit'); return; }
+    const g = fgDecode(o.g), id = 'f' + Date.now().toString(36);
+    const name = String(o.name || 'Friend').slice(0, 14);
+    friendList = friendList.filter(q => !(q.name === name && q.m === o.m && q.g.seed === o.g.seed));   // the same run twice: keep one
+    friendList.unshift({ id, name, m: o.m, g: o.g, score: g.score, skin: g.skin, when: Date.now() });
+    if (friendList.length > 20) friendList.length = 20;
+    if (!saveFriends()) { msg.textContent = "This phone won't let the game save (private browsing?)"; return; }
+    setRace(id); playSound('point'); haptic(); showPage('friends');
+  });
+  // the list
+  if (friendList.length) {
+    box.appendChild(el('div', 'pk-sec', 'Friends'));
+    const list = el('div', 'fg-list');
+    for (const f of friendList) {
+      const row = el('div', 'fg-row' + (f.id === raceId ? ' sel' : '')), cv = el('canvas'); cv.width = 48; cv.height = 40;
+      try { ensureSkin(f.skin); drawSkinInto(cv, skinExists(f.skin) ? f.skin : 'yellow', 2); } catch (e) {}
+      const t = el('div', 'fg-t'); t.append(el('b', '', f.name), el('span', '', modeInfo(f.m).title + ' - ' + f.score));
+      const race = el('button', 'mk-btn fg-race', f.id === raceId ? 'Racing' : 'Race'), del = el('button', 'fg-del', '✕');
+      race.addEventListener('click', () => { setRace(f.id === raceId ? '' : f.id); playSound('swoosh'); haptic(); showPage('friends'); });
+      del.addEventListener('click', () => { friendList = friendList.filter(q => q.id !== f.id); if (raceId === f.id) setRace(''); saveFriends(); playSound('swoosh'); showPage('friends'); });
+      row.append(cv, t, race, del); list.appendChild(row);
+    }
+    box.appendChild(list);
+    box.appendChild(el('div', 'pk-note', raceId ? 'You race the friend marked Racing every round (in their mode). Tap Racing to stop.' : 'Tap Race to race a friend. The game switches to their mode.'));
+  }
+  page.appendChild(box);
+}
+{
+  const _bs = buildSettingsPage;
+  buildSettingsPage = function (page) {
+    _bs(page);
+    const list = page.querySelector('.st-list'); if (!list) return;
+    const b = el('button', 'st-row'), t = el('div', 'st-rt');
+    const f = friendList.find(q => q.id === raceId);
+    t.append(el('div', 'st-rn', "Friends' Ghosts"), el('div', 'st-rs', f ? 'Racing ' + f.name : 'Race a friend\'s best run'));
+    b.append(t, el('span', 'st-tval', f ? 'Racing ' + f.name : (friendList.length ? friendList.length + ' saved' : '')), el('span', 'st-arrow', '›'));
+    b.addEventListener('click', () => { playSound('swoosh'); haptic(); showPage('friends'); });
+    const rows = [...list.querySelectorAll('.st-row')], ghostRow = rows.find(r => r.textContent.includes('Ghost') && !r.textContent.includes('Friends'));
+    list.insertBefore(b, ghostRow ? ghostRow.nextSibling : null);
+  };
+  const _sp = showPage;
+  showPage = function (kind, first) {
+    if (kind !== 'friends') return _sp(kind, first);
+    _sp('weather', first);
+    PK.kind = 'friends';
+    PK.root.className = 'pk-root pk-friends' + (first ? '' : ' pk-in');
+    const page = PK.panel.querySelector('.pk-page');
+    page.querySelector('.pk-title').textContent = 'Friends';
+    while (page.children.length > 1) page.removeChild(page.lastChild);
+    clearPageTimers();
+    buildFriendsPage(page);
+    for (const sc of [PK.panel, ...PK.panel.querySelectorAll('.fg-page, .fg-list')]) pkScroll(sc);
+  };
+}
+
+// ===================== v132: richer seasons =====================
+// Every season gets its own sky visitors, ground scenery and pipe decorations (all pixel art, 1 art pixel = 3 pt).
+// Halloween gets the most: a haunted house on the hill, a witch across the moon, drifting ghosts, glowing jack-o'-lanterns,
+// bats hanging under the pipes, dead trees, an iron fence, a skeleton hand, candy corn and ghosts peeking from the graves.
+const SART = {};
+function sart(name) {
+  if (name in SART) return SART[name];
+  const D = {
+    // ---------- Halloween ----------
+    house: [[
+      '.........#................', '........###...............', '.......#####..............', '......###y###.............', '......#######.....#.......',
+      '......###y###....###......', '......#######...#####.....', '....###########.#######....', '...#############y##y###....', '..##########################',
+      '..##y##y##################.', '..#############y##y####y##..', '..##y##y###################.', '..########################..', '..####.####################.',
+      '..####.##y##y#####.#####y##.', '..####.###########.########.', '..#########################.'],
+      { '#': '#1c1028', y: '#ffd84a' }],
+    houseDim: null,
+    witch: [[
+      '.......##.........', '......####........', '.....######.......', '.......##..........', '......####........', '.....######.......',
+      '....########......', '.#################', 'bbbb...##....bbbb.', 'bbb....#.#.......', '.......#..#......'],
+      { '#': '#14081c', b: '#3a2410' }],
+    ghostW: [['...####...', '.########.', '##########', '##k##k####', '##########', '###kk#####', '##########', '##########', '#.##.##.##', '...#....#.'],
+      { '#': 'rgba(240,240,255,0.78)', k: '#2a1e3a' }],
+    deadTree: [[
+      '..#.......#...', '...#.....#....', '#..#....#..#..', '.#.##..##.#...', '..#.#..#.##...', '...####.##....', '....####......', '.....###......',
+      '.....##.......', '.....##.......', '....###.......', '....###.......', '...#####......', '..##.#.##.....'],
+      { '#': '#1a0f1e' }],
+    fence: [['#..#..#..#..#..#', '#..#..#..#..#..#', '################', '#..#..#..#..#..#', '#..#..#..#..#..#', '################', '#..#..#..#..#..#'],
+      { '#': '#1e1424' }],
+    hand: [['.#.#.#..', '.#.#.#..', '.#####.#', '.######.', '..####..', '...##...', '...##...'], { '#': '#e8e4d0' }],
+    candyCorn: [['.w.', 'yyy', 'ooo', 'ooo'], { w: '#ffffff', y: '#ffd23c', o: '#f07818' }],
+    jack: [['....g....', '...gg....', '.ooooooo.', 'oOooOooOo', 'oyyoOoyyo', 'oOoyyyoOo', 'oyyyyyyyo', '.oOyOyOo.', '..ooooo..'],
+      { o: '#f07818', O: '#c8560e', g: '#4a7a2a', y: '#ffe060' }],
+    hangBat: [['..##..', '..##..', '.####.', '#.##.#', '#.rr.#', '..##..'], { '#': '#1b0f24', r: '#ff3030' }],
+    // ---------- Christmas / winter ----------
+    sleigh: [[
+      '...#.#.....#.#.....#.#..................', '....#.......#.......#...................', '...###.....###.....###......##...........',
+      '..#####...#####...#####....####.......##', '..#.#.#...#.#.#...#.#.#..#######....###.', '.......................##########.###...', '..........................#....#.........'],
+      { '#': '#1a1424' }],
+    snowman: [['...kkk...', '..kkkkk..', '...www...', '..wkwkw..', '..wwoww..', '...www...', 'rrrrrrr..', '..wwwww..', '.wwwkwww.', '.wwwwwww.', '.wwwkwww.', 'wwwwwwwww', 'wwwwwwwww', '.wwwwwww.'],
+      { w: '#f4f8ff', k: '#1e1e24', o: '#ff8a1e', r: '#e8281e' }],
+    present1: [['...yy...', '.yy..yy.', 'rrryyrrr', 'rrryyrrr', 'yyyyyyyy', 'rrryyrrr', 'rrryyrrr'], { r: '#e8281e', y: '#ffd23c' }],
+    present2: [['..w..w..', 'bbbwwbbb', 'bbbwwbbb', 'wwwwwwww', 'bbbwwbbb', 'bbbwwbbb'], { b: '#3a6ae0', w: '#ffffff' }],
+    present3: [['.r..r.', 'ggrrgg', 'ggrrgg', 'rrrrrr', 'ggrrgg'], { g: '#2a9a3a', r: '#e8281e' }],
+    cane: [['.rwr', 'w..w', 'r...', 'w...', 'r...', 'w...', 'r...', 'w...'], { r: '#e8281e', w: '#ffffff' }],
+    wreath: [['..ggggg..', '.gRgggRg.', 'ggg...ggg', 'gR.....Rg', 'gg.....gg', 'ggg...ggg', '.gggrggg.', '..grrrg..', '...r.r...'],
+      { g: '#2a8a3a', R: '#ff3b3b', r: '#e8281e' }],
+    pine: [['....w....', '...www...', '...gwg...', '..wwgww..', '..ggwgg..', '.wwgggww.', '.gggwggg.', 'wwggggwww', 'ggggwgggg', '....t....', '....t....'],
+      { g: '#1f6a3a', w: '#f4f8ff', t: '#5a3a1e' }],
+    // ---------- spring ----------
+    fly1: [['#..#', '####', '#..#'], { '#': '#ff8ac8' }], fly2: [['....', '####', '....'], { '#': '#ff8ac8' }],
+    flyB1: [['#..#', '####', '#..#'], { '#': '#ffd23c' }], flyB2: [['....', '####', '....'], { '#': '#ffd23c' }],
+    tulipR: [['r.r', 'rrr', 'rrr', '.g.', 'gg.', '.g.'], { r: '#e8281e', g: '#3f9a30' }],
+    tulipY: [['y.y', 'yyy', 'yyy', '.g.', '.gg', '.g.'], { y: '#ffd23c', g: '#3f9a30' }],
+    bunny1: [['..w.w...', '..w.w...', '..www...', '.wwkww..', 'wwwwwww.', 'wwwwwwwp', '.w...w..'], { w: '#f8f4f0', k: '#1e1e24', p: '#ffb0c0' }],
+    bunny2: [['...w.w..', '...w.w..', '...www..', '..wwkww.', '.wwwwwww', 'wwwwwwwp', '........'], { w: '#f8f4f0', k: '#1e1e24', p: '#ffb0c0' }],
+    blossom: [['...pPpp.....', '.pPppPpPp...', 'ppPpppPppp..', '.pppPppPpp..', '..pp.#.pp...', '.....##.....', '.....#......', '.....#......', '....##......', '....#.......'],
+      { p: '#ffc2d8', P: '#ff8ab8', '#': '#6a4020' }],
+    // ---------- summer ----------
+    gull1: [['#.....#', '.#...#.', '..#.#..'], { '#': '#f4f4f4' }], gull2: [['.......', '##...##', '..#.#..'], { '#': '#f4f4f4' }],
+    umbrella: [['....rwr....', '..rwrwrwr..', '.rwrwrwrwr.', 'rwrwrwrwrwr', '.....k.....', '.....k.....', '.....k.....', '.....k.....', '.....k.....', '.....k.....'],
+      { r: '#e8281e', w: '#ffffff', k: '#5a4a3a' }],
+    sandcastle: [['r........', 'k.s...s..', 'sss.sss.s', 'sssssssss', 'ssssdssss', 'sssddssss', 'sssssssss'], { s: '#e8c880', d: '#8a6a3a', r: '#e8281e', k: '#5a4a3a' }],
+    beachball: [['.rwb.', 'rrwbb', 'yywww', 'yywrr', '.ywr.'], { r: '#e8281e', w: '#ffffff', b: '#3a8ae0', y: '#ffd23c' }],
+    // ---------- fall ----------
+    scarecrow: [['...yyy...', '..yyyyy..', '.yyyyyyy.', '...www...', '...wkw...', '...www...', 'rrrrrrrrr', 'y.rrrrr.y', '...rrr...', '...bbb...', '...b.b...', '....t....', '....t....', '....t....', '....t....'],
+      { y: '#e8c050', w: '#f0e0b0', k: '#1e1e24', r: '#c8402a', b: '#3a5aa8', t: '#6a4020' }],
+    hay: [['yyyyyyyy', 'yYyyYyyY', 'yyyyyyyy', 'YyyYyyYy', 'yyyyyyyy', 'yYyyYyyY'], { y: '#e8c050', Y: '#b89030' }],
+    gourd: [['...g...', '.ooooo.', 'oOoOoOo', 'oOoOoOo', '.ooooo.'], { o: '#f08a1e', O: '#c86a10', g: '#4a7a2a' }],
+    crow: [['..##..', '.####k', '######', '.##...', '.#.#..'], { '#': '#1a1a24', k: '#e8a020' }],
+    // ---------- valentine ----------
+    heartBal: [['.##.##.', '#######', '#####w#', '.#####.', '..###..', '...#...', '...s...', '..s....', '...s...', '....s..'], { '#': '#ff3a6a', w: '#ffb0c8', s: '#e8e0e0' }],
+    roses: [['.r..r..r.', 'rRr.rRr.r', '.r.g.r.gR', 'ggggggggg', 'gGgggGggg', 'ggggggggg'], { r: '#e8203a', R: '#a81028', g: '#2a8a3a', G: '#1e6a2a' }],
+    miniHeart: [['#.#', '###', '.#.'], { '#': '#ff5c8a' }],
+    // ---------- new year ----------
+    partyHat: [['...y...', '...p...', '..pbp..', '..bpb..', '.pbpbp.', '.bpbpb.', 'yyyyyyy'], { p: '#ff4fa3', b: '#3ab0ff', y: '#ffd23c' }],
+    plane: [['......##....', '.#...####...', '############', '.###########', '.....##.....'], { '#': '#e8e8f0' }],
+    balloonNY: [['.##.', '####', '####', '.##.', '..s.', '.s..', '..s.'], { '#': '#ffd23c', s: '#e8e0e0' }],
+  };
+  const d = D[name];
+  let c = null;
+  if (name === 'houseDim') { const h = D.house; c = pixCanvas(h[0], { '#': h[1]['#'], y: '#8a6a20' }); }
+  else if (d) c = pixCanvas(d[0], d[1]);
+  SART[name] = c; return c;
+}
+const WX2 = { par: 0, witch: null, nextWitch: 6, ghosts: [], nextGhost: 2, sleigh: null, nextSleigh: 8, flies: [], gulls: [], nextGull: 3,
+  hearts: [], nextHeart: 1.5, plane: null, nextPlane: 5, aur: 0 };
+function seasonSky() {   // extra sky life, drawn after the sun/moon (the sky tint is drawn later and colours it)
+  const s = WX.season, v = viewBox(), t = WX.t;
+  if (s === 'halloween') {
+    // the haunted house on its hill (slow parallax), windows flicker
+    const span = 1400, x0 = ((v.L + 260 + WX2.par * 0.25) % span + span) % span + v.L - 200;
+    for (let x = x0; x < v.R + 200; x += span) {
+      ctx.fillStyle = '#1c1028';
+      for (let i = -190; i <= 190; i += 3) { const c = Math.cos(i / 190 * Math.PI / 2), hh = Math.round((4 + 62 * c * c) / 3) * 3; ctx.fillRect(x + i, 224, 3, hh); }   // a soft hill
+      const lit = Math.sin(t * 7.3 + Math.sin(t * 2.1) * 3) > -0.6;
+      spr(sart(lit ? 'house' : 'houseDim'), x, 224 + 62 + 27 - 3, 3, 3, 0);
+      if (lit) drawImgUp(wxArt('glowOrange'), x - 60, 224 + 40, 120, 90, true, 0.35);
+      spr(sart('deadTree'), x - 120, 224 + Math.round((4 + 62 * Math.cos(120 / 190 * Math.PI / 2) ** 2) / 3) * 3 + 19, 3, 3, 0);
+      spr(sart('deadTree'), x + 140, 224 + Math.round((4 + 62 * Math.cos(140 / 190 * Math.PI / 2) ** 2) / 3) * 3 + 19, -3, 3, 0);
+    }
+    // ghosts drifting through the sky
+    for (const g of WX2.ghosts) {
+      ctx.globalAlpha = Math.min(1, g.t / 1.2, (g.life - g.t) / 1.2) * 0.75;
+      spr(sart('ghostW'), Math.round(g.x), Math.round(g.y + Math.sin(g.t * 2 + g.ph) * 10), g.s, g.s, Math.sin(g.t * 1.5 + g.ph) * 0.12);
+      ctx.globalAlpha = 1;
+    }
+    // the witch crossing in front of the moon
+    if (WX2.witch) { const w = WX2.witch; spr(sart('witch'), Math.round(w.x), Math.round(w.y + Math.sin(w.t * 3) * 8), -3, 3, Math.sin(w.t * 3) * 0.06); }
+  }
+  if ((s === 'winter' || s === 'christmas') && skyIsNight && WX.weather === 'clear') {   // aurora on clear winter nights
+    const L = v.L, R = v.R;
+    for (let band = 0; band < 3; band++) {
+      const col = ['rgba(90,255,170,', 'rgba(120,200,255,', 'rgba(190,120,255,'][band];
+      for (let x = Math.floor(L / 6) * 6; x < R; x += 6) {
+        const y = 600 + band * 26 + Math.sin(x * 0.006 + t * 0.5 + band) * 26 + Math.sin(x * 0.017 - t * 0.8) * 10;
+        const a = 0.12 + 0.1 * Math.sin(x * 0.01 + t + band * 2);
+        ctx.fillStyle = col + Math.max(0, a).toFixed(3) + ')'; ctx.fillRect(x, y, 6, 40 + band * 10);
+      }
+    }
+  }
+  if (s === 'christmas' && WX2.sleigh) { const sl = WX2.sleigh; spr(sart('sleigh'), Math.round(sl.x), Math.round(sl.y + Math.sin(sl.t * 2) * 6), -3, 3, 0); }
+  if (s === 'spring') for (const f of WX2.flies) { const up = Math.floor(f.t * 9 + f.ph) % 2; spr(sart(f.c ? (up ? 'flyB1' : 'flyB2') : (up ? 'fly1' : 'fly2')), Math.round(f.x), Math.round(f.y), 3, 3, 0); }
+  if (s === 'summer') for (const g of WX2.gulls) { const up = Math.floor(g.t * 4 + g.ph) % 2; spr(sart(up ? 'gull1' : 'gull2'), Math.round(g.x), Math.round(g.y + Math.sin(g.t + g.ph) * 6), 3, 3, 0); }
+  if (s === 'valentine') for (const h of WX2.hearts) spr(sart('heartBal'), Math.round(h.x + Math.sin(h.t * 1.3 + h.ph) * 10), Math.round(h.y), 3, 3, Math.sin(h.t * 1.3 + h.ph) * 0.1);
+  if (s === 'newyear' && WX2.plane) {   // a little plane pulling a banner
+    const p = WX2.plane, yr = new Date().getMonth() === 11 ? new Date().getFullYear() + 1 : new Date().getFullYear();
+    const text = 'HAPPY NEW YEAR ' + yr, tw = panelTextWidth(text) + 24, bx = p.x + 40, by = p.y + Math.sin(p.t * 2) * 4;
+    ctx.fillStyle = '#cfc8d8'; ctx.fillRect(p.x + 18, by + 2, 24, 2);
+    ctx.fillStyle = '#fff6e0'; ctx.fillRect(bx, by - 10, tw, 24);
+    ctx.fillStyle = '#e8281e'; ctx.fillRect(bx, by - 12, tw, 3); ctx.fillRect(bx, by + 13, tw, 3);
+    drawPanelText(text, Math.round(bx + 12), Math.round(by - 6));
+    spr(sart('plane'), Math.round(p.x), Math.round(p.y + Math.sin(p.t * 2) * 4), -3, 3, 0);
+  }
+}
+function updateSeasons(dt) {
+  if (!weatherOn()) { WX2.witch = null; WX2.ghosts = []; WX2.sleigh = null; WX2.plane = null; return; }
+  const s = WX.season, v = viewBox(), scroll = moving.speed > 0 && !(ending && ending.frozen) ? 200 * speedMul() : 0;
+  WX2.par -= scroll * dt;
+  if (s === 'halloween') {
+    WX2.nextWitch -= dt;
+    if (!WX2.witch && WX2.nextWitch <= 0) { WX2.nextWitch = 14 + Math.random() * 10; WX2.witch = { x: v.R + 60, y: 630 + Math.random() * 30, t: 0 }; }
+    if (WX2.witch) { const w = WX2.witch; w.t += dt; w.x -= (70 + scroll * 0.08) * dt; w.y += Math.sin(w.t * 0.8) * 10 * dt; if (w.x < v.L - 80) WX2.witch = null; }
+    WX2.nextGhost -= dt;
+    if (WX2.nextGhost <= 0 && WX2.ghosts.length < 3) { WX2.nextGhost = 3 + Math.random() * 4; WX2.ghosts.push({ x: rnd(v.L + 60, v.R + 60), y: rnd(380, 700), t: 0, life: 6 + Math.random() * 4, ph: Math.random() * 6, s: Math.random() < 0.5 ? 2 : 3, vx: -rnd(15, 40) }); }
+    for (const g of WX2.ghosts) { g.t += dt; g.x += (g.vx - scroll * 0.06) * dt; }
+    WX2.ghosts = WX2.ghosts.filter(g => g.t < g.life);
+  } else { WX2.witch = null; WX2.ghosts = []; }
+  if (s === 'christmas') {
+    WX2.nextSleigh -= dt;
+    if (!WX2.sleigh && WX2.nextSleigh <= 0) { WX2.nextSleigh = 16 + Math.random() * 10; WX2.sleigh = { x: v.R + 100, y: 660 + Math.random() * 40, t: 0 }; }
+    if (WX2.sleigh) { const sl = WX2.sleigh; sl.t += dt; sl.x -= (80 + scroll * 0.08) * dt; if (sl.x < v.L - 160) WX2.sleigh = null; }
+  } else WX2.sleigh = null;
+  if (s === 'spring') {
+    while (WX2.flies.length < 5) WX2.flies.push({ x: rnd(v.L, v.R + 200), y: rnd(260, 520), t: 0, ph: Math.random() * 6, c: Math.random() < 0.4, vx: rnd(-30, 20), vy: 0 });
+    for (const f of WX2.flies) { f.t += dt; f.vy += rnd(-60, 60) * dt; f.vy = Math.max(-30, Math.min(30, f.vy)); f.x += (f.vx - scroll * 0.6) * dt; f.y = Math.max(250, Math.min(560, f.y + f.vy * dt)); }
+    WX2.flies = WX2.flies.filter(f => f.x > v.L - 30);
+  } else WX2.flies = [];
+  if (s === 'summer') {
+    WX2.nextGull -= dt;
+    if (WX2.nextGull <= 0) { WX2.nextGull = 4 + Math.random() * 5; const n = 1 + Math.floor(Math.random() * 3), y0 = rnd(520, 700); for (let i = 0; i < n; i++) WX2.gulls.push({ x: v.R + 30 + i * 26, y: y0 + i * 12, t: 0, ph: Math.random() * 6 }); }
+    for (const g of WX2.gulls) { g.t += dt; g.x -= (35 + scroll * 0.08) * dt; }
+    WX2.gulls = WX2.gulls.filter(g => g.x > v.L - 30);
+  } else WX2.gulls = [];
+  if (s === 'valentine') {
+    WX2.nextHeart -= dt;
+    if (WX2.nextHeart <= 0 && WX2.hearts.length < 6) { WX2.nextHeart = 2 + Math.random() * 3; WX2.hearts.push({ x: rnd(v.L + 30, v.R + 100), y: 240, t: 0, ph: Math.random() * 6 }); }
+    for (const h of WX2.hearts) { h.t += dt; h.y += 28 * dt; h.x -= scroll * 0.2 * dt; }
+    WX2.hearts = WX2.hearts.filter(h => h.y < SH + 40);
+  } else WX2.hearts = [];
+  if (s === 'newyear') {
+    WX2.nextPlane -= dt;
+    if (!WX2.plane && WX2.nextPlane <= 0) { WX2.nextPlane = 18 + Math.random() * 8; WX2.plane = { x: v.R + 40, y: 640, t: 0 }; }
+    if (WX2.plane) { const p = WX2.plane; p.t += dt; p.x -= 70 * dt; if (p.x < v.L - 520) WX2.plane = null; }
+  } else WX2.plane = null;
+}
+function seasonPipes() {   // decorations on the pipes, on top of the old ones
+  const s = WX.season;
+  for (const p of pipeList) {
+    if (p.falling || p.gold) continue;
+    const R = pipeRects(p), x = R.up.cx, top = R.up.cy + 512, bot = R.down.cy - 512, k = p.k || 1;
+    if (s === 'halloween') {
+      if (k % 2 === 0) {   // a jack-o'-lantern on the cap, its face flickering
+        const fl = 0.6 + 0.4 * Math.sin(WX.t * 9 + k * 2) * Math.sin(WX.t * 5.3 + k);
+        drawImgUp(wxArt('glowOrange'), x - 30, top - 10, 60, 50, true, 0.35 + 0.35 * fl);
+        spr(sart('jack'), x + (k % 4 === 0 ? -12 : 12), top + 13.5, 3, 3, 0);
+      } else spr(sart('candyCorn'), x + 16, top + 6, 3, 3, 0);
+      if (k % 3 === 1) { const sw = Math.sin(WX.t * 1.6 + k) * 0.12; spr(sart('hangBat'), x - 14, bot - 9, 3, 3, sw); }
+      if (k % 5 === 2) spr(sart('hangBat'), x + 18, bot - 9, 3, 3, -Math.sin(WX.t * 1.4 + k) * 0.12);
+    } else if (s === 'christmas') {
+      if (k % 2) spr(sart('wreath'), x, top - 40, 3, 3, 0);
+      for (let j = 0; j < 3; j++) {   // ornaments hanging under the top pipe
+        const ox = x - 22 + j * 22, len = 10 + ((k * 7 + j * 5) % 4) * 6;
+        ctx.fillStyle = '#c8c8d0'; ctx.fillRect(ox, bot - len, 2, len);
+        ctx.fillStyle = ['#ff3b3b', '#ffd23b', '#3bb0ff'][(j + k) % 3]; ctx.fillRect(ox - 4, bot - len - 9, 10, 10);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(ox - 2, bot - len - 3, 2, 2);
+      }
+    } else if (s === 'winter') {
+      if (k % 3 === 0) spr(sart('snowman'), x + 10, top + 21, 2, 2, 0);
+    } else if (s === 'spring') {
+      if (k % 2 === 0) { ctx.fillStyle = '#3f9a30'; for (let i = 0; i < 6; i++) ctx.fillRect(x - 33 + ((i * 11 + k * 3) % 64), bot - 4 - (i % 3) * 6, 3, 6 + (i % 3) * 6); }
+    } else if (s === 'summer') {
+      if (k % 3 === 1) spr(sart('beachball'), x + 14, top + 7.5, 3, 3, 0);
+    } else if (s === 'fall') {
+      if (k % 2 === 0) spr(sart('crow'), x - 10, top + 7.5, k % 4 ? 3 : -3, 3, 0);
+      if (k % 3 === 1) spr(sart('gourd'), x + 16, top + 7.5, 3, 3, 0);
+    } else if (s === 'valentine') {
+      for (let j = 0; j < 5; j++) { const hx = x - 26 + j * 13, hy = bot - 10 - Math.round(Math.sin(j / 4 * Math.PI) * 6); ctx.fillStyle = '#e8e0e8'; ctx.fillRect(hx, hy + 6, 13, 1); spr(sart('miniHeart'), hx + 1, hy, 3, 3, 0); }
+    } else if (s === 'newyear') {
+      if (k % 2) spr(sart('partyHat'), x - 8, top + 10.5, 3, 3, 0);
+      const C = ['#ff3b3b', '#ffd23b', '#3bb0ff', '#ff6bf0', '#3bff6b'];
+      for (let j = 0; j < 4; j++) { ctx.fillStyle = C[(j + k) % 5]; for (let r = 0; r < 7; r++) ctx.fillRect(x - 24 + j * 16 + (r % 2) * 3, bot - 4 - r * 4, 3, 4); }
+    }
+  }
+}
+function seasonGround() {   // scenery on the ground, scrolling with it (per 336-pt land tile pair)
+  const s = WX.season, landW = 336 * 2, n = 2 + Math.floor(width / landW);
+  for (let i = 0; i < n; i++) {
+    const cx = groundX + i * (landW - 1), left = cx - 336;
+    const at = (name, off, sc, flip) => { const im = sart(name); if (im) spr(im, left + off, 224 + im.height * sc / 2 - 2, flip ? -sc : sc, sc, 0); };
+    if (s === 'halloween') {
+      at('fence', 120, 3); at('fence', 545, 3);
+      at('hand', 255, 3); at('candyCorn', 345, 3); at('candyCorn', 470, 3);
+      // a ghost peeks out from behind a gravestone every few seconds, then sinks back
+      const ph = (WX.t * 0.35 + i * 0.5) % 1, rise = ph < 0.15 ? ph / 0.15 : ph < 0.45 ? 1 : ph < 0.6 ? 1 - (ph - 0.45) / 0.15 : 0;
+      if (rise > 0) { const gh = sart('ghostW'); ctx.globalAlpha = 0.85; spr(gh, left + 185 + 4, 224 + 6 + rise * 30, 2, 2, Math.sin(WX.t * 3) * 0.1); ctx.globalAlpha = 1; spr(pix('tomb'), left + 185, 224 + 9 * 3 / 2 - 2, 3, 3, 0); }
+      if (skyIsNight) for (const o of [70, 300, 505]) drawImgUp(wxArt('glowOrange'), left + o - 26, 216, 52, 44, true, 0.45 + 0.25 * Math.sin(WX.t * 7 + o));
+      // low purple-orange mist hugging the ground
+      ctx.fillStyle = 'rgba(120,60,150,0.16)'; ctx.fillRect(left, 224, landW, 22);
+      ctx.fillStyle = 'rgba(255,140,60,0.08)'; ctx.fillRect(left, 224, landW, 8);
+    } else if (s === 'christmas') {
+      at('present1', 175, 3); at('present2', 200, 3); at('present3', 500, 3); at('present1', 520, 3);
+      at('snowman', 330, 3); at('cane', 60, 3); at('cane', 610, 3, 1);
+      const C = ['#ff3b3b', '#3bff6b', '#ffd23b', '#3bb0ff'];   // a garland of lights along the ground
+      for (let j = 0; j < 24; j++) { const on = (Math.floor(WX.t * 3) + j) % 4 !== 0; ctx.fillStyle = on ? C[j % 4] : '#4a4a52'; ctx.fillRect(left + j * 28, 228 + (j % 2) * 3, 4, 4); }
+    } else if (s === 'winter') {
+      at('pine', 90, 3); at('pine', 130, 3); at('snowman', 300, 3); at('pine', 470, 3); at('pine', 620, 3);
+    } else if (s === 'spring') {
+      at('blossom', 300, 3); at('tulipR', 230, 3); at('tulipY', 400, 3); at('tulipR', 575, 3);
+      const hop = Math.abs(Math.sin(WX.t * 3 + i)), b = sart(hop > 0.5 ? 'bunny2' : 'bunny1');
+      if (b) spr(b, left + 500 + Math.sin(WX.t * 0.5 + i) * 40, 224 + 10 + hop * 12, 3, 3, 0);
+    } else if (s === 'summer') {
+      at('umbrella', 230, 3); at('sandcastle', 470, 3); at('beachball', 310, 3);
+    } else if (s === 'fall') {
+      at('scarecrow', 330, 3); at('hay', 150, 3); at('hay', 180, 3); at('gourd', 520, 3); at('gourd', 545, 3);
+    } else if (s === 'valentine') {
+      at('roses', 120, 3); at('roses', 360, 3); at('roses', 590, 3);
+    } else if (s === 'newyear') {
+      at('balloonNY', 140, 3); at('balloonNY', 420, 3); at('balloonNY', 640, 3);
+    }
+  }
+}
+{
+  const _sky = drawWeatherSky; drawWeatherSky = function () { _sky(); if (weatherOn()) try { seasonSky(); } catch (e) {} };
+  const _pp = drawSeasonPipes; drawSeasonPipes = function () { _pp(); if (weatherOn()) try { seasonPipes(); } catch (e) {} };
+  const _gr = drawSeasonGround; drawSeasonGround = function () { _gr(); if (weatherOn()) try { seasonGround(); } catch (e) {} };
+  const _uw = updateWeather; updateWeather = function (dt) { _uw(dt); try { updateSeasons(dt); } catch (e) {} };
 }
 
 // ===================== v129: Trails & effects (100) + app haptics =====================
