@@ -106,7 +106,7 @@ struct AccountView: View {
                 field("Password", $pass, secure: true, kind: .password)
                 message
                 Button(busy ? "SIGNING IN..." : "SIGN IN") { run { done in Account.shared.signIn(user: user, password: pass, done: done) } }.buttonStyle(PxButtonStyle(fill: Px.green, fg: .white, size: 13))
-                Button("FORGOT PASSWORD?") { tab = 2; msg = "" }.font(Px.text(9)).foregroundColor(Px.brown).underline()
+                Button("FORGOT PASSWORD?") { tab = 2; msg = "" }.font(Px.text(9)).foregroundColor(Px.brown)
             } else if tab == 1 {
                 field("Username", $user, kind: .username)
                 field("Password (8+ letters)", $pass, secure: true, kind: .newPassword)
@@ -122,7 +122,7 @@ struct AccountView: View {
                     busy = true; msg = ""
                     Account.shared.recover(email: email) { err in busy = false; ok = err == nil; msg = err ?? "Sent! Open the link in the email to pick a new password." }
                 }.buttonStyle(PxButtonStyle(fill: Px.green, fg: .white, size: 13))
-                Button("BACK TO SIGN IN") { tab = 0; msg = "" }.font(Px.text(9)).foregroundColor(Px.brown).underline()
+                Button("BACK TO SIGN IN") { tab = 0; msg = "" }.font(Px.text(9)).foregroundColor(Px.brown)
             }
         }
     }
