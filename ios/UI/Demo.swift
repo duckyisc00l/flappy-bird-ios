@@ -20,10 +20,11 @@ enum Demo {
         say("dailycourse \(dailyKey()) \(ys)")
         r = mulberry32(12345); say("mulberry 12345 \((0..<4).map { _ in r() })")
         at(2) { say("snap title") }
+        at(4) {}
         for p in ["settings", "birds", "modes", "weather", "trails", "maker", "account", "leaders", "friends", "partycode", "dev", "avatar", "import"] {
-            at(0.8) { if p == "dev" { devMode = true }; openSheet(p) }
-            at(1.0) { say("snap \(p)") }
-            at(3.0) { closePicker() }
+            at(1.0) { if p == "dev" { devMode = true }; openSheet(p) }
+            at(1.5) { say("snap \(p)") }
+            at(4.0) { closePicker() }
         }
         at(1) { autoplay = true; handlePlayTap(); say("snap ready") }
         at(1.5) { say("snap play1") }
