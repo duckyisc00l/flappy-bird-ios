@@ -172,7 +172,7 @@ struct BirdsPage: View {
                     ForEach(chips, id: \.0) { c in Button(c.1 == nil ? c.0 : "\(c.0) (\(c.1!.formatted()))") { cat = c.0; haptic() } }
                 } label: {
                     HStack { KT(chipLabel(chips), 11, .white, lines: 1).frame(maxWidth: .infinity, alignment: .leading); Image(systemName: "chevron.down").font(.system(size: 9, weight: .black)).foregroundColor(.white) }
-                        .padding(.vertical, 6).padding(.leading, 10).padding(.trailing, 9).background(Capsule().fill(K.orange)).overlay(Capsule().stroke(K.brown, lineWidth: 2))
+                        .padding(.vertical, 6).padding(.leading, 10).padding(.trailing, 9).padding(2).background(Capsule().fill(K.orange)).overlay(Capsule().strokeBorder(K.brown, lineWidth: 2))
                 }
             }.padding(.bottom, 6)
             KT(countText, 6).opacity(0.7).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 2).padding(.bottom, 4)
@@ -210,8 +210,8 @@ struct BirdsPage: View {
                     .buttonStyle(PressStyle(scale: 1.2, dy: 0)).id(favTick)
             }
         }
-        .padding(.vertical, 5).padding(.horizontal, 7)
-        .background(RoundedRectangle(cornerRadius: 8).fill(K.light)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 2))
+        .padding(.vertical, 5).padding(.horizontal, 7).padding(2)
+        .background(RoundedRectangle(cornerRadius: 8).fill(K.light)).overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(K.brown, lineWidth: 2))
         .padding(.bottom, 6)
     }
     @ViewBuilder private func cell(_ id: String) -> some View {

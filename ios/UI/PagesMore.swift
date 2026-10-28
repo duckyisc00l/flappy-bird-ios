@@ -26,7 +26,7 @@ struct MakerPage: View {
                     TextField("", text: $name).font(K.kong(16)).foregroundColor(K.brown).autocorrectionDisabled()
                         .onChange(of: name) { v in if v.count > 16 { name = String(v.prefix(16)) } }
                         .overlay(alignment: .leading) { if name.isEmpty { Text("Name your bird").font(K.kong(9)).foregroundColor(K.placeholder).allowsHitTesting(false) } }
-                        .padding(.vertical, 6).padding(.horizontal, 8).background(RoundedRectangle(cornerRadius: 8).fill(K.input)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 2))
+                        .padding(.vertical, 6).padding(.horizontal, 8).padding(2).background(RoundedRectangle(cornerRadius: 8).fill(K.input)).overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(K.brown, lineWidth: 2))
                 }.padding(.bottom, 5)
                 HStack(spacing: 5) { tabBtn("colors", "Colors"); tabBtn("draw", "Draw") }.padding(.bottom, 6)
                 if tab == "colors" {
@@ -82,9 +82,9 @@ struct MakerPage: View {
         }
     }
     private func tabBtn(_ id: String, _ label: String) -> some View {
-        Button { tab = id; haptic() } label: { KT(label, 9, tab == id ? .white : K.brown).frame(maxWidth: .infinity).padding(.vertical, 7).background(RoundedRectangle(cornerRadius: 8).fill(tab == id ? K.orange : K.light)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 2)) }.buttonStyle(.plain)
+        Button { tab = id; haptic() } label: { KT(label, 9, tab == id ? .white : K.brown).frame(maxWidth: .infinity).padding(.vertical, 7).padding(2).background(RoundedRectangle(cornerRadius: 8).fill(tab == id ? K.orange : K.light)).overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(K.brown, lineWidth: 2)) }.buttonStyle(.plain)
     }
-    private func toolLabel(_ t: String, _ on: Bool) -> some View { KT(t, 8, on ? .white : K.brown).frame(maxWidth: .infinity).padding(.vertical, 5).background(RoundedRectangle(cornerRadius: 8).fill(on ? K.brown : K.light)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 2)) }
+    private func toolLabel(_ t: String, _ on: Bool) -> some View { KT(t, 8, on ? .white : K.brown).frame(maxWidth: .infinity).padding(.vertical, 5).padding(2).background(RoundedRectangle(cornerRadius: 8).fill(on ? K.brown : K.light)).overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(K.brown, lineWidth: 2)) }
     private func toolBtn(_ id: String, _ label: String) -> some View { Button { tool = id; haptic() } label: { toolLabel(label, tool == id) }.buttonStyle(.plain) }
     private func palette(_ cur: String?, _ pick: @escaping (String) -> Void) -> some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 3), count: 10), spacing: 3) {

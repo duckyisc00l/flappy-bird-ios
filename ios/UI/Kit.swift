@@ -103,11 +103,12 @@ struct MkBtn: View {
             Text(t.uppercased()).font(K.kong(size)).foregroundColor(fg).underline(style == .link)
                 .shadow(color: style == .save ? Color(hex: 0x3f7a26) : .clear, radius: 0, x: 0, y: 1)
                 .frame(maxWidth: full ? .infinity : nil).padding(.vertical, pad).padding(.horizontal, full ? 0 : 9)
+                .padding(style == .link ? 0 : 2)
                 .background(ZStack(alignment: .bottom) {
                     RoundedRectangle(cornerRadius: 9).fill(bg)
                     if style != .link { RoundedRectangle(cornerRadius: 9).fill(sh).frame(height: 3).mask(RoundedRectangle(cornerRadius: 9).padding(.top, -20)) }
                 })
-                .overlay(RoundedRectangle(cornerRadius: 9).stroke(style == .link ? .clear : K.brown, lineWidth: 2))
+                .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(style == .link ? .clear : K.brown, lineWidth: 2))
                 .opacity(disabled ? 0.6 : 1)
         }.buttonStyle(PressStyle())
     }
@@ -123,8 +124,8 @@ struct Opt: View {
         Button(action: act) {
             Text(t.uppercased()).font(K.kong(size)).foregroundColor(on || warn ? .white : K.brown)
                 .frame(maxWidth: grow ? .infinity : nil)
-                .padding(.vertical, 6).padding(.horizontal, 8)
-                .background(Capsule().fill(warn ? K.red : on ? K.orange : K.light)).overlay(Capsule().stroke(K.brown, lineWidth: 2))
+                .padding(.vertical, 6).padding(.horizontal, 8).padding(2)
+                .background(Capsule().fill(warn ? K.red : on ? K.orange : K.light)).overlay(Capsule().strokeBorder(K.brown, lineWidth: 2))
         }.buttonStyle(PressStyle(scale: 0.95, dy: 0))
     }
 }
@@ -176,8 +177,8 @@ struct Field: View {
             .textContentType(content)
             .onSubmit { submit?() }
         }
-        .padding(.vertical, 5).padding(.horizontal, 9)
-        .background(RoundedRectangle(cornerRadius: 8).fill(K.input)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 2))
+        .padding(.vertical, 5).padding(.horizontal, 9).padding(2)
+        .background(RoundedRectangle(cornerRadius: 8).fill(K.input)).overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(K.brown, lineWidth: 2))
         .padding(.bottom, 6)
     }
 }
@@ -193,8 +194,8 @@ struct CodeBox: View {
                 TextEditor(text: $text).font(.system(size: 16, design: .monospaced)).foregroundColor(K.brown).autocorrectionDisabled().textInputAutocapitalization(.never)
             }
         }
-        .padding(7).frame(height: lines * 15 + 14)
-        .background(RoundedRectangle(cornerRadius: 8).fill(K.input)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 2))
+        .padding(7).frame(height: lines * 15 + 14).padding(2)
+        .background(RoundedRectangle(cornerRadius: 8).fill(K.input)).overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(K.brown, lineWidth: 2))
         .padding(.bottom, 7)
     }
 }
@@ -214,7 +215,7 @@ struct Arrow: View { var body: some View { Text("\u{203A}").font(.system(size: 2
 
 /// the card every menu sits in (.pk-panel)
 struct PanelCard<C: View>: View {
-    let title: String; var back: (() -> Void)?; var compact = false; let close: () -> Void
+    let title: String; var back: (() -> Void)?; var compact = false; var fill = false; let close: () -> Void
     @ViewBuilder var content: C
     var body: some View {
         VStack(spacing: 0) {
@@ -223,15 +224,15 @@ struct PanelCard<C: View>: View {
                 OutlinedTitle(t: title, size: 22).frame(maxWidth: .infinity, alignment: .leading)
                 HeadBtn(t: "\u{2715}", act: close)
             }.padding(.bottom, 7)
-            content
+            if fill { content.frame(maxHeight: .infinity, alignment: .top) } else { content }
         }
-        .padding(9)
+        .padding(9).padding(3)
         .background(ZStack {
             RoundedRectangle(cornerRadius: 10).fill(K.panel)
             VStack { K.light.frame(height: 3); Spacer(); K.line.frame(height: 3) }.clipShape(RoundedRectangle(cornerRadius: 10))
         })
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(K.brown, lineWidth: 3))
-        .shadow(color: .black.opacity(0.28), radius: 0, x: 0, y: 6)
+        .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(K.brown, lineWidth: 3))
+        .compositingGroup().shadow(color: .black.opacity(0.28), radius: 0, x: 0, y: 6)
     }
 }
 struct HeadBtn: View { let t: String; var big = false; let act: () -> Void
@@ -247,8 +248,9 @@ struct HeadBtn: View { let t: String; var big = false; let act: () -> Void
 /// a tile border like .pk-cell / .fg-row
 extension View {
     func tile(_ sel: Bool, radius: CGFloat = 7, border: CGFloat = 2, bg: Color = K.light) -> some View {
-        self.background(RoundedRectangle(cornerRadius: radius).fill(sel ? K.cream : bg))
-            .overlay(RoundedRectangle(cornerRadius: radius).stroke(sel ? K.orange : K.line, lineWidth: border))
-            .overlay(RoundedRectangle(cornerRadius: radius + 2).stroke(sel ? K.orange : .clear, lineWidth: 2).padding(-2))
+        // like CSS: the border takes its own space inside the box; the selected ring is a 1px box-shadow outside it
+        self.padding(border).background(RoundedRectangle(cornerRadius: radius).fill(sel ? K.cream : bg))
+            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(sel ? K.orange : K.line, lineWidth: border))
+            .overlay(RoundedRectangle(cornerRadius: radius + 1).strokeBorder(sel ? K.orange : .clear, lineWidth: 1).padding(-1))
     }
 }

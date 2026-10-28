@@ -63,8 +63,8 @@ struct FriendsPage: View {
             Sec(t: "Share your best run (\(mi.title))", top: 6)
             if best > 0 {
                 Note(t: "Your best \(mi.title) run: \(best). Send this link to a friend. They tap it and race your ghost on the same pipes.")
-                Text(link).font(K.kong(8)).foregroundColor(K.brown).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 7).padding(.horizontal, 9)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(K.input)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 2)).padding(.bottom, 5)
+                Text(link).font(K.kong(8)).foregroundColor(K.brown).lineLimit(1).frame(maxWidth: .infinity, alignment: .leading).padding(.vertical, 7).padding(.horizontal, 9).padding(2)
+                    .background(RoundedRectangle(cornerRadius: 8).fill(K.input)).overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(K.brown, lineWidth: 2)).padding(.bottom, 5)
                 MkBtn(linkErr ? "Try again" : copied ? "Link copied!" : "Share link", .save) {
                     if link.hasPrefix("http") { playSound("swoosh"); share(["Race my Flappy Bird ghost! I got \(best) in \(mi.title). Tap to race me:\n" + link]) } else { makeLink() }
                 }
@@ -81,7 +81,7 @@ struct FriendsPage: View {
                             PixImage(img: skinCanvas(skinExists(f.skin) ? f.skin : "yellow", 2), w: 36, h: 30, bg: K.sky, radius: 4)
                             VStack(alignment: .leading, spacing: 3) { KT(f.name, 8, K.orange, lines: 1); KT(modeInfo(f.m).title + " - \(f.score)" + (f.duel != nil ? " - duel round \(f.round ?? 1)" : ""), 6) }.frame(maxWidth: .infinity, alignment: .leading)
                             Button { setRace(f.id == raceId ? nil : f.id); playSound("swoosh"); haptic(); showPage("friends") } label: {
-                                KT(f.id == raceId ? "Racing" : "Race", 7, f.id == raceId ? .white : K.brown).padding(.vertical, 6).padding(.horizontal, 8).background(RoundedRectangle(cornerRadius: 9).fill(f.id == raceId ? Color(hex: 0x78d850) : K.light)).overlay(RoundedRectangle(cornerRadius: 9).stroke(K.brown, lineWidth: 2))
+                                KT(f.id == raceId ? "Racing" : "Race", 7, f.id == raceId ? .white : K.brown).padding(.vertical, 6).padding(.horizontal, 8).padding(2).background(RoundedRectangle(cornerRadius: 9).fill(f.id == raceId ? Color(hex: 0x78d850) : K.light)).overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(K.brown, lineWidth: 2))
                             }.buttonStyle(.plain)
                             Button { friendList.removeAll { $0.id == f.id }; if raceId == f.id { setRace(nil) }; saveFriends(); playSound("swoosh"); showPage("friends") } label: {
                                 Text("\u{2715}").font(.system(size: 11)).foregroundColor(K.brown).frame(width: 24, height: 24).background(RoundedRectangle(cornerRadius: 6).fill(.white)).overlay(RoundedRectangle(cornerRadius: 6).stroke(K.brown, lineWidth: 2))
@@ -157,7 +157,7 @@ struct LeadersPage: View {
             Flow(spacing: 4, center: true) {
                 ForEach(LB_MODES, id: \.self) { m in
                     Button { lbMode = m; playSound("swoosh"); showPage("leaders") } label: {
-                        KT(modeInfo(m).title, 7, m == lbMode ? .white : K.brown).padding(.vertical, 6).padding(.horizontal, 8).background(Capsule().fill(m == lbMode ? K.orange : K.light)).overlay(Capsule().stroke(K.brown, lineWidth: 2))
+                        KT(modeInfo(m).title, 7, m == lbMode ? .white : K.brown).padding(.vertical, 6).padding(.horizontal, 8).padding(2).background(Capsule().fill(m == lbMode ? K.orange : K.light)).overlay(Capsule().strokeBorder(K.brown, lineWidth: 2))
                     }.buttonStyle(.plain)
                 }
             }.padding(.bottom, 6)
@@ -197,8 +197,8 @@ struct LeadersPage: View {
                 Text("\(Int(num(r["score"]) ?? 0))").font(K.kong(11)).foregroundColor(K.brown).padding(.trailing, 2)
                 Button { watchBest(uid, lbMode, name) } label: { Text("\u{25B6}").font(.system(size: 9)).foregroundColor(.white).padding(.leading, 2).frame(width: 22, height: 22).background(Circle().fill(K.brown)) }.buttonStyle(.plain).padding(.leading, 8)
             }
-            .padding(.vertical, 2).padding(.horizontal, 6)
-            .background(RoundedRectangle(cornerRadius: 7).fill(bg)).overlay(RoundedRectangle(cornerRadius: 7).stroke(me ? K.orange : K.line, lineWidth: 2))
+            .padding(.vertical, 2).padding(.horizontal, 6).padding(2)
+            .background(RoundedRectangle(cornerRadius: 7).fill(bg)).overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(me ? K.orange : K.line, lineWidth: 2))
         }.buttonStyle(.plain)
     }
 }
@@ -504,8 +504,8 @@ struct ProfilePage: View {
                                 Avatar(av: v.other["avatar"] as? String, bg: v.other["avatar_bg"] as? String, w: 30, h: 25)
                                 VStack(alignment: .leading, spacing: 2) { KT("\(res) vs \(v.other["username"] as? String ?? "")", 7, lines: 1); KT((v.kind == "live" ? "Live" : "Race") + " - " + modeInfo(v.mode).title + " - " + agoText(v.at), 6).opacity(0.7) }.frame(maxWidth: .infinity, alignment: .leading)
                                 Text("\(v.my) : \(v.their)").font(K.kong(10)).foregroundColor(K.brown)
-                            }.padding(.vertical, 3).padding(.horizontal, 7)
-                                .background(RoundedRectangle(cornerRadius: 7).fill(K.light)).overlay(RoundedRectangle(cornerRadius: 7).stroke(K.line, lineWidth: 2))
+                            }.padding(.vertical, 3).padding(.horizontal, 7).padding(2)
+                                .background(RoundedRectangle(cornerRadius: 7).fill(K.light)).overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(K.line, lineWidth: 2))
                                 .overlay(alignment: .leading) { col.frame(width: 5).clipShape(RoundedRectangle(cornerRadius: 2)) }
                         }.buttonStyle(.plain)
                     }
@@ -708,8 +708,8 @@ struct PalsPage: View {
                                     KT((Int(num(g["round"]) ?? 1) > 1 ? "replied" : "sent a race") + " - " + modeInfo(g["mode"] as? String ?? "normal").title + " - beat \(Int(num(g["score"]) ?? 0)) - " + agoText(g["created_at"] as? String ?? ""), 6).opacity(0.8)
                                 }.frame(maxWidth: .infinity, alignment: .leading)
                                 KT(fresh ? "Race!" : "Again", 7, .white).padding(.vertical, 6).padding(.horizontal, 7).background(RoundedRectangle(cornerRadius: 7).fill(Color(hex: 0x9b6bd6)))
-                            }.padding(.vertical, 4).padding(.horizontal, 8)
-                                .background(RoundedRectangle(cornerRadius: 9).fill(fresh ? Color(hex: 0xf3e8ff) : K.light)).overlay(RoundedRectangle(cornerRadius: 9).stroke(fresh ? Color(hex: 0x9b6bd6) : K.line, lineWidth: 2))
+                            }.padding(.vertical, 4).padding(.horizontal, 8).padding(2)
+                                .background(RoundedRectangle(cornerRadius: 9).fill(fresh ? Color(hex: 0xf3e8ff) : K.light)).overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(fresh ? Color(hex: 0x9b6bd6) : K.line, lineWidth: 2))
                         }.buttonStyle(.plain).padding(.bottom, 4)
                     }
                 }
@@ -774,7 +774,7 @@ struct AvatarPage: View {
                 ForEach(Array(pool.prefix(shown)), id: \.self) { id in
                     Button { pickId = id; avPick = id; playSound("swoosh") } label: {
                         PixImage(img: skinCanvas(id, 2), w: 48, h: 40).frame(maxWidth: .infinity).aspectRatio(6.0 / 5.0, contentMode: .fit)
-                            .padding(2).background(RoundedRectangle(cornerRadius: 7).fill(K.sky)).overlay(RoundedRectangle(cornerRadius: 7).stroke(id == pickId ? K.orange : K.line, lineWidth: 2))
+                            .padding(2).padding(2).background(RoundedRectangle(cornerRadius: 7).fill(K.sky)).overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(id == pickId ? K.orange : K.line, lineWidth: 2))
                     }.buttonStyle(.plain)
                 }
             }
@@ -887,7 +887,7 @@ struct PartyController: View {
                     TextField("Your name", text: Binding(get: { accSignedIn() ? partyName() : nick }, set: { v in nick = String(v.filter { $0.isLetter || $0.isNumber || " .-!'_".contains($0) }.prefix(14)); PARTY.nick = nick; saveStr("partyNick", nick) }))
                         .disabled(accSignedIn()).font(K.kong(16)).textInputAutocapitalization(.characters).foregroundColor(K.brown)
                         .onSubmit { partyHello() }
-                        .padding(.vertical, 9).padding(.horizontal, 10).background(RoundedRectangle(cornerRadius: 10).fill(K.cream)).overlay(RoundedRectangle(cornerRadius: 10).stroke(K.brown, lineWidth: 3))
+                        .padding(.vertical, 9).padding(.horizontal, 10).padding(3).background(RoundedRectangle(cornerRadius: 10).fill(K.cream)).overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(K.brown, lineWidth: 3))
                     Button { leaveParty() } label: { Text("\u{2715}").font(.system(size: 18)).foregroundColor(.white).frame(width: 46, height: 46).background(RoundedRectangle(cornerRadius: 12).fill(K.orange)).overlay(RoundedRectangle(cornerRadius: 12).stroke(K.brown, lineWidth: 3)) }.buttonStyle(.plain)
                 }
                 KT(status, 10, .white, shadow: K.brown, align: .center).padding(.top, 12).padding(.bottom, 10)
@@ -910,7 +910,7 @@ struct PartyController: View {
                     ForEach(Array(((st?["pl"] as? [[String: Any]]) ?? []).enumerated()), id: \.offset) { _, p in
                         let mine = (p["id"] as? String) == PARTY.id
                         HStack(spacing: 8) { KT(p["name"] as? String ?? "", 8, mine ? .white : K.brown); if (st?["s"] as? String) != "lobby" { Text("\(Int(num(p["score"]) ?? 0))").font(K.kong(10)).foregroundColor(mine ? .white : K.brown) } }
-                            .padding(.vertical, 5).padding(.horizontal, 8).background(RoundedRectangle(cornerRadius: 8).fill(mine ? K.orange : K.cream)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 2))
+                            .padding(.vertical, 5).padding(.horizontal, 8).padding(2).background(RoundedRectangle(cornerRadius: 8).fill(mine ? K.orange : K.cream)).overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(K.brown, lineWidth: 2))
                     }
                 }.frame(maxHeight: 92).clipped().padding(.top, 10)
             }

@@ -59,31 +59,36 @@ struct MenuLayer: View {
             page(kind)
                 .id(PK.tok)
                 .frame(width: min(size.width * (kind == "settings" ? 0.78 : 0.8), kind == "settings" ? 300 : 310))
-                .frame(maxHeight: maxH(kind))
+                .frame(minHeight: fixedH(kind) ? maxH(kind) : nil, maxHeight: maxH(kind))
                 .scaleEffect(shown ? 1 : 0.92).offset(y: shown ? 0 : 24).opacity(shown ? 1 : 0)
         }
         .onAppear { withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) { shown = true } }
     }
+    /// the website's .pk-panel heights (picker95.css): % of the whole screen, never more than the screen minus 40px and the safe areas
     func maxH(_ k: String) -> CGFloat {
-        let H = size.height - safe.top - safe.bottom
+        let V = size.height, cap = V - 40 - safe.top - safe.bottom
+        let v: CGFloat
         switch k {
-        case "birds", "trails": return min(H * 0.68, 560)
-        case "modes": return min(H * 0.72, 600)
-        case "weather": return H * 0.8
-        case "leaders", "challenge", "live": return min(H * 0.74, 620)
-        case "friends": return min(H * 0.78, 640)
-        case "account", "profile", "twofa", "email", "newpass", "notify", "partycode", "tvapprove": return min(H * 0.8, 660)
-        case "pals", "avatar": return min(H * 0.84, 700)
-        case "maker": return H * 0.92
-        case "dev": return H * 0.86
-        case "replay": return H * 0.9
-        default: return H - 40
+        case "birds", "trails": v = min(V * 0.68, 560)
+        case "modes": v = min(V * 0.72, 600)
+        case "weather": v = V * 0.8
+        case "leaders", "challenge", "live": v = min(V * 0.74, 620)
+        case "friends": v = min(V * 0.78, 640)
+        case "account", "profile", "twofa", "email", "newpass": v = min(V * 0.8, 660)
+        case "pals", "avatar": v = min(V * 0.84, 700)
+        case "maker": v = V * 0.92
+        case "dev": v = V * 0.86
+        case "replay": v = V * 0.9
+        default: v = cap
         }
+        return min(v, cap)
     }
+    /// these pages are always that tall (height, not max-height, on the website)
+    func fixedH(_ k: String) -> Bool { ["birds", "trails", "leaders", "challenge", "live"].contains(k) }
     @ViewBuilder func page(_ k: String) -> some View {
         let back = backTarget(k)
         let backAct: (() -> Void)? = back == nil ? nil : { playSound("swoosh"); PK.from[k] = nil; showPage(back!) }
-        PanelCard(title: PAGE_TITLES[k] ?? "", back: backAct, close: closePicker) {
+        PanelCard(title: PAGE_TITLES[k] ?? "", back: backAct, fill: fixedH(k), close: closePicker) {
             switch k {
             case "settings": SettingsPage()
             case "birds": BirdsPage()
@@ -141,8 +146,8 @@ struct InviteBanner: View {
                 MkBtn("Join", .save, full: false) { UIBridge.shared.invite = nil; playSound("swoosh"); joinLive(inv.room); if PK.open { showPage("live") } else { openSheet("live") } }.fixedSize()
                 MkBtn("Not now", full: false) { UIBridge.shared.invite = nil; rtSend(inv.uid, ["t": "no", "room": inv.room]) }.fixedSize()
             }
-            .padding(7).background(RoundedRectangle(cornerRadius: 12).fill(K.cream)).overlay(RoundedRectangle(cornerRadius: 12).stroke(K.brown, lineWidth: 3))
-            .shadow(color: .black.opacity(0.25), radius: 0, x: 0, y: 6)
+            .padding(7).padding(3).background(RoundedRectangle(cornerRadius: 12).fill(K.cream)).overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(K.brown, lineWidth: 3))
+            .compositingGroup().shadow(color: .black.opacity(0.25), radius: 0, x: 0, y: 6)
             .frame(maxWidth: 380).padding(.horizontal, 16).padding(.top, top + 10)
             Spacer()
         }
@@ -157,8 +162,8 @@ struct UpdateBanner: View {
                 VStack(alignment: .leading, spacing: 2) { KT("New version \(v) is out!", 9, K.orange); KT(note, 6, spacing: 3) }.frame(maxWidth: .infinity, alignment: .leading)
                 MkBtn("OK", .save, full: false) { UIBridge.shared.update = nil }.fixedSize()
             }
-            .padding(9).background(RoundedRectangle(cornerRadius: 12).fill(K.cream)).overlay(RoundedRectangle(cornerRadius: 12).stroke(K.brown, lineWidth: 3))
-            .shadow(color: .black.opacity(0.25), radius: 0, x: 0, y: 6)
+            .padding(9).padding(3).background(RoundedRectangle(cornerRadius: 12).fill(K.cream)).overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(K.brown, lineWidth: 3))
+            .compositingGroup().shadow(color: .black.opacity(0.25), radius: 0, x: 0, y: 6)
             .frame(maxWidth: 420).padding(.horizontal, 12).padding(.bottom, bottom + 14)
         }
     }
