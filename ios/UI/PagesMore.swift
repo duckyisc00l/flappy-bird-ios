@@ -323,7 +323,7 @@ struct CardPage: View {
 struct CardBtn: View { let title: String; let sub: String; var green = false; let act: () -> Void
     var body: some View {
         Button(action: act) {
-            VStack(spacing: 3) { KT(title, 9, .white, upper: false, align: .center).shadow(color: green ? Color(hex: 0x3a7a2a) : Color(hex: 0x4a3a90), radius: 0, x: 0, y: 2); KT(sub, 6, .white, align: .center).opacity(0.9) }
+            VStack(spacing: 3) { KT(title, 9, .white, align: .center).shadow(color: green ? Color(hex: 0x3a7a2a) : Color(hex: 0x4a3a90), radius: 0, x: 0, y: 2); KT(sub, 6, .white, align: .center).opacity(0.9) }
                 .frame(maxWidth: .infinity).padding(.vertical, 7).padding(.horizontal, 8)
                 .background(ZStack(alignment: .bottom) { RoundedRectangle(cornerRadius: 9).fill(green ? Color(hex: 0x78d850) : Color(hex: 0x8a7ae0)); (green ? Color(hex: 0x4aa83a) : Color(hex: 0x6a5ac0)).frame(height: 3) }.clipShape(RoundedRectangle(cornerRadius: 9)))
                 .overlay(RoundedRectangle(cornerRadius: 9).stroke(K.brown, lineWidth: 2))

@@ -55,11 +55,14 @@ struct FriendsPage: View {
     @State private var copied = false
     @State private var room = ""
     @State private var liveMsg = ""
+    @State private var name = playerName
     var body: some View {
         _ = ui.tick
         let mi = modeInfo(), best = ghostScore(gameMode)
         return Scroll {
-            AccBar()
+            // like the website: your name (shown over your ghost) at the top
+            Sec(t: "Your name")
+            Field(ph: "Shown over your ghost", text: Binding(get: { name }, set: { v in name = String(v.prefix(14)); playerName = name; saveStr("playerName", playerName) }))
             Sec(t: "Share your best run (\(mi.title))", top: 6)
             if best > 0 {
                 Note(t: "Your best \(mi.title) run: \(best). Send this link to a friend. They tap it and race your ghost on the same pipes.")

@@ -167,7 +167,7 @@ struct Field: View {
     let ph: String; @Binding var text: String; var secure = false; var size: CGFloat = 16; var center = false; var kerning: CGFloat = 0; var caps = false; var numeric = false; var content: UITextContentType? = nil; var submit: (() -> Void)? = nil
     var body: some View {
         ZStack(alignment: center ? .center : .leading) {
-            if text.isEmpty { Text(ph).font(K.kong(10)).foregroundColor(K.placeholder) }
+            if text.isEmpty { Text(ph).font(K.kong(10)).kerning(kerning).foregroundColor(K.placeholder) }
             Group {
                 if secure { SecureField("", text: $text) } else { TextField("", text: $text) }
             }
@@ -190,8 +190,9 @@ struct CodeBox: View {
             if readOnly {
                 ScrollView { Text(text).font(.system(size: size, design: .monospaced)).foregroundColor(K.brown).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled) }
             } else {
-                if text.isEmpty { Text(ph).font(.system(size: 16, design: .monospaced)).foregroundColor(K.placeholder).padding(.top, 8).padding(.leading, 4) }
                 TextEditor(text: $text).font(.system(size: 16, design: .monospaced)).foregroundColor(K.brown).autocorrectionDisabled().textInputAutocapitalization(.never)
+                    .scrollContentBackground(.hidden)
+                if text.isEmpty { Text(ph).font(.system(size: 16, design: .monospaced)).foregroundColor(K.placeholder).padding(.top, 8).padding(.leading, 5).allowsHitTesting(false) }
             }
         }
         .padding(7).frame(height: lines * 15 + 14).padding(2)
