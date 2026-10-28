@@ -64,8 +64,13 @@ struct LeaderboardView: View {
 struct AccountView: View {
     @EnvironmentObject var g: GameModel
     @State private var tab = 0          // 0 sign in, 1 create, 2 forgot
-    @State private var user = "", pass = "", email = "", code = ""
-    @State private var msg = "", ok = false, busy = false
+    @State private var user = ""
+    @State private var pass = ""
+    @State private var email = ""
+    @State private var code = ""
+    @State private var msg = ""
+    @State private var ok = false
+    @State private var busy = false
     var body: some View {
         let a = Account.shared
         Panel(title: a.signedIn ? "Profile" : "Account", onClose: { g.sheet = nil }) {
