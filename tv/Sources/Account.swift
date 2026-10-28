@@ -136,11 +136,16 @@ final class Account {
             let key = "sent_" + s.userId + "_" + mode
             guard score > 0, score > UserDefaults.standard.integer(forKey: key) else { return }
             self.request("/rest/v1/scores", body: ["name": s.username, "mode": mode, "score": score, "bird": String(bird.prefix(40)),
-                                                   "device": "appletv-" + Self.deviceId, "user_id": s.userId], token: t) { st, _ in
+                                                   "device": Self.devicePrefix + Self.deviceId, "user_id": s.userId], token: t) { st, _ in
                 if st >= 200 && st < 300 { UserDefaults.standard.set(score, forKey: key) }
             }
         }
     }
+    #if os(tvOS)
+    static let devicePrefix = "appletv-"
+    #else
+    static let devicePrefix = "ios-"
+    #endif
     static var deviceId: String {
         if let d = UserDefaults.standard.string(forKey: "deviceId") { return d }
         let d = UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(16).lowercased()
@@ -151,3 +156,89 @@ final class Account {
 }
 
 extension Notification.Name { static let accountChanged = Notification.Name("accountChanged") }
+
+// MARK: - typing your username + password (the iPhone app; the TV signs in with your phone instead)
+extension Account {
+    static let mailDomain = "@players.flappybird.app"
+    static let site = "https://duckyisc00l.github.io/flappy-bird/"
+
+    /// a friendly message from an auth error
+    private func authMessage(_ obj: Any?, _ fallback: String) -> String {
+        let o = obj as? [String: Any]
+        let m = (o?["msg"] as? String) ?? (o?["error_description"] as? String) ?? (o?["message"] as? String) ?? ""
+        let code = (o?["error_code"] as? String) ?? (o?["code"] as? String) ?? ""
+        if m.range(of: "invalid login credentials", options: .caseInsensitive) != nil { return "Wrong username or password" }
+        if (m + code).range(of: "weak_password|password should be", options: [.regularExpression, .caseInsensitive]) != nil { return "Pick a longer password (8+ letters)" }
+        if (m + code).range(of: "already registered|user_already_exists|email_exists", options: [.regularExpression, .caseInsensitive]) != nil { return "That email is already used by another account" }
+        if (m + code).range(of: "rate limit|over_.*_rate", options: [.regularExpression, .caseInsensitive]) != nil { return "Too many tries. Wait a minute and try again" }
+        return m.isEmpty ? fallback : m
+    }
+    private func validName(_ u: String) -> Bool { u.range(of: "^[A-Za-z0-9_]{3,14}$", options: .regularExpression) != nil }
+
+    /// username -> the email the account signs in with (username-only accounts use username@players.flappybird.app)
+    private func resolveEmail(_ user: String, done: @escaping (String?, String?) -> Void) {
+        let u = user.trimmingCharacters(in: .whitespaces)
+        if u.contains("@") { return done(u, nil) }
+        guard validName(u) else { return done(nil, "Usernames are 3-14 letters, numbers or _") }
+        request("/rest/v1/profiles?select=email_login&handle=eq.\(u.lowercased())", method: "GET", body: nil) { st, obj in
+            guard st == 200, let rows = obj as? [[String: Any]] else { return done(nil, "Couldn't reach the server. Check the internet") }
+            guard let r = rows.first else { return done(nil, "No player called \(u)") }
+            if r["email_login"] as? Bool == true { return done(nil, "This account signs in with its email. Type your email instead") }
+            done(u.lowercased() + Self.mailDomain, nil)
+        }
+    }
+    private func fetchUsername(_ uid: String, token: String, done: @escaping (String) -> Void) {
+        request("/rest/v1/profiles?select=username&id=eq.\(uid)", method: "GET", body: nil, token: token) { _, obj in
+            done(((obj as? [[String: Any]])?.first?["username"] as? String) ?? "")
+        }
+    }
+    /// sign in; done(nil) = signed in (check session.needCode for 2FA), done(message) = a problem
+    func signIn(user: String, password: String, done: @escaping (String?) -> Void) {
+        guard !user.isEmpty, !password.isEmpty else { return done("Type your username and password") }
+        resolveEmail(user) { [weak self] email, err in
+            guard let self = self, let email = email else { return done(err) }
+            self.request("/auth/v1/token?grant_type=password", body: ["email": email, "password": password]) { st, obj in
+                guard st == 200, let s = obj as? [String: Any], let tok = s["access_token"] as? String else { return done(self.authMessage(obj, "Wrong username or password")) }
+                let uid = ((s["user"] as? [String: Any])?["id"] as? String) ?? ""
+                self.fetchUsername(uid, token: tok) { name in
+                    self.session = nil
+                    guard self.take(s, username: name) else { return done("The sign-in didn't work. Try again") }
+                    self.checkTwoFactor { done(nil) }
+                }
+            }
+        }
+    }
+    /// create an account (the email is optional: with one you can reset a forgotten password)
+    func signUp(username: String, password: String, email: String, done: @escaping (String?) -> Void) {
+        let u = username.trimmingCharacters(in: .whitespaces), e = email.trimmingCharacters(in: .whitespaces)
+        guard validName(u) else { return done("Usernames are 3-14 letters, numbers or _") }
+        guard password.count >= 8 else { return done("Pick a longer password (8+ letters)") }
+        if !e.isEmpty && e.range(of: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", options: .regularExpression) == nil { return done("That email doesn't look right") }
+        request("/rest/v1/profiles?select=id&handle=eq.\(u.lowercased())", method: "GET", body: nil) { [weak self] st, obj in
+            guard let self = self else { return }
+            if let rows = obj as? [[String: Any]], !rows.isEmpty { return done("That username is taken") }
+            let body: [String: Any] = ["email": e.isEmpty ? u.lowercased() + Self.mailDomain : e, "password": password,
+                                       "data": ["username": u, "email_login": !e.isEmpty]]
+            self.request("/auth/v1/signup?redirect_to=" + (Self.site.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""), body: body) { st, obj in
+                guard st == 200, let s = obj as? [String: Any] else { return done(self.authMessage(obj, "Couldn't make the account")) }
+                if s["access_token"] == nil { return done("Almost done! Open the link we emailed you, then sign in.") }
+                self.session = nil
+                guard self.take(s, username: u) else { return done("Couldn't make the account") }
+                done(nil)
+            }
+        }
+    }
+    /// forgot your password: a link by email
+    func recover(email: String, done: @escaping (String?) -> Void) {
+        let e = email.trimmingCharacters(in: .whitespaces)
+        guard e.range(of: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", options: .regularExpression) != nil else { return done("That email doesn't look right") }
+        request("/auth/v1/recover?redirect_to=" + (Self.site.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""), body: ["email": e]) { st, obj in
+            done(st == 200 ? nil : self.authMessage(obj, "Couldn't send the email"))
+        }
+    }
+    /// a database call as you (signed in) or as a guest
+    func rest(_ path: String, method: String = "GET", body: [String: Any]? = nil, prefer: String? = nil, done: @escaping (Int, Any?) -> Void) {
+        let go: (String?) -> Void = { t in self.request("/rest/v1/" + path, method: method, body: body, token: t, done: done) }
+        if signedIn { withToken { go($0) } } else { go(nil) }
+    }
+}

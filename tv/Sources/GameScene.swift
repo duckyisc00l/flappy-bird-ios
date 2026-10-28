@@ -64,7 +64,11 @@ final class GameScene: SKScene {
     private var streaks: [(node: SKShapeNode, vy: CGFloat)] = []
     private lazy var logo = sprite("flappybird", 1.5, CGPoint(x: W / 2, y: H / 2 + 200))
     private lazy var getReady = sprite("get-ready", 1.2, CGPoint(x: W / 2, y: H / 2 + 130))
-    private lazy var tapTap = sprite("pressremote", 1.5, CGPoint(x: W / 2, y: H / 2))
+    #if os(tvOS)
+    private lazy var tapTap = sprite("pressremote", 1.5, CGPoint(x: W / 2, y: H / 2))   // PRESS + the remote
+    #else
+    private lazy var tapTap = sprite("taptap", 1.5, CGPoint(x: W / 2, y: H / 2))
+    #endif
     private lazy var gameOverNode = sprite("gameover", 1.5, CGPoint(x: W / 2, y: H / 2 + 210))
     private lazy var board = ScoreBoard(atlas: atlas)
     private let modeTag = SKLabelNode(fontNamed: "KongtextRegular")
@@ -75,7 +79,15 @@ final class GameScene: SKScene {
     /// (drawn at 1.5x, 2x, 3x) covers a whole number of pixels on a 1080p or 4K TV. Before, they were 5.6 / 7.5 pixels
     /// wide on 4K, so neighbouring pixels came out different sizes and shimmered while scrolling.
     private let cam = SKCameraNode()
-    private func aimCamera() { cam.setScale(0.9375); cam.position = CGPoint(x: 512, y: mode == "flipped" && dynamic ? 366 : 402) }
+    private func aimCamera() {
+        #if os(tvOS)
+        cam.setScale(0.9375); cam.position = CGPoint(x: 512, y: mode == "flipped" && dynamic ? 366 : 402)
+        #else
+        cam.setScale(1); cam.position = CGPoint(x: W / 2, y: H / 2)   // iPhone: the whole height, a slice of the width (like the original)
+        #endif
+    }
+    /// "flap", "point", "crash" (the iPhone plays haptics for them)
+    var onEvent: ((String) -> Void)?
 
     // sounds
     private let sWing = SKAction.playSoundFileNamed("sfx_wing.caf", waitForCompletion: false)
@@ -206,6 +218,9 @@ final class GameScene: SKScene {
     }
 
     // MARK: input
+    #if os(iOS)
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) { primaryAction() }   // tap anywhere to flap
+    #endif
     /// a click on the remote, a tap on its touch surface, or the A button on a controller
     func primaryAction() {
         switch phase {
@@ -220,7 +235,7 @@ final class GameScene: SKScene {
         lastFlap = time
         rot = flapRotation
         vy = flapImpulse / birdMass
-        sound(sWing)
+        sound(sWing); onEvent?("flap")
         trail.flap(birdX, birdY)
     }
 
@@ -363,7 +378,7 @@ final class GameScene: SKScene {
     private func addPoint() {
         score += 1
         trail.point(birdX, birdY)
-        sound(sPoint); Rumble.point()
+        sound(sPoint); Rumble.point(); onEvent?("point")
         for l in [scoreLabel, scoreInside] { l.run(.sequence([.scale(to: 1.5, duration: 0.1), .scale(to: 1, duration: 0.1)])) }
     }
 
@@ -374,7 +389,7 @@ final class GameScene: SKScene {
         phase = .dying
         flash.size = size; flash.run(.sequence([.fadeAlpha(to: 0.9, duration: 0.1), .fadeAlpha(to: 0, duration: 0.25)]))
         landOnly = true
-        sound(sHit); Rumble.crash()
+        sound(sHit); Rumble.crash(); onEvent?("crash")
         run(.sequence([.wait(forDuration: 0.2), .run { [weak self] in if let s = self { s.sound(s.sDie) } }]))
         gameOverNode.isHidden = false; gameOverNode.setScale(0)
         run(.sequence([.wait(forDuration: 0.1), .run { [weak self] in

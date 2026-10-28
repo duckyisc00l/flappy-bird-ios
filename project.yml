@@ -8,19 +8,31 @@ targets:
     type: application
     platform: iOS
     sources:
-      - path: App
-        excludes:
-          - "web/**"
-          - "Info.plist"
-      - path: App/web
+      - path: ios/Sources                 # the iPhone screens (SwiftUI)
+      - path: tv/Sources/GameScene.swift   # the game itself, shared with the Apple TV app
+      - path: tv/Sources/Birds.swift
+      - path: tv/Sources/Trails.swift
+      - path: tv/Sources/Seasons.swift
+      - path: tv/Sources/Prefs.swift
+      - path: tv/Sources/Online.swift
+      - path: tv/Sources/Account.swift
+      - path: tv/Sources/Realtime.swift
+      - path: tv/Sources/Rumble.swift
+      - path: App/Assets.xcassets          # app icon + the game's sprites
+      - path: tv/Resources/sounds
+      - path: tv/Resources/fonts
+      - path: tv/Resources/birds
+        type: folder
+        buildPhase: resources
+      - path: tv/Resources/season
         type: folder
         buildPhase: resources
     info:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Flappy Bird
-        CFBundleShortVersionString: "5.3"
-        CFBundleVersion: "148"
+        CFBundleShortVersionString: "6.0"
+        CFBundleVersion: "149"
         UILaunchScreen:
           UIColorName: ""
         UIRequiresFullScreen: true
@@ -31,9 +43,7 @@ targets:
         UISupportedInterfaceOrientations~ipad:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
-        NSPhotoLibraryAddUsageDescription: Save your score cards and replays to Photos.
+        UIAppFonts: [inside.ttf, outside.ttf, pixel.ttf]
         ITSAppUsesNonExemptEncryption: false
     settings:
       base:
