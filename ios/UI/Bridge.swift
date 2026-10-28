@@ -47,7 +47,9 @@ func openSheet(_ kind: String) {
     showPage(kind)
 }
 func openPicker(_ kind: String) { openSheet(kind) }
-func showPage(_ kind: String) {
+func showPage(_ kind0: String) {
+    // the signed-in-only pages show the sign-in page when nobody is signed in (like the website)
+    let kind = !accSignedIn() && ["twofa", "email", "newpass", "pals", "avatar"].contains(kind0) ? "account" : kind0
     if PK.kind == "birds" { birdChanged() }
     if kind == "friends" { PK.friendsFromCard = PK.kind == "card" || (PK.kind == "friends" && PK.friendsFromCard) }
     PK.kind = kind; PK.tok += 1

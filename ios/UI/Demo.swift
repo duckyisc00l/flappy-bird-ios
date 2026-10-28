@@ -14,9 +14,9 @@ enum Demo {
         r = mulberry32(12345); say("mulberry 12345 \((0..<4).map { _ in r() })")
         at(2) { say("snap title") }
         for p in ["settings", "birds", "modes", "weather", "trails", "maker", "account", "leaders", "friends", "partycode", "dev", "avatar", "import"] {
-            at(1.2) { if p == "dev" { devMode = true }; openSheet(p) }
-            at(1.3) { say("snap \(p)") }
-            at(1.2) { closePicker() }
+            at(0.8) { if p == "dev" { devMode = true }; openSheet(p) }
+            at(1.0) { say("snap \(p)") }
+            at(3.0) { closePicker() }
         }
         at(1) { autoplay = true; handlePlayTap(); say("snap ready") }
         at(1.5) { say("snap play1") }
@@ -27,7 +27,7 @@ enum Demo {
         at(1.5) { say("snap over2") }
         at(1) { openSheet("card") }
         at(1.5) { say("snap card") }
-        at(1) { closePicker(); saveBool("autoplay", false); setGameMode("daily"); handlePlayTap() }
+        at(3) { closePicker(); saveBool("autoplay", false); setGameMode("daily"); handlePlayTap() }
         at(1.5) { say("snap daily") }
         at(0.5) { touchesBegan(0, 0) }
         at(0.6) { say("snap dailyplay") }
