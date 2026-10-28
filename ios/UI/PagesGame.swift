@@ -88,7 +88,7 @@ struct SettingsPage: View {
                 }
                 tile("weather", "Weather", wName) { PixImage(img: weatherIcon(), w: 36, h: 36) }
             }.padding(.bottom, 7)
-            ScrollView(showsIndicators: false) {
+            FitScroll {
                 VStack(spacing: 0) {
                     row("Account", trailing: AnyView(Arrow())) { playSound("swoosh"); haptic(); accGo(accSignedIn() ? "profile" : "account", accSignedIn() ? ACCT.uid : nil) }
                     row("Join a TV party", trailing: AnyView(Arrow())) { playSound("swoosh"); accGo("partycode") }
@@ -245,7 +245,7 @@ struct ModesPage: View {
     var body: some View {
         VStack(spacing: 0) {
             Note(t: "Every mode keeps its own best score and ghost. From 920 on, the ending always plays the normal way.")
-            ScrollView(showsIndicators: false) {
+            FitScroll {
                 VStack(spacing: 5) {
                     ForEach(MODES, id: \.id) { m in
                         Button {
@@ -279,7 +279,7 @@ struct WeatherPage: View {
         let sToday = seasonByDate(Date())
         func sName(_ id: String) -> String { SEASONS.first { $0.0 == id }!.2 }
         let status = "Today is " + sName(sToday) + ". Now showing: " + sName(WX.season) + ", " + (WEATHERS.first { $0.0 == WX.weather }?.2.lowercased() ?? "") + "."
-        return ScrollView(showsIndicators: false) {
+        return FitScroll {
             VStack(alignment: .leading, spacing: 0) {
                 Sec(t: "Weather")
                 Flow(spacing: 4) { ForEach(WEATHERS, id: \.0) { w in Opt(t: w.2, on: weatherPick == w.0) { weatherPick = w.0; saveStr("weather", w.0); haptic(); playSound("swoosh"); rollWeather(); tick += 1 } } }.padding(.bottom, 8)
@@ -309,7 +309,7 @@ struct TrailsPage: View {
     var body: some View {
         VStack(spacing: 0) {
             Note(t: "100 trails and effects. They follow you while you fly; some burst when you flap or score.")
-            ScrollView(showsIndicators: false) {
+            FitScroll {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 70), spacing: 4)], spacing: 4) {
                     tile("none", "None")
                     ForEach(Array(cats.enumerated()), id: \.offset) { _, c in

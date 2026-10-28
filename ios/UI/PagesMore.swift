@@ -19,7 +19,7 @@ struct MakerPage: View {
     private func frames() -> [Img] { (0..<3).map { buildCustomFrame($0, pal: pal, px: px) } }
     var body: some View {
         let fr = frames()
-        return ScrollView(showsIndicators: false) {
+        return FitScroll {
             VStack(spacing: 0) {
                 HStack(spacing: 8) {
                     TimelineView(.periodic(from: .now, by: 0.1)) { c in let n = Int(c.date.timeIntervalSinceReferenceDate * 10); PixImage(img: fr[[0, 1, 2, 1][n % 4]], w: 50, h: 48, bg: K.sky, radius: 7, border: K.brown) }
@@ -280,7 +280,7 @@ struct CardPage: View {
     @State private var reply: String? = nil
     var body: some View {
         let d = PK_CARD ?? cardSnapshot()
-        ScrollView(showsIndicators: false) {
+        FitScroll {
             VStack(spacing: 0) {
                 ZStack { if let c = card { Image(uiImage: c.ui).resizable().interpolation(.high).aspectRatio(1, contentMode: .fit) } else { K.sky } }
                     .frame(maxWidth: 280).aspectRatio(1, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 8)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 3))
@@ -340,7 +340,7 @@ struct DevPage: View {
     @State private var tick = 0
     var body: some View {
         _ = tick
-        return ScrollView(showsIndicators: false) {
+        return FitScroll {
             VStack(alignment: .leading, spacing: 0) {
                 Sec(t: "Jump to"); Hint(t: "Starts a game there (practice: best scores are not saved)")
                 Flow(spacing: 4) {
@@ -467,7 +467,7 @@ struct ReplayPage: View {
     @State private var saving = ""
     var body: some View {
         if m.frames.count < 2 { Note(t: "Play a round first.") } else {
-            ScrollView(showsIndicators: false) {
+            FitScroll {
                 VStack(spacing: 0) {
                     TimelineView(.animation) { _ in Image(uiImage: m.tick().ui).resizable().interpolation(.none).aspectRatio(1, contentMode: .fit) }
                         .frame(maxWidth: 280).clipShape(RoundedRectangle(cornerRadius: 8)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 3)).padding(.bottom, 6)

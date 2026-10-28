@@ -162,7 +162,7 @@ struct LeadersPage: View {
                 }
             }.padding(.bottom, 6)
             HStack(spacing: 5) { ForEach([(false, "All time"), (true, "This week")], id: \.0) { w, t in Opt(t: t, on: lbWeek == w, grow: true) { lbWeek = w; showPage("leaders") } } }.padding(.bottom, 6)
-            ScrollView(showsIndicators: false) {
+            FitScroll {
                 VStack(spacing: 3) {
                     if let e = err { Note(t: e) }
                     else if let rs = rows {

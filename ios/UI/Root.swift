@@ -118,7 +118,17 @@ struct MenuLayer: View {
 /// pages that scroll inside the card (.fg-page)
 struct Scroll<C: View>: View {
     @ViewBuilder var content: C
-    var body: some View { ScrollView(showsIndicators: false) { VStack(spacing: 0) { content }.padding(2) } }
+    var body: some View { FitScroll { VStack(spacing: 0) { content }.padding(2) } }
+}
+/// like the website's panels: as tall as the content, and only scrolls when it doesn't fit
+struct FitScroll<C: View>: View {
+    @ViewBuilder var content: C
+    var body: some View {
+        ViewThatFits(in: .vertical) {
+            content.fixedSize(horizontal: false, vertical: true)
+            ScrollView(showsIndicators: false) { content }
+        }
+    }
 }
 
 struct InviteBanner: View {
