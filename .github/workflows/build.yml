@@ -41,20 +41,11 @@ jobs:
           xcrun simctl install "$UDID" "$APP"
           mkdir -p out/shots
           xcrun simctl launch --console-pty "$UDID" com.jordanvalladares.flappybird -shots > out/console.txt 2>&1 &
-          # the app writes "DEMO snap NAME" to Documents/demo.txt when a screen is ready; take a named screenshot right then
+          # the app saves its own screenshots to Documents/shots and writes "DEMO end" to Documents/demo.txt when done
           DATA=$(xcrun simctl get_app_container "$UDID" com.jordanvalladares.flappybird data); F="$DATA/Documents/demo.txt"; echo "data $DATA"
-          done_n=0
-          for t in $(seq 1 1500); do
-            sleep 0.2
-            [ -f "$F" ] || continue
-            n=$(grep -c "DEMO snap " "$F" || true)
-            while [ "$done_n" -lt "$n" ]; do
-              done_n=$((done_n+1))
-              name=$(grep "DEMO snap " "$F" | sed -n "${done_n}p" | sed 's/.*DEMO snap //' | tr -dc 'a-z0-9_-')
-              xcrun simctl io "$UDID" screenshot "out/shots/$(printf %02d $done_n)_$name.png" > /dev/null 2>&1 || true
-            done
-            grep -q "DEMO end" "$F" && break
-          done
+          for t in $(seq 1 900); do sleep 0.5; [ -f "$F" ] && grep -q "DEMO end" "$F" && break; done
+          xcrun simctl io "$UDID" screenshot out/shots/zz_last.png > /dev/null 2>&1 || true
+          cp "$DATA"/Documents/shots/*.png out/shots/ 2>/dev/null || true
           cp "$F" out/demo.txt 2>/dev/null || true
           xcrun simctl terminate "$UDID" com.jordanvalladares.flappybird || true
           grep DEMO out/console.txt | head -30 || true

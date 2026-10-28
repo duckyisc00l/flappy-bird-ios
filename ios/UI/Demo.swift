@@ -1,10 +1,22 @@
 import Foundation
+import UIKit
 
 /// "-shots": the build runs the app in the simulator and plays through the screens.
 /// "DEMO snap NAME" tells the build to take a screenshot right then.
 /// It also prints the Daily course so it can be checked against the website.
 enum Demo {
+    static var shotN = 0
+    /// the app takes its own screenshot (the simulator's screenshots arrive seconds late)
+    static func snap(_ name: String) {
+        guard let win = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).flatMap({ $0.windows }).first(where: { $0.isKeyWindow }) else { say("nowindow"); return }
+        let img = UIGraphicsImageRenderer(bounds: win.bounds).image { _ in _ = win.drawHierarchy(in: win.bounds, afterScreenUpdates: false) }
+        shotN += 1
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("shots")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        try? img.pngData()?.write(to: dir.appendingPathComponent(String(format: "%02d_", shotN) + name + ".png"))
+    }
     static func say(_ s: String) {
+        if s.hasPrefix("snap ") { snap(String(s.dropFirst(5))) }
         print("DEMO \(s)"); fflush(stdout)
         // the build reads this file (the console reaches it seconds late)
         let u = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("demo.txt")
