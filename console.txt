@@ -1,0 +1,52 @@
+2026-10-28 00:10:22.321 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO title
+2026-10-28 00:10:27.488 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO birds
+2026-10-28 00:10:34.205 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO modes
+2026-10-28 00:10:41.305 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO leaderboard
+2026-10-28 00:10:48.123 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO signin
+2026-10-28 00:10:54.558 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO settings
+DEMO trails
+2026-10-28 00:11:03.539 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO daily ready daily-20261028
+DEMO ready normal halloween rainbow
+2026-10-28 00:11:14.655 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO play normal
+DEMO score normal 9
+2026-10-28 00:11:28.022 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO over normal 9
+DEMO ready flipped christmas sparkles
+DEMO play flipped
+2026-10-28 00:11:37.455 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO score flipped 5
+DEMO over flipped 5
+DEMO ready dark spring hearts
+DEMO play dark
+2026-10-28 00:11:56.388 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO score dark 5
+2026-10-28 00:12:05.922 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO over dark 5
+DEMO ready windy fall fireribbon
+DEMO play windy
+DEMO score windy 5
+DEMO over windy 5
+2026-10-28 00:12:24.638 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO ready wavy summer bubbles
+DEMO play wavy
+DEMO score wavy 0
+2026-10-28 00:12:37.239 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO over wavy 0
+DEMO ready hard winter halo
+2026-10-28 00:12:43.839 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO play hard
+DEMO score hard 2
+2026-10-28 00:12:53.172 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+DEMO over hard 2
+DEMO end
+2026-10-28 00:13:11.889 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:13:36.388 FlappyBirdTV[34996:95693] SKView: no drawables available for rendering. Skipping this frame.
+com.jordanvalladares.flappybird.tv: 34996

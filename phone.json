@@ -1,0 +1,28 @@
+{
+ "id": "ciphone350584",
+ "states": 113,
+ "phases": [
+  "lobby",
+  "count",
+  "play",
+  "over"
+ ],
+ "me": [
+  "lobby in=0 alive=0 score=0",
+  "count in=1 alive=1 score=0",
+  "play in=1 alive=1 score=0",
+  "play in=1 alive=0 score=0",
+  "over in=1 alive=0 score=0"
+ ],
+ "subscribed": "SUBSCRIBED",
+ "players": [
+  "LEO",
+  "MIA",
+  "SAM",
+  "CI PHONE"
+ ],
+ "last": "over",
+ "win": [
+  "LEO"
+ ]
+}

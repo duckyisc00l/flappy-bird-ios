@@ -1,0 +1,23 @@
+2026-10-28 00:14:07.594 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+PARTY joined SAM
+PARTY joined MIA
+PARTY joined LEO
+2026-10-28 00:14:18.872 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+PARTY start
+2026-10-28 00:14:23.956 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:14:29.038 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:14:34.123 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+PARTY state play SAM=1x CI PHONE=0x MIA=10+ LEO=10+
+2026-10-28 00:14:39.206 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:14:44.289 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:14:49.374 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+PARTY end play winners=[]
+2026-10-28 00:14:54.471 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:14:59.555 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:15:04.640 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:15:09.723 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:15:14.805 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:15:19.888 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:15:24.972 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 00:15:30.057 FlappyBirdTV[46390:122954] SKView: no drawables available for rendering. Skipping this frame.
+com.jordanvalladares.flappybird.tv: 46390
