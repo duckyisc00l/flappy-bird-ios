@@ -10,7 +10,7 @@ enum Demo {
         var r = mulberry32(dailySeed()); var ys: [Int] = []
         for _ in 0..<12 { ys.append(Int(floor(r() * 192) + 192)) }
         print("DEMO dailycourse \(dailyKey()) \(ys)")
-        r = mulberry32(12345); print("DEMO mulberry 12345 \((0..<4).map { r() })")
+        r = mulberry32(12345); print("DEMO mulberry 12345 \((0..<4).map { _ in r() })")
         at(1) { print("DEMO title") }
         for p in ["settings", "birds", "modes", "weather", "trails", "maker", "account", "leaders", "partycode", "dev", "avatar"] {
             at(3) { if p == "dev" { devMode = true }; openSheet(p); print("DEMO page \(p)") }

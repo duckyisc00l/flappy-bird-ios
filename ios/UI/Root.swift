@@ -33,7 +33,7 @@ struct RootView: View {
                 if ui.partyOpen { PartyController().transition(.opacity) }
                 if let inv = ui.invite { InviteBanner(inv: inv, top: geo.safeAreaInsets.top) }
                 if let u = ui.update { UpdateBanner(v: u.version, note: u.note, bottom: geo.safeAreaInsets.bottom) }
-                ForEach(ui.toasts, id: \.id) { t in
+                ForEach(ui.toasts) { t in
                     KT(t.text, 9, .white, align: .center).padding(.vertical, 10).padding(.horizontal, 14).background(RoundedRectangle(cornerRadius: 9).fill(K.brown))
                         .frame(maxWidth: geo.size.width * 0.8).position(x: geo.size.width / 2, y: geo.size.height * 0.18 + 20).allowsHitTesting(false)
                         .transition(.opacity)
@@ -51,7 +51,7 @@ struct RootView: View {
 struct MenuLayer: View {
     let size: CGSize, safe: EdgeInsets
     @ObservedObject var ui = UIBridge.shared
-    @State private var shown = false
+    @State var shown = false
     var body: some View {
         let kind = PK.kind
         ZStack {
@@ -82,7 +82,8 @@ struct MenuLayer: View {
     }
     @ViewBuilder func page(_ k: String) -> some View {
         let back = backTarget(k)
-        PanelCard(title: PAGE_TITLES[k] ?? "", back: back.map { b in { playSound("swoosh"); if PK.from[k] != nil { PK.from[k] = nil }; showPage(b) } }, close: closePicker) {
+        let backAct: (() -> Void)? = back == nil ? nil : { playSound("swoosh"); PK.from[k] = nil; showPage(back!) }
+        PanelCard(title: PAGE_TITLES[k] ?? "", back: backAct, close: closePicker) {
             switch k {
             case "settings": SettingsPage()
             case "birds": BirdsPage()

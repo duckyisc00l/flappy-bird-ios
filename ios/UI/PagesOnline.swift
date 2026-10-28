@@ -32,7 +32,7 @@ struct Dot: View { let n: Int
 struct WorkBtn: View {
     let t: String; var busy: String = "..."; var style: MkStyle = .save; var size: CGFloat = 9; var pad: CGFloat = 11; @Binding var msg: String; @Binding var ok: Bool
     let fn: () async throws -> Void
-    @State private var working = false
+    @State var working = false
     var body: some View {
         MkBtn(working ? busy : t, style, size: size, pad: pad, disabled: working) {
             working = true; msg = ""; ok = false
@@ -48,8 +48,13 @@ struct WorkBtn: View {
 
 struct FriendsPage: View {
     @ObservedObject var ui = UIBridge.shared
-    @State private var pasted = "", msg = "", link = "Making your link...", linkErr = false, copied = false
-    @State private var room = "", liveMsg = ""
+    @State private var pasted = ""
+    @State private var msg = ""
+    @State private var link = "Making your link..."
+    @State private var linkErr = false
+    @State private var copied = false
+    @State private var room = ""
+    @State private var liveMsg = ""
     var body: some View {
         _ = ui.tick
         let mi = modeInfo(), best = ghostScore(gameMode)
@@ -269,7 +274,12 @@ final class AppLogin: NSObject, ASWebAuthenticationPresentationContextProviding 
 }
 var accTab = "in"
 struct AccountPage: View {
-    @State private var user = "", pass = "", email = "", code = "", msg = "", ok = false
+    @State private var user = ""
+    @State private var pass = ""
+    @State private var email = ""
+    @State private var code = ""
+    @State private var msg = ""
+    @State private var ok = false
     var body: some View {
         Scroll {
             if ACCT.needCode {
@@ -352,8 +362,15 @@ func accNum(_ n0: Double) -> String { let n = n0; return n >= 1e6 ? String(forma
 
 struct ProfilePage: View {
     @ObservedObject var ui = UIBridge.shared
-    @State private var p: [String: Any]? = nil, bests: [String: Int] = [:], matches: [[String: Any]]? = nil, err: String? = nil
-    @State private var msg = "", ok = false, rmArmed = false, delArmed = false, delText: String? = nil
+    @State private var p: [String: Any]? = nil
+    @State private var bests: [String: Int] = [:]
+    @State private var matches: [[String: Any]]? = nil
+    @State private var err: String? = nil
+    @State private var msg = ""
+    @State private var ok = false
+    @State private var rmArmed = false
+    @State private var delArmed = false
+    @State private var delText: String? = nil
     var body: some View {
         _ = ui.tick
         let id = accProfileId ?? ACCT.uid ?? ""
@@ -545,8 +562,12 @@ struct OnlineDot: View { let uid: String
 
 struct TwoFaPage: View {
     @State private var state: String = "loading"
-    @State private var on: [String: Any]? = nil, enroll: [String: Any]? = nil
-    @State private var code = "", msg = "", ok = false, keyCopied = false
+    @State private var on: [String: Any]? = nil
+    @State private var enroll: [String: Any]? = nil
+    @State private var code = ""
+    @State private var msg = ""
+    @State private var ok = false
+    @State private var keyCopied = false
     var body: some View {
         Scroll {
             if state == "loading" { Note(t: "Loading...") }
@@ -597,7 +618,9 @@ func qrImage(_ s: String) -> UIImage? {
     return UIImage(cgImage: cg)
 }
 struct EmailPage: View {
-    @State private var email = "", msg = "", ok = false
+    @State private var email = ""
+    @State private var msg = ""
+    @State private var ok = false
     var body: some View {
         let em = ACCT.user?["email"] as? String ?? "", real = em.hasSuffix(ACC_MAIL) ? "" : em
         return Scroll {
@@ -615,7 +638,10 @@ struct EmailPage: View {
     }
 }
 struct NewPassPage: View {
-    @State private var a = "", b = "", msg = "", ok = false
+    @State private var a = ""
+    @State private var b = ""
+    @State private var msg = ""
+    @State private var ok = false
     var body: some View {
         Scroll {
             ChS(t: ACCT.recovering ? "Pick a new password for \(myUsername().isEmpty ? "your account" : myUsername())." : "Pick a new password.")
@@ -637,7 +663,9 @@ struct NewPassPage: View {
 var palsDraft = ""
 struct PalsPage: View {
     @ObservedObject var ui = UIBridge.shared
-    @State private var name = palsDraft, msg = "", ok = false
+    @State private var name = palsDraft
+    @State private var msg = ""
+    @State private var ok = false
     var body: some View {
         _ = ui.tick
         return Scroll {
@@ -715,7 +743,12 @@ struct PalsPage: View {
 
 var avPick: String? = nil, avBgPick: String? = nil, avSearch = ""
 struct AvatarPage: View {
-    @State private var pickId = "yellow", bg = "sky", q = avSearch, shown = 60, msg = "", ok = false
+    @State private var pickId = "yellow"
+    @State private var bg = "sky"
+    @State private var q = avSearch
+    @State private var shown = 60
+    @State private var msg = ""
+    @State private var ok = false
     var body: some View {
         let pool = avPool()
         return Scroll {
@@ -768,7 +801,8 @@ struct AvatarPage: View {
 // MARK: - TV party code, notifications, Apple TV approval
 
 struct PartyCodePage: View {
-    @State private var code = "", msg = ""
+    @State private var code = ""
+    @State private var msg = ""
     var body: some View {
         Scroll {
             ChS(t: "On the Apple TV, open PARTY. Scan its QR code with your camera, or type the code you see on the TV:")
@@ -788,7 +822,9 @@ struct NotifyPage: View {
     }
 }
 struct TVApprovePage: View {
-    @State private var msg = "", ok = false, done = false
+    @State private var msg = ""
+    @State private var ok = false
+    @State private var done = false
     var body: some View {
         Scroll {
             if done {

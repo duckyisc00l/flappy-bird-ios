@@ -69,7 +69,9 @@ func modeBest(_ id: String) -> Int { Int(localStorage.getItem("fb_bestScore" + m
 
 struct SettingsPage: View {
     @ObservedObject var ui = UIBridge.shared
-    @State private var verTaps = 0, verAt = Date.distantPast, verText = ""
+    @State private var verTaps = 0
+    @State private var verAt = Date.distantPast
+    @State private var verText = ""
     @State private var show: String? = nil
     var body: some View {
         _ = ui.tick
@@ -145,7 +147,8 @@ struct SettingsPage: View {
 
 struct BirdsPage: View {
     @ObservedObject var ui = UIBridge.shared
-    @State private var q = "", cat = "All"
+    @State private var q = ""
+    @State private var cat = "All"
     @State private var pick = birdPick
     @State private var favTick = 0
     var body: some View {

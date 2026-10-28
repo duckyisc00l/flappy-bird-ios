@@ -11,10 +11,11 @@ let PK = PKState()
 var PK_CARD: CardData? = nil
 
 /// Tells SwiftUI when the game changed something the menus show.
+struct Toast: Identifiable { let id: Int; let text: String }
 final class UIBridge: ObservableObject {
     static let shared = UIBridge()
     @Published var tick = 0
-    @Published var toasts: [(id: Int, text: String)] = []
+    @Published var toasts: [Toast] = []
     @Published var invite: (uid: String, name: String, av: String?, bg: String?, room: String)? = nil
     @Published var update: (version: String, note: String)? = nil
     @Published var partyOpen = false
@@ -30,7 +31,7 @@ final class UIBridge: ObservableObject {
     }
     func toast(_ t: String) {
         nextId += 1; let id = nextId
-        toasts.append((id, t))
+        toasts.append(Toast(id: id, text: t))
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.2) { self.toasts.removeAll { $0.id == id } }
     }
     func showInvite(_ uid: String, _ name: String, _ av: String?, _ bg: String?, _ room: String) {

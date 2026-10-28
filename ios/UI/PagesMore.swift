@@ -7,8 +7,13 @@ struct MakerPage: View {
     @State private var name = ""
     @State private var pal: [String: String] = BASE_PAL
     @State private var px: [String: String] = [:]
-    @State private var part = "R", brush = "#ffd23c", tool = "paint", tab = "colors"
-    @State private var clearSure = false, delSure = false, saveText = "Save"
+    @State private var part = "R"
+    @State private var brush = "#ffd23c"
+    @State private var tool = "paint"
+    @State private var tab = "colors"
+    @State private var clearSure = false
+    @State private var delSure = false
+    @State private var saveText = "Save"
     @State private var loaded = false
     private var old: CustomBird? { PK.makerId.flatMap { customBird($0) } }
     private func frames() -> [Img] { (0..<3).map { buildCustomFrame($0, pal: pal, px: px) } }
@@ -135,7 +140,8 @@ struct ExportPage: View {
     }
 }
 struct ImportPage: View {
-    @State private var text = "", msg = ""
+    @State private var text = ""
+    @State private var msg = ""
     var body: some View {
         VStack(spacing: 0) {
             Hint(t: "Paste a bird code here (it starts with FLAPPYBIRD1:)")
@@ -310,7 +316,7 @@ struct CardPage: View {
                 CardBtn(title: "Race a Friend", sub: f != nil ? "Racing \(f!.name)" : "Send your ghost or race theirs") { playSound("swoosh"); haptic(); showPage("friends") }
             }.padding(2)
         }
-        .onAppear { DispatchQueue.global(qos: .userInitiated).async { let c = makeScoreCard(d); DispatchQueue.main.async { card = c } } }
+        .onAppear { DispatchQueue.main.async { card = makeScoreCard(d) } }
     }
     @State private var replyURL: String? = nil
 }
@@ -328,7 +334,10 @@ struct CardBtn: View { let title: String; let sub: String; var green = false; le
 // MARK: - Developer
 
 struct DevPage: View {
-    @State private var num = "", sure: String? = nil, done: String? = nil, tick = 0
+    @State private var num = ""
+    @State private var sure: String? = nil
+    @State private var done: String? = nil
+    @State private var tick = 0
     var body: some View {
         _ = tick
         return ScrollView(showsIndicators: false) {

@@ -89,7 +89,7 @@ func accFlushStats() {
     let d = ACC_ST; accStatBusy = true
     sb("rpc/add_stats", method: "POST", body: ["g": d.g, "p": d.p, "f": d.f, "s": d.s]) { r in
         accStatBusy = false
-        if case .success = r {
+        if case .success(_) = r {
             ACC_ST = (max(0, ACC_ST.g - d.g), max(0, ACC_ST.p - d.p), max(0, ACC_ST.f - d.f), max(0, ACC_ST.s - d.s)); accSaveStats()
             if var p = ACCT.profile {
                 for (k, v) in [("games", d.g), ("pipes", d.p), ("flaps", d.f), ("seconds", d.s)] { p[k] = Int(num(p[k]) ?? 0) + v }
@@ -103,7 +103,7 @@ func accPushLook() {
     guard accSignedIn(), let p = ACCT.profile, let id = p["id"] as? String else { return }
     let b = String(birdColor.prefix(40)), t = String(trailPick.prefix(40))
     if (p["bird"] as? String) == b && (p["trail"] as? String) == t { return }
-    sb("profiles?id=eq.\(id)", method: "PATCH", body: ["bird": b, "trail": t], headers: ["Prefer": "return=minimal"]) { r in if case .success = r { ACCT.profile?["bird"] = b; ACCT.profile?["trail"] = t } }
+    sb("profiles?id=eq.\(id)", method: "PATCH", body: ["bird": b, "trail": t], headers: ["Prefer": "return=minimal"]) { r in if case .success(_) = r { ACCT.profile?["bird"] = b; ACCT.profile?["trail"] = t } }
 }
 func accBests(_ uid: String) async throws -> [String: Int] {
     let rows = try await sbAsync("scores?select=mode,score&user_id=eq.\(uid)&order=score.desc&limit=300") as? [[String: Any]] ?? []
@@ -312,7 +312,7 @@ func joinLive(_ code: String, host: Bool = false) {
         if s.4 && L.oppScore == nil && s.3 == L.round { L.oppScore = s.2; liveCheckEnd() }
     }
     ch.onStatus = { st in
-        if st == "SUBSCRIBED" { L.status = "in"; ch.track(["name": onlineName().isEmpty ? "Player" : onlineName(), "bird": birdColor, "uid": accSignedIn() ? ACCT.uid! : NSNull()]) }
+        if st == "SUBSCRIBED" { L.status = "in"; ch.track(["name": onlineName().isEmpty ? "Player" : onlineName(), "bird": birdColor, "uid": accSignedIn() ? (ACCT.uid! as Any) : (NSNull() as Any)]) }
         else if st == "CHANNEL_ERROR" { L.status = "error" }
         liveRefresh()
     }

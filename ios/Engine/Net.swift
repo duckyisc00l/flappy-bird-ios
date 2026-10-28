@@ -101,12 +101,12 @@ final class Auth {
     }
     @discardableResult func refresh() async -> Bool {
         if let t = refreshing { return await t.value }
-        let t = Task<Bool, Never> { @MainActor in
-            defer { refreshing = nil }
-            guard let rt = session?["refresh_token"] as? String else { return false }
+        let t = Task<Bool, Never> { @MainActor [self] in
+            defer { self.refreshing = nil }
+            guard let rt = self.session?["refresh_token"] as? String else { return false }
             guard let (code, obj) = try? await http(SB_URL + "/auth/v1/token?grant_type=refresh_token", method: "POST", body: ["refresh_token": rt]) else { return false }
-            if code == 200, let o = obj as? [String: Any] { take(o, "TOKEN_REFRESHED"); return true }
-            if (400..<500).contains(code) { session = nil; store(); onChange?("SIGNED_OUT", nil) }
+            if code == 200, let o = obj as? [String: Any] { self.take(o, "TOKEN_REFRESHED"); return true }
+            if (400..<500).contains(code) { self.session = nil; self.store(); self.onChange?("SIGNED_OUT", nil) }
             return false
         }
         refreshing = t
@@ -142,7 +142,7 @@ final class Auth {
     }
     func signOut() async {
         if let t = session?["access_token"] as? String { _ = try? await http(SB_URL + "/auth/v1/logout?scope=local", method: "POST", body: [:], headers: ["Authorization": "Bearer " + t]) }
-        await MainActor.run { session = nil; store() }
+        await MainActor.run { self.session = nil; self.store() }
     }
     private func authed(_ path: String, method: String, body: Any? = nil) async throws -> Any? {
         guard let t = await token() else { throw NetError(message: "Sign in first") }
@@ -152,12 +152,12 @@ final class Auth {
     }
     func getUser() async throws -> [String: Any]? {
         let o = try await authed("user", method: "GET") as? [String: Any]
-        if let u = o { await MainActor.run { session?["user"] = u; store() } }
+        if let u = o { await MainActor.run { self.session?["user"] = u; self.store() } }
         return o
     }
     func updateUser(_ attrs: [String: Any], redirect: Bool = false) async throws -> [String: Any]? {
         let o = try await authed("user" + (redirect ? "?redirect_to=" + (SITE.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "") : ""), method: "PUT", body: attrs) as? [String: Any]
-        if let u = o { await MainActor.run { session?["user"] = u; store() } }
+        if let u = o { await MainActor.run { self.session?["user"] = u; self.store() } }
         return o
     }
     // 2FA (TOTP)

@@ -157,7 +157,7 @@ func ghostRunEnded() {
     // v134: the round you just played (for duel replies)
     if let R = R, !R.y.isEmpty, score > 0 { lastRun = LastRun(enc: encRun(R, score), score: score, mode: R.hard, raced: raced, bot: runUsedBot || START_SCORE > 0) } else { lastRun = nil }
     // v138: racing a friend's run goes in the duel history
-    if let rd = racedM, !botM, accSignedIn(), let f = friendList.first(where: { $0.id == rd }), let uid = f.uid, let gid = f.gid, uid != ACCT.user?.id {
+    if let rd = racedM, !botM, accSignedIn(), let f = friendList.first(where: { $0.id == rd }), let uid = f.uid, let gid = f.gid, uid != ACCT.uid {
         recordMatch("race", gid, uid, sM, f.score, f.m.isEmpty ? modeM : f.m)
     }
     // v147: the Daily streak
