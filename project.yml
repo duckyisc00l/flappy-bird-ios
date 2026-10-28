@@ -2,37 +2,25 @@ name: FlappyBird
 options:
   bundleIdPrefix: com.jordanvalladares
   deploymentTarget:
-    iOS: "15.0"
+    iOS: "16.0"
 targets:
   FlappyBird:
     type: application
     platform: iOS
     sources:
-      - path: ios/Sources                 # the iPhone screens (SwiftUI)
-      - path: tv/Sources/GameScene.swift   # the game itself, shared with the Apple TV app
-      - path: tv/Sources/Birds.swift
-      - path: tv/Sources/Trails.swift
-      - path: tv/Sources/Seasons.swift
-      - path: tv/Sources/Prefs.swift
-      - path: tv/Sources/Online.swift
-      - path: tv/Sources/Account.swift
-      - path: tv/Sources/Realtime.swift
-      - path: tv/Sources/Rumble.swift
-      - path: App/Assets.xcassets          # app icon + the game's sprites
-      - path: tv/Resources/sounds
+      - path: ios/Engine                  # the website's game, ported to Swift line by line
+      - path: ios/UI                      # the website's menus, in SwiftUI
+      - path: App/Assets.xcassets          # app icon
       - path: tv/Resources/fonts
-      - path: tv/Resources/birds
-        type: folder
-        buildPhase: resources
-      - path: tv/Resources/season
+      - path: ios/Resources/web            # the website's pictures, birds, sounds and data
         type: folder
         buildPhase: resources
     info:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Flappy Bird
-        CFBundleShortVersionString: "6.0"
-        CFBundleVersion: "149"
+        CFBundleShortVersionString: "6.1"
+        CFBundleVersion: "150"
         UILaunchScreen:
           UIColorName: ""
         UIRequiresFullScreen: true
@@ -44,6 +32,10 @@ targets:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown
         UIAppFonts: [inside.ttf, outside.ttf, pixel.ttf]
+        CFBundleURLTypes:
+          - CFBundleURLName: flappybird
+            CFBundleURLSchemes: [flappybird]
+        NSPhotoLibraryAddUsageDescription: Save your score card and replay clips to Photos.
         ITSAppUsesNonExemptEncryption: false
     settings:
       base:
