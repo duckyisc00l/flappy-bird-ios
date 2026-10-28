@@ -103,7 +103,7 @@ struct PartyView: View {
                 HStack { BirdPic(id: party.bird, size: 44, bg: nil); Text(party.name.uppercased()).font(Px.text(12)).foregroundColor(.white); Spacer()
                     Button("LEAVE") { party.leave() }.font(Px.text(10)).foregroundColor(.white).padding(10).background(RoundedRectangle(cornerRadius: 8).fill(.black.opacity(0.3))) }
                 Spacer()
-                Text(big).font(Px.title(ph == "count" ? 120 : 44)).foregroundColor(.white).multilineTextAlignment(.center).shadow(color: .black.opacity(0.4), radius: 0, x: 3, y: 3)
+                Text(big).font(ph == "count" ? Px.text(90) : Px.title(44)).foregroundColor(.white).multilineTextAlignment(.center).shadow(color: .black.opacity(0.4), radius: 0, x: 3, y: 3)
                 Text(small).font(Px.text(10)).foregroundColor(.white.opacity(0.85)).multilineTextAlignment(.center)
                 Spacer()
             }.padding(20).allowsHitTesting(true)
