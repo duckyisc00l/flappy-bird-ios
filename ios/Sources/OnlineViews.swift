@@ -38,7 +38,7 @@ struct LeaderboardView: View {
                                     BirdPic(id: r.avatar ?? r.bird, size: 40, bg: Color(Online.color(r.avatarBg)))
                                     Text(r.name.uppercased()).font(Px.text(11)).foregroundColor(Px.brown).lineLimit(1)
                                     Spacer()
-                                    Text("\(r.score)").font(Px.title(26)).foregroundColor(Px.brown)
+                                    Text("\(r.score)").font(Px.text(18)).foregroundColor(Px.brown)   // (the title font clips numbers)
                                 }
                             }
                         }

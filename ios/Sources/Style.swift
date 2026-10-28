@@ -67,7 +67,7 @@ struct BirdPic: View {
     var body: some View {
         ZStack {
             if let bg = bg { RoundedRectangle(cornerRadius: size * 0.18).fill(bg) }
-            if let im = Birds.shared.image(id == "random" ? "yellow" : id, scale: 2) {
+            if id != "random", let im = Birds.shared.image(id, scale: 2) {
                 Image(uiImage: im).interpolation(.none).resizable().aspectRatio(contentMode: .fit).padding(size * 0.1)
             }
         }.frame(width: size, height: size * 0.86)
