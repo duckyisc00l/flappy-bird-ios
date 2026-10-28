@@ -439,7 +439,10 @@ func replayCam(_ frames: [RPFrame], _ i: Int, _ angle: String, _ f: Double) -> (
 }
 final class ReplayModel: ObservableObject {
     let frames = RP.frames
-    @Published var pos = 0.0, playing = true, k = 0.5, angle = "cinematic"
+    @Published var pos = 0.0
+    @Published var playing = true
+    @Published var k = 0.5
+    @Published var angle = "cinematic"
     var t = 0.0, last = Date()
     let cv = CGCanvas(540, 540)
     func frameAt(_ pos: Double) -> RPFrame {
