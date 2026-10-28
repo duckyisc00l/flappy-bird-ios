@@ -1,0 +1,29 @@
+DEMO dailycourse daily-20261028 [219, 242, 310, 358, 202, 192, 279, 205, 326, 279, 232, 239]
+DEMO mulberry 12345 [0.9797282677609473, 0.3067522644996643, 0.484205421525985, 0.817934412509203]
+DEMO snap title
+DEMO snap settings
+DEMO snap birds
+DEMO snap modes
+DEMO snap weather
+DEMO snap trails
+DEMO snap maker
+DEMO snap account
+DEMO snap leaders
+DEMO snap friends
+DEMO snap partycode
+DEMO snap dev
+DEMO snap avatar
+DEMO snap import
+DEMO snap ready
+DEMO snap play1
+DEMO snap play2
+DEMO snap play3
+DEMO score 6
+DEMO over true
+DEMO snap over
+DEMO snap over2
+DEMO snap card
+DEMO snap daily
+DEMO snap dailyplay
+DEMO snap dailyover
+DEMO end

@@ -1,0 +1,50 @@
+2026-10-28 04:48:26.238 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO dailycourse daily-20261028 [219, 242, 310, 358, 202, 192, 279, 205, 326, 279, 232, 239]
+DEMO mulberry 12345 [0.9797282677609473, 0.3067522644996643, 0.484205421525985, 0.817934412509203]
+DEMO snap title
+2026-10-28 04:48:33.490 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap settings
+2026-10-28 04:48:38.572 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap birds
+2026-10-28 04:48:44.287 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 04:48:49.425 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap modes
+2026-10-28 04:48:54.788 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap weather
+2026-10-28 04:48:59.972 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap trails
+2026-10-28 04:49:06.539 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap maker
+2026-10-28 04:49:11.640 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap account
+2026-10-28 04:49:19.188 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap leaders
+2026-10-28 04:49:25.138 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap friends
+2026-10-28 04:49:30.387 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap partycode
+2026-10-28 04:49:35.956 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+2026-10-28 04:49:41.271 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap dev
+2026-10-28 04:49:47.054 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap avatar
+DEMO snap import
+2026-10-28 04:49:54.789 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap ready
+2026-10-28 04:50:00.071 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap play1
+DEMO snap play2
+2026-10-28 04:50:06.888 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap play3
+DEMO score 6
+DEMO over true
+DEMO snap over
+DEMO snap over2
+2026-10-28 04:50:14.808 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap card
+DEMO snap daily
+DEMO snap dailyplay
+DEMO snap dailyover
+DEMO end
+2026-10-28 04:50:28.739 FlappyBird[14270:47073] SKView: no drawables available for rendering. Skipping this frame.
+com.jordanvalladares.flappybird: 14270
