@@ -4,10 +4,17 @@ import Foundation
 /// "DEMO snap NAME" tells the build to take a screenshot right then.
 /// It also prints the Daily course so it can be checked against the website.
 enum Demo {
-    static func say(_ s: String) { print("DEMO \(s)"); fflush(stdout) }
+    static func say(_ s: String) {
+        print("DEMO \(s)"); fflush(stdout)
+        // the build reads this file (the console reaches it seconds late)
+        let u = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("demo.txt")
+        let line = Data(("DEMO " + s + "\n").utf8)
+        if let h = try? FileHandle(forWritingTo: u) { h.seekToEndOfFile(); h.write(line); try? h.close() } else { try? line.write(to: u) }
+    }
     static func run() {
         var t = 0.0
         func at(_ d: Double, _ f: @escaping () -> Void) { t += d; DispatchQueue.main.asyncAfter(deadline: .now() + t, execute: f) }
+        try? FileManager.default.removeItem(at: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("demo.txt"))
         var r = mulberry32(dailySeed()); var ys: [Int] = []
         for _ in 0..<12 { ys.append(Int(floor(r() * 192) + 192)) }
         say("dailycourse \(dailyKey()) \(ys)")
