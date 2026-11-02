@@ -274,6 +274,8 @@ func updateSky() {
     if adaptiveBackground { WX.tod = clockTod(); night = WX.tod == "night" }
     skyIsNight = night
     rollWeather()
+    // v156: real day and night (the sun where your weather comes from); Halloween stays spooky at night
+    if WX.season != "halloween" { WX.tod = realTod(); skyIsNight = WX.tod == "night" }
     skyX = 0
 }
 
@@ -535,6 +537,7 @@ func handleScore() {
 func gameOver() {
     if isShowingGameOver { return }
     isShowingGameOver = true
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { widgetSync() }   // v156: new best / Daily for the widget
     recordDeath()
     if ending.swarmed || afterlife == 2 { afterlife = 1 }
     isGameOver = true
@@ -803,4 +806,5 @@ func startEngine() {
     didMove()
     dissolving = true
     dailyFresh()
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { widgetSync() }   // v156: the Home Screen widget
 }

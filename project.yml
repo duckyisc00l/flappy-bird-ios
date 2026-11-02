@@ -10,17 +10,20 @@ targets:
     sources:
       - path: ios/Engine                  # the website's game, ported to Swift line by line
       - path: ios/UI                      # the website's menus, in SwiftUI
+      - path: ios/Shared                  # shared with the Home Screen widget
       - path: App/Assets.xcassets          # app icon
-      - path: tv/Resources/fonts
+      - path: ios/Resources/fonts
       - path: ios/Resources/web            # the website's pictures, birds, sounds and data
         type: folder
         buildPhase: resources
+    dependencies:
+      - target: FlappyBirdWidget          # v156: the Home Screen widget (embedded in the app)
     info:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Flappy Bird
         CFBundleShortVersionString: "6.2"
-        CFBundleVersion: "168"
+        CFBundleVersion: "169"
         UILaunchScreen:
           UIColorName: ""
         UIRequiresFullScreen: true
@@ -49,3 +52,34 @@ targets:
         CODE_SIGNING_ALLOWED: NO
         CODE_SIGNING_REQUIRED: NO
         CODE_SIGN_IDENTITY: ""
+        CODE_SIGN_ENTITLEMENTS: App/FlappyBird.entitlements   # (applied by the build's ad-hoc signing step)
+  FlappyBirdWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ios/Widget
+        excludes: [Info.plist, Widget.entitlements]
+      - path: ios/Shared
+      - path: ios/Resources/fonts
+    info:
+      path: ios/Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Flappy Bird
+        CFBundleShortVersionString: "6.2"
+        CFBundleVersion: "169"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        UIAppFonts: [inside.ttf, outside.ttf, pixel.ttf]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jordanvalladares.flappybird.widget
+        PRODUCT_NAME: FlappyBirdWidget
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: NO
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        CODE_SIGN_IDENTITY: ""
+        CODE_SIGN_ENTITLEMENTS: ios/Widget/Widget.entitlements

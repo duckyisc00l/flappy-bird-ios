@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
-    paths-ignore: [ 'tv/TopShelf/**', '.github/workflows/tv.yml' ]
+
 
 permissions:
   contents: write
@@ -24,6 +24,9 @@ jobs:
           PL=App/Info.plist
           V=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" $PL); B=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" $PL)
           /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V.$B" $PL
+          # the widget must carry the same version as the app
+          WP=ios/Widget/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V.$B" $WP; /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $B" $WP
           echo "version $V.$B ($B)"
       - name: Build the app (unsigned)
         run: |
@@ -32,6 +35,12 @@ jobs:
             -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             -derivedDataPath build build > out/build.log 2>&1 || { grep -E "error:" out/build.log | sort -u | head -60 > out/errors.txt; cat out/errors.txt; echo FAILED > out/status.txt; exit 0; }
           mkdir -p Payload && cp -R build/Build/Products/Release-iphoneos/FlappyBird.app Payload/
+          # ad-hoc sign with the App Group (SideStore reads the entitlements from the app and sets the group up;
+          # the widget needs it to see what the app writes). The widget first, then the app around it.
+          ls Payload/FlappyBird.app/PlugIns || true
+          codesign -f -s - --entitlements ios/Widget/Widget.entitlements Payload/FlappyBird.app/PlugIns/FlappyBirdWidget.appex
+          codesign -f -s - --entitlements App/FlappyBird.entitlements Payload/FlappyBird.app
+          codesign -d --entitlements - Payload/FlappyBird.app 2>&1 | tail -5 > out/entitlements.txt || true
           zip -qry FlappyBird.ipa Payload && cp FlappyBird.ipa out/
           echo BUILT > out/status.txt
           grep -E "warning:" out/build.log | grep -v "/build/" | sort -u | head -40 > out/warnings.txt || true
@@ -80,7 +89,7 @@ jobs:
             f=$(ls out/shots/*_$n.png 2> /dev/null | head -1)
             if [ -n "$f" ]; then sips -Z 1400 "$f" --out "ipaout/shots/$n.png" > /dev/null; SH="$SH $n.png"; fi
           done
-          python3 scripts/make_source.py ipaout/source.json FlappyBird.ipa "$VER" "$BLD" "$URL" "$NOTE1" $SH
+          swift scripts/make_source.swift ipaout/source.json FlappyBird.ipa "$VER" "$BLD" "$URL" "$NOTE1" $SH
           cp ipaout/source.json out/source.json
           cd ipaout
           git init -q; git config user.name "github-actions"; git config user.email "github-actions@users.noreply.github.com"

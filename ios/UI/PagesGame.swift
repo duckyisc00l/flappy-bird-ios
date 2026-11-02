@@ -49,6 +49,7 @@ func weatherIcon() -> Img {
     let w: String? = weatherPick != "auto" ? weatherPick : nil, s = seasonPick == "auto" ? seasonByDate(Date()) : seasonPick
     func P(_ x: Double, _ y: Double, _ ww: Double, _ hh: Double, _ c: String) { g.fill(c); g.fillRect(x, y, ww, hh) }
     func cloud(_ c: String) { P(5, 7, 14, 6, c); P(7, 5, 6, 2, c); P(12, 4, 5, 3, c) }
+    if w == nil && s == "thanksgiving" { put(sart("turkey"), 1); return g.image() }   // v156
     if w == "rain" || w == "storm" { cloud(w == "storm" ? "#4a5068" : "#8a94a8"); for i in 0..<4 { P(6 + Double(i) * 4, 15 + Double(i % 2) * 2, 1, 3, "#7ab8ff") }; if w == "storm" { P(12, 13, 2, 3, "#ffe14a"); P(10, 16, 3, 2, "#ffe14a"); P(10, 18, 2, 3, "#ffe14a") } }
     else if w == "snow" { cloud("#c9ccd6"); for (x, y) in [(6.0, 16.0), (11, 19), (16, 15), (14, 21), (8, 21)] { P(x, y, 2, 2, "#ffffff") } }
     else if w == "fog" { for i in 0..<4 { P(3 + Double(i % 2) * 3, 6 + Double(i) * 4, 16, 2, "#dfe3e8") } }
@@ -91,7 +92,6 @@ struct SettingsPage: View {
             FitScroll {
                 VStack(spacing: 0) {
                     row("Account", trailing: AnyView(Arrow())) { playSound("swoosh"); haptic(); accGo(accSignedIn() ? "profile" : "account", accSignedIn() ? ACCT.uid : nil) }
-                    row("Join a TV party", trailing: AnyView(Arrow())) { playSound("swoosh"); accGo("partycode") }
                     row("Notifications", trailing: AnyView(Arrow())) { playSound("swoosh"); accGo("notify") }
                     row("Trail", trailing: AnyView(HStack(spacing: 10) { KT(trailDef(trailPick)?.name ?? "None", 6).opacity(0.75).lineLimit(1).frame(maxWidth: 90, alignment: .trailing); Arrow() })) { playSound("swoosh"); haptic(); showPage("trails") }
                     row("Haptics", trailing: AnyView(Sw(on: haptics))) { haptics.toggle(); saveBool("appHaptics", haptics); if haptics { appHaptic("medium") }; playSound("swoosh"); ui.refresh() }

@@ -262,11 +262,11 @@ var challengeRow: [String: Any]? = nil
 /// a race link or room link (pasted, or opened as flappybird://...)
 func openLink(_ text: String) {
     let s = text
+    // v156: the Home Screen widget opens the Daily Challenge
+    if s.hasPrefix("#daily") { if !bird.dynamic && !isGameOver { setGameMode("daily") }; return }
     if let r = s.range(of: "[#&?]live=([A-Za-z0-9]{4,8})", options: .regularExpression) {
         let code = String(s[r].split(separator: "=").last ?? "").uppercased(); joinLive(code); openSheet("live"); return
     }
-    if let r = s.range(of: "[#&?]party=([A-Za-z0-9]{4,12})", options: .regularExpression) { _ = joinParty(String(s[r].split(separator: "=").last ?? "")); return }
-    if let r = s.range(of: "[#&?]tv=([A-Za-z0-9]{8})", options: .regularExpression) { tvCode = String(s[r].split(separator: "=").last ?? "").uppercased(); if PK.open { showPage("tvapprove") } else { openSheet("tvapprove") }; return }
     guard let r = s.range(of: "[#&?]r=([A-Za-z0-9]{8,12})", options: .regularExpression) else { return }
     let id = String(s[r].split(separator: "=").last ?? "")
     Task { @MainActor in
@@ -420,9 +420,8 @@ func palsSignedIn() {
         me.subscribe()
         RT.online = on; RT.me = me
     }
-    // v139: saved progress; v143: come back to the Apple TV approval
+    // v139: saved progress
     if SV.uid != ACCT.uid { saveSync() }
-    if tvCode != nil && PK.kind == "profile" { DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { if PK.open && tvCode != nil { showPage("tvapprove") } } }
 }
 private func palsSignedOutBase() {
     for c in [RT.online, RT.me] { c?.unsubscribe() }
@@ -469,43 +468,6 @@ func agoText(_ t: String) -> String {
     let s = max(0, Date().timeIntervalSince(d))
     return s < 90 ? "just now" : s < 3600 ? "\(Int(jsRound(s / 60)))m ago" : s < 86400 ? "\(Int(jsRound(s / 3600)))h ago" : "\(Int(jsRound(s / 86400)))d ago"
 }
-
-// ---------- the TV party (your phone as the Apple TV's controller) ----------
-final class PartyState { var code: String? = nil, ch: RTChannel? = nil, id = "", st: [String: Any]? = nil, lastTv = Date.distantPast, hello: Timer? = nil, nick = "" }
-let PARTY = PartyState()
-func partyName() -> String { String((accSignedIn() ? myUsername() : (PARTY.nick.isEmpty ? "PLAYER" : PARTY.nick)).prefix(14)) }
-func partyBird() -> String { skinExists(birdPick) ? birdPick : birdColor }
-func partySend(_ e: String, _ p: [String: Any] = [:]) { var m = p; m["id"] = PARTY.id; PARTY.ch?.send(e, m) }
-func partyHello() { partySend("p", ["name": partyName(), "bird": partyBird()]) }
-func joinParty(_ raw: String) -> Bool {
-    let code = raw.uppercased().filter { ($0 >= "A" && $0 <= "Z") || ($0 >= "0" && $0 <= "9") }
-    if code.count < 4 || code.count > 12 { return false }
-    leaveParty(quiet: true)
-    if PK.open { closePicker() }
-    PARTY.code = code; PARTY.id = "ph" + rid(10); PARTY.st = nil; PARTY.lastTv = .distantPast
-    let ch = RTChannel("fb-party-" + code)
-    ch.on("st") { p in PARTY.st = p; PARTY.lastTv = Date(); UIBridge.shared.refresh() }
-    ch.onStatus = { s in if s == "SUBSCRIBED" { partyHello(); UIBridge.shared.refresh() } }
-    ch.subscribe()
-    PARTY.ch = ch
-    PARTY.hello = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { _ in partyHello(); UIBridge.shared.refresh() }
-    UIApplication.shared.isIdleTimerDisabled = true
-    UIBridge.shared.partyOpen = true
-    return true
-}
-func leaveParty(quiet: Bool = false) {
-    if let ch = PARTY.ch {
-        partySend("bye")
-        PARTY.ch = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { ch.unsubscribe() }
-        PARTY.hello?.invalidate()
-        PARTY.code = nil; PARTY.st = nil
-        if !quiet { playSound("swoosh") }
-    }
-    UIApplication.shared.isIdleTimerDisabled = false
-    UIBridge.shared.partyOpen = false
-}
-func partyMe() -> [String: Any]? { (PARTY.st?["pl"] as? [[String: Any]])?.first { ($0["id"] as? String) == PARTY.id } }
 
 // ---------- v139: saved progress ----------
 let SAVE_SCALARS: [String] = ["birdPick", "trail", "gameMode", "weather", "season", "playSounds", "ghostOn", "adaptiveBackground", "appHaptics", "dailyStreak", "dailyLast", "pipes"].map { "fb_" + $0 }
@@ -615,9 +577,6 @@ func reloadEverything() {
     if !bird.dynamic && !isGameOver { updateBirdTextures(); updateSky() }
     UIBridge.shared.refresh()
 }
-
-// ---------- v143: approve an Apple TV sign-in ----------
-var tvCode: String? = nil
 
 // ---------- v147: watch uploads (others can watch your best runs) ----------
 private var watchUpBusy = false

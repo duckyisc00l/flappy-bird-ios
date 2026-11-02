@@ -115,4 +115,4 @@ func birdFromCode(_ text: String) throws -> (name: String, pal: [String: String]
     if name.isEmpty { name = "Imported bird" }
     return (name, pal, px)
 }
-func birdChanged() { if !bird.dynamic && !isGameOver && !isShowingGameOver { updateBirdTextures() } }
+func birdChanged() { if !bird.dynamic && !isGameOver && !isShowingGameOver { updateBirdTextures() }; DispatchQueue.main.async { widgetSync() } }

@@ -34,7 +34,7 @@ func drawDarkness(_ flip: Bool) {
 // ---------- Weather, seasons and time of day ----------
 let WEATHERS: [(String, String, String)] = [("auto", "AUTO", "Auto"), ("clear", "CLEAR", "Clear"), ("rain", "RAIN", "Rain"), ("storm", "STORM", "Thunderstorm"), ("snow", "SNOW", "Snow"), ("fog", "FOG", "Fog"), ("windy", "WINDY", "Windy")]
 let SEASONS: [(String, String, String)] = [("auto", "AUTO", "Auto (by date)"), ("classic", "CLASSIC", "Classic"), ("spring", "SPRING", "Spring"), ("summer", "SUMMER", "Summer"), ("fall", "FALL", "Fall"), ("winter", "WINTER", "Winter"),
-                                           ("halloween", "SPOOKY", "Halloween"), ("christmas", "XMAS", "Christmas"), ("newyear", "NYE", "New Year"), ("valentine", "LOVE", "Valentine")]
+                                           ("halloween", "SPOOKY", "Halloween"), ("thanksgiving", "THANKS", "Thanksgiving"), ("christmas", "XMAS", "Christmas"), ("newyear", "NYE", "New Year"), ("valentine", "LOVE", "Valentine")]
 var weatherPick = "auto", seasonPick = "auto"
 let WX_ODDS: [String: [(String, Double)]] = [
     "classic": [("clear", 0.55), ("rain", 0.15), ("storm", 0.07), ("fog", 0.1), ("windy", 0.13)],
@@ -46,6 +46,7 @@ let WX_ODDS: [String: [(String, Double)]] = [
     "christmas": [("snow", 0.7), ("clear", 0.3)],
     "newyear": [("clear", 0.6), ("snow", 0.4)],
     "valentine": [("clear", 0.7), ("snow", 0.15), ("rain", 0.15)],
+    "thanksgiving": [("clear", 0.45), ("windy", 0.25), ("rain", 0.15), ("fog", 0.15)],
 ]
 final class WPart { var k = "", x = 0.0, y = 0.0, vx = 0.0, vy = 0.0, ph = 0.0, par = 0.3, wf = 1.0, s = 2.0, c = "#fff", spin = 0.0, len = 0.0 }
 struct Bolt { var pts: [(Double, Double)], br: [(Double, Double)], t: Double }
@@ -62,6 +63,7 @@ func seasonByDate(_ d: Date) -> String {
     if (m == 12 && day == 31) || (m == 1 && day == 1) { return "newyear" }
     if m == 2 && day >= 7 && day <= 14 { return "valentine" }
     if m == 10 && day >= 15 { return "halloween" }
+    if m == 11 && day >= 18 { return "thanksgiving" }   // v156
     if m == 12 { return "christmas" }
     if m <= 2 { return "winter" }
     if m <= 5 { return "spring" }
@@ -99,6 +101,7 @@ func wantParts() -> [(String, Int)] {
     if w == "storm" { set("rain", 190) }
     if w == "snow" { set("snow", 120) } else if (s == "christmas" || s == "winter") && w != "rain" && w != "storm" { set("snow", 35) }
     if s == "fall" { set("leaf", w == "windy" ? 34 : 18) }
+    if s == "thanksgiving" { set("leaf", w == "windy" ? 34 : 20) }
     if s == "halloween" { set("leaf", 10) }
     if s == "spring" { set("petal", w == "windy" ? 34 : 20) }
     if s == "summer" && skyIsNight && w != "rain" && w != "storm" { set("fly", 16) }
@@ -214,8 +217,8 @@ func sart(_ name: String) -> Img? { img("sart_" + name) }
 func wxArt(_ name: String) -> Img? { img("wx_" + name) }
 func tintFor() -> Img? {
     var layers: [(String, String)] = []
-    if adaptiveBackground && WX.tod == "dawn" { layers.append(("rgba(255,150,190,0.28)", "rgba(255,205,150,0.38)")) }
-    if adaptiveBackground && WX.tod == "dusk" { layers.append(("rgba(80,50,140,0.42)", "rgba(255,120,60,0.45)")) }
+    if WX.tod == "dawn" { layers.append(("rgba(255,150,190,0.28)", "rgba(255,205,150,0.38)")) }
+    if WX.tod == "dusk" { layers.append(("rgba(80,50,140,0.42)", "rgba(255,120,60,0.45)")) }
     let s = WX.season
     if s == "halloween" { layers.append(("rgba(70,20,90,0.35)", "rgba(255,110,20,0.28)")) }
     else if s == "fall" { layers.append(("rgba(255,140,40,0.10)", "rgba(255,140,40,0.16)")) }
@@ -321,10 +324,8 @@ func hash2(_ a: Int, _ b: Int) -> Double {
     h = toInt32(Double(h ^ Int32(bitPattern: UInt32(bitPattern: h) >> 13)) * 1274126177)
     return Double(UInt32(bitPattern: h ^ Int32(bitPattern: UInt32(bitPattern: h) >> 16))) / 4294967296
 }
-func drawSeasonPipes() {
-    drawSeasonPipesBase()
-    if weatherOn() { seasonPipes() }
-}
+/// v156: nothing is drawn on the pipes any more (the event pipe sets carry each event in the pipe itself)
+func drawSeasonPipes() {}
 private func drawSeasonPipesBase() {
     if !weatherOn() { return }
     let s = WX.season, snowy = s == "winter" || s == "christmas" || WX.weather == "snow"
@@ -426,6 +427,7 @@ final class WX2State {
 }
 let WX2 = WX2State()
 func seasonSky() {
+    if WX.season == "thanksgiving" { tgSky() }
     let s = WX.season, v = viewBox(), t = WX.t
     if s == "halloween" {
         let span = 1400.0
@@ -476,6 +478,7 @@ func seasonSky() {
     }
 }
 func updateSeasons(_ dt: Double) {
+    tgUpdate(dt)
     if !weatherOn() { WX2.witch = nil; WX2.ghosts = []; WX2.sleigh = nil; WX2.plane = nil; return }
     let s = WX.season, v = viewBox(), scroll = moving.speed > 0 && !ending.frozen ? 200 * speedMul() : 0
     WX2.par -= scroll * dt
@@ -558,6 +561,7 @@ func seasonPipes() {
     }
 }
 func seasonGround() {
+    if WX.season == "thanksgiving" { tgGround() }
     let s = WX.season, landW = 336.0 * 2, n = 2 + Int(floor(width / landW))
     for i in 0..<n {
         let cx = groundX + Double(i) * (landW - 1), left = cx - 336
@@ -590,5 +594,38 @@ func seasonGround() {
         } else if s == "newyear" {
             at("balloonNY", 140, 3); at("balloonNY", 420, 3); at("balloonNY", 640, 3)
         }
+    }
+}
+
+
+// ===================== v156: Thanksgiving (Nov 18 - 30): geese flying south, a turkey, corn, a cornucopia =====================
+final class TGState { var geese: [(x: Double, y: Double, t: Double, ph: Double)] = [], nextGeese = 4.0 }
+let TG = TGState()
+func tgUpdate(_ dt: Double) {
+    if !weatherOn() || WX.season != "thanksgiving" { TG.geese = []; return }
+    let v = viewBox(), scroll = moving.speed > 0 && !ending.frozen ? 200 * speedMul() : 0
+    TG.nextGeese -= dt
+    if TG.nextGeese <= 0 && TG.geese.isEmpty {   // a V of geese
+        TG.nextGeese = 12 + mrand() * 8
+        let y0 = rnd(600, 700), n = 5 + Int(floor(mrand() * 3))
+        for i in 0..<n { let side = i % 2 == 1 ? 1.0 : -1.0, row = Double((i + 1) / 2); TG.geese.append((x: v.R + 40 + row * 22, y: y0 + side * row * 14, t: 0, ph: mrand() * 6)) }
+    }
+    for i in TG.geese.indices { TG.geese[i].t += dt; TG.geese[i].x -= (60 + scroll * 0.08) * dt }
+    TG.geese = TG.geese.filter { $0.x > v.L - 40 }
+}
+func tgSky() {
+    for g in TG.geese { let up = Int(floor(g.t * 5 + g.ph)) % 2 == 1; spr(sart(up ? "goose1" : "goose2"), jsRound(g.x), jsRound(g.y + sin(g.t * 1.5 + g.ph) * 3), 3, 3, 0) }
+}
+func tgGround() {
+    let landW = 336.0 * 2, n = 2 + Int(floor(width / landW))
+    for i in 0..<n {
+        let left = groundX + Double(i) * (landW - 1) - 336
+        func at(_ im: Img?, _ off: Double, _ sc: Double, _ flip: Bool = false, _ dy: Double = 0) { if let im = im { spr(im, left + off, 224 + Double(im.height) * sc / 2 - 2 + dy, flip ? -sc : sc, sc, 0) } }
+        at(sart("cornStalk"), 40, 3); at(sart("cornStalk"), 66, 3, true); at(sart("cornStalk"), 640, 3)
+        at(sart("hay"), 150, 3); at(sart("hay"), 176, 3)
+        let bob = abs(sin(WX.t * 2.2 + Double(i))) > 0.6 ? 3.0 : 0
+        at(sart("turkey"), 320, 3, Int(floor(WX.t / 4 + Double(i))) % 2 == 1, bob)
+        at(sart("cornucopia"), 470, 3)
+        at(pix("pumpkin"), 560, 3); at(pix("pumpkin"), 590, 2)
     }
 }

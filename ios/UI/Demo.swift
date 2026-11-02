@@ -1,5 +1,7 @@
 import Foundation
 import UIKit
+import SwiftUI
+import WidgetKit
 
 /// "-shots": the build runs the app in the simulator and plays through the screens.
 /// "DEMO snap NAME" tells the build to take a screenshot right then.
@@ -14,6 +16,21 @@ enum Demo {
         let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("shots")
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         try? img.pngData()?.write(to: dir.appendingPathComponent(String(format: "%02d_", shotN) + name + ".png"))
+    }
+    /// v156: draws the Home Screen widget (small + medium) with sample numbers, so the build shows how it looks
+    @MainActor static func widgetShots() {
+        var d = WidgetData(); d.best = max(42, Int(localStorage.getItem("fb_bestScore") ?? "0") ?? 0); d.streak = 5; d.streakLast = WidgetShare.day()
+        d.dailyDay = WidgetShare.day(); d.dailyScore = 17; d.weather = FLWX.map { "\($0.temp)F, " + wmoText($0.code) } ?? "74F, light rain"
+        let bird = skinCanvas(pickedSkin() ?? birdColor, 2)?.ui
+        let e = FlappyEntry(date: Date(), data: d, bird: bird)
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent("shots")
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        for (name, fam, w, h) in [("widget_small", WidgetFamily.systemSmall, 170.0, 170.0), ("widget_medium", WidgetFamily.systemMedium, 364.0, 170.0)] {
+            let v = FlappyWidgetView(e: e, forced: fam).frame(width: w, height: h).clipShape(RoundedRectangle(cornerRadius: 22))
+            let r = ImageRenderer(content: v); r.scale = 3
+            if let png = r.uiImage?.pngData() { shotN += 1; try? png.write(to: dir.appendingPathComponent(String(format: "%02d_", shotN) + name + ".png")) }
+        }
+        say("widget group \(WidgetShare.group) folder \(WidgetShare.folder != nil)")
     }
     static func say(_ s: String) {
         if s.hasPrefix("snap ") { snap(String(s.dropFirst(5))) }
@@ -32,8 +49,9 @@ enum Demo {
         say("dailycourse \(dailyKey()) \(ys)")
         r = mulberry32(12345); say("mulberry 12345 \((0..<4).map { _ in r() })")
         at(2) { say("snap title") }
+        at(0.5) { Task { @MainActor in widgetShots() } }
         at(4) {}
-        for p in ["settings", "birds", "modes", "weather", "trails", "maker", "account", "leaders", "friends", "partycode", "dev", "avatar", "import"] {
+        for p in ["settings", "birds", "modes", "weather", "trails", "maker", "account", "leaders", "friends", "dev", "avatar", "import"] {
             at(1.0) { if p == "dev" { devMode = true }; openSheet(p) }
             at(1.5) { say("snap \(p)") }
             at(4.0) { closePicker() }
@@ -47,6 +65,9 @@ enum Demo {
         at(1.0) { say("snap pipes_winter"); pipePick = "newyear" }
         at(1.0) { say("snap pipes_newyear"); pipePick = "auto"; say("pipes now \(pipeSkin) season \(WX.season)") }
         at(1) { say("snap play3") }
+        at(0.5) { seasonPick = "thanksgiving"; pipePick = "auto"; rollWeather(); TG.nextGeese = 0; say("season \(WX.season) pipes \(pipeSkin) tod \(WX.tod)") }
+        at(2.5) { say("snap thanksgiving") }
+        at(0.5) { seasonPick = "auto"; rollWeather() }
         at(1) { autoplay = false; say("score \(score)") }
         at(3) { say("over \(isGameOver)"); say("snap over") }
         at(1.5) { say("snap over2") }

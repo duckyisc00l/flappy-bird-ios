@@ -18,7 +18,6 @@ final class UIBridge: ObservableObject {
     @Published var toasts: [Toast] = []
     @Published var invite: (uid: String, name: String, av: String?, bg: String?, room: String)? = nil
     @Published var update: (version: String, note: String)? = nil
-    @Published var partyOpen = false
     private var nextId = 0
     func refresh() { DispatchQueue.main.async { self.tick &+= 1 } }
     func accountChanged() {
@@ -68,7 +67,7 @@ func closePicker() {
 func backTarget(_ kind: String) -> String? {
     let BACK = ["maker": "birds", "export": "maker", "import": "birds"]
     let ACC = ["account", "profile", "twofa", "email", "newpass", "pals", "avatar"]
-    if ACC.contains(kind) || ["partycode", "notify", "tvapprove"].contains(kind) {
+    if ACC.contains(kind) || ["notify"].contains(kind) {
         if let f = PK.from[kind], f != kind { return f }
         return PK.fromSettings ? "settings" : nil
     }
@@ -80,7 +79,7 @@ func backTarget(_ kind: String) -> String? {
 let PAGE_TITLES = ["settings": "Settings", "birds": "Birds", "modes": "Modes", "weather": "Weather", "maker": "Bird Maker", "export": "Share", "import": "Import", "card": "Score Card",
                    "dev": "Developer", "replay": "Replay", "trails": "Trails", "friends": "Race a Friend", "leaders": "Leaderboard", "challenge": "Race!", "live": "Live Duel",
                    "account": "Account", "profile": "Profile", "twofa": "Two-Factor", "email": "Email", "newpass": "Password", "pals": "Friends", "avatar": "Picture",
-                   "partycode": "TV Party", "notify": "Notifications", "tvapprove": "Apple TV"]
+                   "notify": "Notifications"]
 
 // MARK: - the game's SpriteKit scene: runs the web loop every frame and passes taps to it
 

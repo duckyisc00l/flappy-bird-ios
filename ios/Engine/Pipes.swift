@@ -7,8 +7,8 @@ import UIKit
 // Pick them on the Weather page: Auto follows the season, or choose any set.
 let PIPE_SETS: [(String, String, String)] = [("auto", "AUTO", "Auto (by season)"), ("classic", "CLASSIC", "Classic"), ("halloween", "SPOOKY", "Spooky"),
     ("christmas", "CANDY", "Candy cane"), ("winter", "ICE", "Ice"), ("spring", "BLOSSOM", "Blossom"), ("summer", "BAMBOO", "Bamboo"), ("fall", "BARK", "Bark"),
-    ("valentine", "HEARTS", "Hearts"), ("newyear", "MIDNIGHT", "Midnight")]
-private let PIPE_ART: Set<String> = ["halloween", "christmas", "winter", "spring", "summer", "fall", "valentine", "newyear"]
+    ("valentine", "HEARTS", "Hearts"), ("newyear", "MIDNIGHT", "Midnight"), ("thanksgiving", "HARVEST", "Harvest")]
+private let PIPE_ART: Set<String> = ["halloween", "christmas", "winter", "spring", "summer", "fall", "valentine", "newyear", "thanksgiving"]
 var pipePick = "auto"
 /// the set the game draws right now ("classic" during the ending, haunted mode and the -1 run)
 var pipeSkin = "classic"
@@ -34,7 +34,9 @@ func themedImg(_ k: String) -> Img? {
 // "Weather from" on the Weather page switches between the two. If nothing can be reached, Auto falls back to the
 // old random weather for the season.
 let FL_PLACE = (name: "Daytona Beach, FL", lat: 29.2108, lon: -81.0228)
-struct FLData: Codable { var w: String; var code: Int; var temp: Int; var wind: Int; var day: Bool; var t: Double; var lat: Double; var lon: Double; var name: String; var here: Bool }
+struct FLData: Codable { var w: String; var code: Int; var temp: Int; var wind: Int; var day: Bool; var t: Double; var lat: Double; var lon: Double; var name: String; var here: Bool
+    var rise: Double? = nil, set: Double? = nil   // v156: today's sunrise / sunset (ms)
+}
 struct HereData: Codable { var lat: Double; var lon: Double; var name: String; var t: Double }
 var wxFrom = "daytona"   // "daytona" | "here"
 var HERE: HereData? = {
@@ -74,7 +76,7 @@ func fetchFlorida() {
     if flBusy { return }; flBusy = true
     let pl = wxPlace()
     let u = "https://api.open-meteo.com/v1/forecast?latitude=" + String(format: "%.2f", pl.lat) + "&longitude=" + String(format: "%.2f", pl.lon) +
-        "&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m,is_day&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto"
+        "&current=temperature_2m,weather_code,wind_speed_10m,wind_gusts_10m,is_day&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto&daily=sunrise,sunset&forecast_days=1"
     var rq = URLRequest(url: URL(string: u)!); rq.cachePolicy = .reloadIgnoringLocalCacheData; rq.timeoutInterval = 15
     URLSession.shared.dataTask(with: rq) { d, r, _ in
         DispatchQueue.main.async {
@@ -83,12 +85,16 @@ func fetchFlorida() {
                   let c = j["current"] as? [String: Any], let code = (c["weather_code"] as? NSNumber)?.intValue else { return }
             let wind = (c["wind_speed_10m"] as? NSNumber)?.doubleValue ?? 0, gust = (c["wind_gusts_10m"] as? NSNumber)?.doubleValue ?? 0
             let temp = (c["temperature_2m"] as? NSNumber)?.doubleValue ?? 0
-            let f = FLData(w: wmoToWx(code, wind, gust), code: code, temp: Int(jsRound(temp)), wind: Int(jsRound(wind)), day: (c["is_day"] as? NSNumber)?.intValue == 1,
+            var f = FLData(w: wmoToWx(code, wind, gust), code: code, temp: Int(jsRound(temp)), wind: Int(jsRound(wind)), day: (c["is_day"] as? NSNumber)?.intValue == 1,
                            t: nowMs(), lat: pl.lat, lon: pl.lon, name: pl.name, here: pl.here)
+            // sunrise / sunset arrive as local times ("2026-11-02T06:41") plus the place's UTC offset
+            let off = ((j["utc_offset_seconds"] as? NSNumber)?.doubleValue ?? 0) * 1000
+            if let dl = j["daily"] as? [String: Any], let sr = (dl["sunrise"] as? [String])?.first, let ss = (dl["sunset"] as? [String])?.first,
+               let a = localMs(sr), let b = localMs(ss) { f.rise = a - off; f.set = b - off }
             FLWX = f
             if let s = try? JSONEncoder().encode(f) { localStorage.setItem("fb_wxLive", String(decoding: s, as: UTF8.self)) }
             if weatherPick == "auto" && WX.weather != f.w { WX.weather = f.w; WX.seeded = false }
-            UIBridge.shared.refresh()
+            UIBridge.shared.refresh(); widgetSync()
         }
     }.resume()
 }
@@ -193,4 +199,25 @@ final class WXLoc: NSObject, CLLocationManagerDelegate {
         fetchFlorida(); UIBridge.shared.refresh()
     }
     private func saveHere() { if let h = HERE, let s = try? JSONEncoder().encode(h) { localStorage.setItem("fb_wxHere", String(decoding: s, as: UTF8.self)) } }
+}
+
+
+// ---------- v156: real day and night ----------
+/// "2026-11-02T06:41" read as if it were UTC (the caller takes the place's offset off)
+func localMs(_ s: String) -> Double? {
+    let fm = DateFormatter(); fm.locale = Locale(identifier: "en_US_POSIX"); fm.timeZone = TimeZone(secondsFromGMT: 0)
+    fm.dateFormat = s.count == 16 ? "yyyy-MM-dd'T'HH:mm" : "yyyy-MM-dd'T'HH:mm:ss"
+    return fm.date(from: s).map { $0.timeIntervalSince1970 * 1000 }
+}
+/// dawn and dusk are the 40 minutes either side of sunrise and sunset; offline it uses your clock
+func realTod() -> String {
+    let now = nowMs()
+    if let f = FLWX, var rise = f.rise, var set = f.set, now - f.t < 24 * 3600 * 1000 {
+        while now - rise > 86400000 { rise += 86400000; set += 86400000 }
+        let m = 40 * 60000.0
+        if abs(now - rise) < m { return "dawn" }
+        if abs(now - set) < m { return "dusk" }
+        return now > rise && now < set ? "day" : "night"
+    }
+    return clockTod()
 }

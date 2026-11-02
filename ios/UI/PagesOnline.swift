@@ -801,125 +801,13 @@ struct AvatarPage: View {
     }
 }
 
-// MARK: - TV party code, notifications, Apple TV approval
+// MARK: - notifications
 
-struct PartyCodePage: View {
-    @State private var code = ""
-    @State private var msg = ""
-    var body: some View {
-        Scroll {
-            ChS(t: "On the Apple TV, open PARTY. Scan its QR code with your camera, or type the code you see on the TV:")
-            Field(ph: "Code", text: $code, size: 20, center: true, kerning: 6, caps: true) { go() }
-            Msg(t: msg)
-            MkBtn("Join", .save, size: 9, pad: 11) { go() }
-        }
-    }
-    private func go() { if !joinParty(code) { msg = "Check the code on the TV"; playSound("hit") } }
-}
 struct NotifyPage: View {
     var body: some View {
         Scroll {
             ChS(t: "Get a notification when a friend beats your score or sends you a race, even when the game is closed.")
             Note(t: "Notifications work in the website version: open duckyisc00l.github.io/flappy-bird in Safari, tap Share > Add to Home Screen, and turn them on there.")
         }
-    }
-}
-struct TVApprovePage: View {
-    @State private var msg = ""
-    @State private var ok = false
-    @State private var done = false
-    var body: some View {
-        Scroll {
-            if done {
-                ChT(t: "Done!", color: K.okGreen)
-                ChS(t: "Look at your TV: it signs in as \(myUsername()) in a moment.")
-                MkBtn("Close", .save, size: 9, pad: 11) { closePicker() }
-            } else if tvCode == nil { Note(t: "Scan the QR code on your Apple TV to sign it in.") }
-            else if !accSignedIn() {
-                ChT(t: "Sign in first")
-                ChS(t: "Sign in on this phone, then you can sign in the Apple TV with the same account.")
-                MkBtn(ACCT.needCode ? "Enter your 2FA code" : "Sign in", .save, size: 9, pad: 11) { playSound("swoosh"); accGo("account") }
-            } else {
-                Avatar(av: ACCT.profile?["avatar"] as? String, bg: ACCT.profile?["avatar_bg"] as? String, w: 96, h: 80, radius: 8, border: 2).padding(.vertical, 4)
-                ChT(t: "Sign in the Apple TV?")
-                ChS(t: "As \(myUsername()). The TV shows code \(tvCode!) - check it matches.")
-                Msg(t: msg, ok: ok)
-                WorkBtn(t: "Approve", busy: "Approving...", msg: $msg, ok: $ok) {
-                    let r = try await sbAsync("rpc/tv_link_approve", method: "POST", body: ["code": tvCode!])
-                    if (r as? Bool) != true { throw NetError(message: "That code ran out or was already used. Get a new one on the TV") }
-                    tvCode = nil; playSound("point"); haptic(); done = true
-                }
-                MkBtn("Cancel", .link, size: 9, pad: 11) { tvCode = nil; closePicker() }
-            }
-        }
-    }
-}
-
-// MARK: - the phone as the Apple TV's controller
-
-struct PartyController: View {
-    @ObservedObject var ui = UIBridge.shared
-    @State private var nick = PARTY.nick
-    @State private var hit = false
-    var body: some View {
-        _ = ui.tick
-        let st = PARTY.st, quiet = Date().timeIntervalSince(PARTY.lastTv) > 5, me = partyMe()
-        var status = "", big = "TAP TO FLAP", small = "", cls = ""
-        if st == nil || quiet { status = "Looking for TV \(PARTY.code ?? "")..."; big = "WAITING"; small = "Is the party open on the Apple TV?"; cls = "wait" }
-        else if (st!["s"] as? String) == "closed" { status = "The TV closed the party"; big = "BYE!"; cls = "wait" }
-        else if me == nil { status = "Joining..."; big = "WAITING"; small = ((st!["pl"] as? [Any])?.count ?? 0) >= 8 ? "The party is full (8 players)" : ""; cls = "wait" }
-        else {
-            let s = st!["s"] as? String ?? ""
-            let alive = (me!["alive"] as? Bool) ?? ((me!["alive"] as? NSNumber)?.boolValue ?? false), inR = (me!["in"] as? Bool) ?? ((me!["in"] as? NSNumber)?.boolValue ?? false), sc = Int(num(me!["score"]) ?? 0)
-            if s == "lobby" { status = "You're in! \((st!["pl"] as? [Any])?.count ?? 0) playing - " + (st!["mode"] as? String ?? "Normal"); big = "READY"; small = "The host starts with the Apple TV remote"; cls = "wait" }
-            else if s == "count" { status = "Get ready!"; big = String(describing: st!["c"] ?? "GO"); small = "Tap to flap when it starts"; cls = "count" }
-            else if s == "play" {
-                if !inR { status = "Round in progress"; big = "NEXT ROUND"; small = "You'll fly in the next one"; cls = "wait" }
-                else if alive { status = "Score \(sc)"; big = "FLAP!"; cls = "go" }
-                else { status = "You crashed with \(sc)"; big = "OUCH!"; small = "Waiting for the others..."; cls = "dead" }
-            } else if s == "over" {
-                let win = st!["win"] as? [String] ?? [], won = win.contains(me!["name"] as? String ?? "")
-                status = "Round over"; big = won ? "YOU WIN!" : win.count == 1 ? win[0].uppercased() + " WINS" : "TIE!"; small = "Your score: \(sc)"; cls = won ? "win" : "wait"
-            }
-        }
-        let (bg, sh): (Color, Color) = cls == "wait" ? (K.panel, K.line) : cls == "count" || cls == "win" ? (Color(hex: 0xf5c542), Color(hex: 0xd6a52a)) : cls == "dead" ? (K.red, Color(hex: 0xa82a1e)) : (K.green, K.greenDark)
-        return GeometryReader { geo in
-            VStack(spacing: 0) {
-                HStack(spacing: 10) {
-                    Avatar(av: partyBird(), bg: accSignedIn() ? ACCT.profile?["avatar_bg"] as? String : "sky", w: 54, h: 45, border: 3)
-                    TextField("Your name", text: Binding(get: { accSignedIn() ? partyName() : nick }, set: { v in nick = String(v.filter { $0.isLetter || $0.isNumber || " .-!'_".contains($0) }.prefix(14)); PARTY.nick = nick; saveStr("partyNick", nick) }))
-                        .disabled(accSignedIn()).font(K.kong(16)).textInputAutocapitalization(.characters).foregroundColor(K.brown)
-                        .onSubmit { partyHello() }
-                        .padding(.vertical, 9).padding(.horizontal, 10).padding(3).background(RoundedRectangle(cornerRadius: 10).fill(K.cream)).overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(K.brown, lineWidth: 3))
-                    Button { leaveParty() } label: { Text("\u{2715}").font(.system(size: 18)).foregroundColor(.white).frame(width: 46, height: 46).background(RoundedRectangle(cornerRadius: 12).fill(K.orange)).overlay(RoundedRectangle(cornerRadius: 12).stroke(K.brown, lineWidth: 3)) }.buttonStyle(.plain)
-                }
-                KT(status, 10, .white, shadow: K.brown, align: .center).padding(.top, 12).padding(.bottom, 10)
-                VStack(spacing: 14) {
-                    OutlinedTitle(t: big, size: 46, outline: 3, drop: 4).multilineTextAlignment(.center).padding(.horizontal, 10)
-                    if !small.isEmpty { KT(small, 9, K.brown, align: .center, spacing: 6).padding(.horizontal, 20) }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(ZStack(alignment: .bottom) { RoundedRectangle(cornerRadius: 26).fill(bg); sh.frame(height: 10) }.clipShape(RoundedRectangle(cornerRadius: 26)))
-                .overlay(RoundedRectangle(cornerRadius: 26).stroke(K.brown, lineWidth: 5))
-                .scaleEffect(hit ? 0.97 : 1)
-                .contentShape(Rectangle())
-                .simultaneousGesture(DragGesture(minimumDistance: 0).onChanged { v in
-                    guard v.translation == .zero, (st?["s"] as? String) == "play" else { return }
-                    if let m = me, ((m["alive"] as? Bool) ?? false) == false { return }
-                    partySend("f"); appHaptic("flap")
-                    hit = true; DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { hit = false }
-                })
-                Flow(spacing: 6, center: true) {
-                    ForEach(Array(((st?["pl"] as? [[String: Any]]) ?? []).enumerated()), id: \.offset) { _, p in
-                        let mine = (p["id"] as? String) == PARTY.id
-                        HStack(spacing: 8) { KT(p["name"] as? String ?? "", 8, mine ? .white : K.brown); if (st?["s"] as? String) != "lobby" { Text("\(Int(num(p["score"]) ?? 0))").font(K.kong(10)).foregroundColor(mine ? .white : K.brown) } }
-                            .padding(.vertical, 5).padding(.horizontal, 8).padding(2).background(RoundedRectangle(cornerRadius: 8).fill(mine ? K.orange : K.cream)).overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(K.brown, lineWidth: 2))
-                    }
-                }.frame(maxHeight: 92).clipped().padding(.top, 10)
-            }
-            .padding(.top, geo.safeAreaInsets.top + 10).padding(.horizontal, 12).padding(.bottom, geo.safeAreaInsets.bottom + 10)
-            .background(K.sky)
-        }
-        .ignoresSafeArea()
     }
 }
