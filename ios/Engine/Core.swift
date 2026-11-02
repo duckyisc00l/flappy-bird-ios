@@ -283,7 +283,8 @@ func hardOn() -> Bool { modeOn("hard") }
 func turboMul() -> Double { 1 + Double(min(max(score, 0), 50)) * 0.016 }
 func speedMul() -> Double { hardOn() ? HARD.speed : modeOn("turbo") ? turboMul() : 1 }
 func modeGap() -> Double { hardOn() ? HARD.gap : modeOn("tiny") ? 106 : modeOn("wavy") ? 140 : C.verticalPipeGap }
-func spawnEvery() -> Double { hardOn() ? HARD.every : modeOn("turbo") ? 1 / turboMul().squareRoot() : 1 }
+let PIPE_EVERY = 2.0   // v151: a new pipe every 2 seconds (was 1)
+func spawnEvery() -> Double { PIPE_EVERY * (hardOn() ? HARD.every : modeOn("turbo") ? 1 / turboMul().squareRoot() : 1) }
 func birdWidthNow() -> Double { bird.scale * (34 * abs(cos(bird.rot)) + 24 * abs(sin(bird.rot))) }
 func spawnPipe() {
     if endingWantsControl() { return }
