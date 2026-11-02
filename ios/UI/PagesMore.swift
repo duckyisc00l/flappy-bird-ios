@@ -94,10 +94,17 @@ struct MakerPage: View {
                         .overlay(RoundedRectangle(cornerRadius: 7).stroke(c == cur ? K.orange : .clear, lineWidth: 2).padding(-4)).overlay(RoundedRectangle(cornerRadius: 6).stroke(c == cur ? .white : .clear, lineWidth: 2).padding(-2))
                 }.buttonStyle(.plain)
             }
-            ColorPicker("", selection: Binding(get: { Color(css: cur ?? "#ffffff") }, set: { c in
-                let u = UIColor(c); var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0; u.getRed(&r, green: &g, blue: &b, alpha: &a)
-                pick(String(format: "#%02x%02x%02x", Int(r * 255), Int(g * 255), Int(b * 255)))
-            }), supportsOpacity: false).labelsHidden().frame(maxWidth: .infinity)
+            // "any colour": the website's rainbow square (the system colour picker sits invisibly on top to catch the tap)
+            ZStack {
+                RoundedRectangle(cornerRadius: 5).fill(AngularGradient(colors: [.red, .yellow, .green, .cyan, .blue, Color(red: 1, green: 0, blue: 1), .red], center: .center))
+                    .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(K.brown, lineWidth: 2))
+                    .overlay(Text("+").font(.system(size: 11, weight: .bold)).foregroundColor(.white).shadow(color: .black, radius: 1))
+                    .allowsHitTesting(false)
+                ColorPicker("", selection: Binding(get: { Color(css: cur ?? "#ffffff") }, set: { c in
+                    let u = UIColor(c); var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0; u.getRed(&r, green: &g, blue: &b, alpha: &a)
+                    pick(String(format: "#%02x%02x%02x", Int(r * 255), Int(g * 255), Int(b * 255)))
+                }), supportsOpacity: false).labelsHidden().scaleEffect(1.6).opacity(0.02)
+            }.aspectRatio(1, contentMode: .fit)
         }.padding(.bottom, 6)
     }
     // 21 x 20 big pixels (the bird is 17 x 12 in the middle)
@@ -346,7 +353,7 @@ struct DevPage: View {
                 Flow(spacing: 4) {
                     ForEach([("Start (0)", 0), ("100", 100), ("500", 500), ("900", 900), ("920 Walls", 920), ("975 Plants", 975), ("985 Blood", 985), ("996 Ending", 996), ("1011 Birds", 1011), ("1013 Swarm", 1013), ("-1 Run", -1)], id: \.0) { l, n in Opt(t: l, on: false) { haptic(); playSound("swoosh"); devJump(n) } }
                 }.padding(.bottom, 8)
-                HStack(spacing: 6) { Field(ph: "Any score", text: $num, numeric: true).padding(.bottom, -6); MkBtn("Go", .save) { if let n = Int(num), n >= 0 { devJump(n) } }.frame(width: 70) }.padding(.bottom, 10)
+                HStack(spacing: 6) { Field(ph: "Any score", text: $num, numeric: true, phSize: 16).padding(.bottom, -6); MkBtn("Go", .save) { if let n = Int(num), n >= 0 { devJump(n) } }.frame(width: 70) }.padding(.bottom, 10)
                 Sec(t: "Cheats"); Hint(t: "Only for this visit")
                 Flow(spacing: 4) {
                     Opt(t: "God mode", on: devGod) { devGod.toggle(); tick += 1 }

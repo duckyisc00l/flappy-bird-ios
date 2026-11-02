@@ -164,10 +164,10 @@ struct Msg: View { let t: String; var ok = false
     var body: some View { KT(t, 7, ok ? K.okGreen : K.red, spacing: 4).frame(maxWidth: .infinity, minHeight: 12, alignment: .leading).padding(.horizontal, 2).padding(.bottom, 6) } }
 /// .pk-search inputs
 struct Field: View {
-    let ph: String; @Binding var text: String; var secure = false; var size: CGFloat = 16; var center = false; var kerning: CGFloat = 0; var caps = false; var numeric = false; var content: UITextContentType? = nil; var submit: (() -> Void)? = nil
+    let ph: String; @Binding var text: String; var secure = false; var size: CGFloat = 16; var center = false; var kerning: CGFloat = 0; var caps = false; var numeric = false; var content: UITextContentType? = nil; var phSize: CGFloat = 10; var submit: (() -> Void)? = nil
     var body: some View {
         ZStack(alignment: center ? .center : .leading) {
-            if text.isEmpty { Text(ph).font(K.kong(10)).kerning(kerning).foregroundColor(K.placeholder) }
+            if text.isEmpty { Text(ph).font(K.kong(phSize)).kerning(kerning).foregroundColor(K.placeholder) }
             Group {
                 if secure { SecureField("", text: $text) } else { TextField("", text: $text) }
             }
@@ -239,7 +239,12 @@ struct PanelCard<C: View>: View {
 struct HeadBtn: View { let t: String; var big = false; let act: () -> Void
     var body: some View {
         Button(action: act) {
-            Text(t).font(.system(size: big ? 22 : 15, weight: .bold)).foregroundColor(.white).padding(.bottom, big ? 3 : 0)
+            Group {
+                if t == "\u{2715}" {   // the website's bold ✕ (the system glyph comes out thin here)
+                    Path { p in p.move(to: CGPoint(x: 0, y: 0)); p.addLine(to: CGPoint(x: 10, y: 10)); p.move(to: CGPoint(x: 10, y: 0)); p.addLine(to: CGPoint(x: 0, y: 10)) }
+                        .stroke(Color.white, style: StrokeStyle(lineWidth: 2.6, lineCap: .square)).frame(width: 10, height: 10)
+                } else { Text(t).font(.system(size: big ? 22 : 15, weight: .bold)).foregroundColor(.white).padding(.bottom, big ? 3 : 0) }
+            }
                 .frame(width: 30, height: 30)
                 .background(ZStack(alignment: .bottom) { RoundedRectangle(cornerRadius: 7).fill(K.orange); K.orangeDark.frame(height: 3) }.clipShape(RoundedRectangle(cornerRadius: 7)))
                 .overlay(RoundedRectangle(cornerRadius: 7).stroke(K.brown, lineWidth: 2))
