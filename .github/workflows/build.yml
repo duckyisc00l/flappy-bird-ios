@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-15-intel   # (the arm64 Macs keep dropping jobs: "capacity constraints")
     steps:
       - uses: actions/checkout@v4
       - name: Install XcodeGen
