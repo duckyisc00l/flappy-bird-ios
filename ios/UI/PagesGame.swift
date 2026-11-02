@@ -72,7 +72,7 @@ struct SettingsPage: View {
     @State private var verTaps = 0
     @State private var verAt = Date.distantPast
     @State private var verText = ""
-    @State private var show: String? = nil
+    @State private var seed = Int.random(in: 0..<1_000_000)   // a different order of random birds each time Settings opens
     var body: some View {
         _ = ui.tick
         let pickName = birdPick == "random" ? "Random" : birdPick == "favs" ? "Favorites" : skinExists(birdPick) ? skinName(birdPick) : "Random"
@@ -117,8 +117,11 @@ struct SettingsPage: View {
     private func tileBird(_ n: Int) -> String {
         if skinExists(birdPick) { return birdPick }
         let pool = birdPick == "favs" && !favBirds.isEmpty ? favBirds : allSkins()
-        if show == nil || n % 20 == 0 { DispatchQueue.main.async { show = pool[Int(floor(mrand() * Double(pool.count)))] } }
-        return show ?? "yellow"
+        if pool.isEmpty { return "yellow" }
+        // one bird per 2-second slot, worked out from the slot itself (picking at random on every redraw
+        // during the switch flashed several birds in a split second)
+        let slot = n / 20
+        return pool[abs((slot &* 7919 &+ seed) % pool.count)]
     }
     private func tile<I: View>(_ kind: String, _ label: String, _ value: String, @ViewBuilder icon: () -> I) -> some View {
         Button { playSound("swoosh"); haptic(); showPage(kind) } label: {
