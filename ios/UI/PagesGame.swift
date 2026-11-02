@@ -117,7 +117,7 @@ struct SettingsPage: View {
     private func tileBird(_ n: Int) -> String {
         if skinExists(birdPick) { return birdPick }
         let pool = birdPick == "favs" && !favBirds.isEmpty ? favBirds : allSkins()
-        if show == nil || n % 10 == 0 { DispatchQueue.main.async { show = pool[Int(floor(mrand() * Double(pool.count)))] } }
+        if show == nil || n % 20 == 0 { DispatchQueue.main.async { show = pool[Int(floor(mrand() * Double(pool.count)))] } }
         return show ?? "yellow"
     }
     private func tile<I: View>(_ kind: String, _ label: String, _ value: String, @ViewBuilder icon: () -> I) -> some View {
@@ -192,7 +192,7 @@ struct BirdsPage: View {
         return HStack(spacing: 8) {
             ZStack {
                 if real { BirdView(id: id, w: 54, h: 45) }
-                else { TimelineView(.periodic(from: .now, by: 0.1)) { c in let n = Int(c.date.timeIntervalSinceReferenceDate * 10); let pool = id == "favs" && !favBirds.isEmpty ? favBirds : allSkins(); PixImage(img: skinCanvas(pool[(n / 6 * 7919) % pool.count], [1, 2, 3, 2][n % 4]), w: 54, h: 45) } }
+                else { TimelineView(.periodic(from: .now, by: 0.1)) { c in let n = Int(c.date.timeIntervalSinceReferenceDate * 10); let pool = id == "favs" && !favBirds.isEmpty ? favBirds : allSkins(); PixImage(img: skinCanvas(pool[(n / 20 * 7919) % pool.count], [1, 2, 3, 2][n % 4]), w: 54, h: 45) } }
             }.frame(width: 54, height: 45).background(K.sky).clipShape(RoundedRectangle(cornerRadius: 6)).overlay(RoundedRectangle(cornerRadius: 6).stroke(K.brown, lineWidth: 2))
             VStack(alignment: .leading, spacing: 4) {
                 KT(real ? skinName(id) : (id == "favs" ? "Random favorite" : "Random bird"), 9, K.orange, lines: 1)
