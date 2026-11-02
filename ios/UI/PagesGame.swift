@@ -124,7 +124,7 @@ struct SettingsPage: View {
         Button { playSound("swoosh"); haptic(); showPage(kind) } label: {
             VStack(spacing: 3) {
                 ZStack { K.sky; icon() }.frame(width: 44, height: 40).clipShape(RoundedRectangle(cornerRadius: 5)).overlay(RoundedRectangle(cornerRadius: 5).stroke(K.brown, lineWidth: 2))
-                KT(label, 8, K.orange, shadow: Color(hex: 0xfff6c8))
+                KT(label, 8, K.orange)
                 KT(value, 6, lines: 1).truncationMode(.tail).padding(.horizontal, 2)
             }
             .frame(maxWidth: .infinity).padding(.top, 5).padding(.bottom, 5).padding(.horizontal, 2)
@@ -135,7 +135,7 @@ struct SettingsPage: View {
     private func row(_ name: String, color: Color = K.orange, trailing: AnyView, last: Bool = false, _ act: @escaping () -> Void) -> some View {
         Button(action: act) {
             VStack(spacing: 0) {
-                HStack(spacing: 10) { KT(name, 8, color, shadow: K.cream).frame(maxWidth: .infinity, alignment: .leading); trailing }
+                HStack(spacing: 10) { KT(name, 8, color).frame(maxWidth: .infinity, alignment: .leading); trailing }
                     .padding(.vertical, 7).padding(.horizontal, 9).frame(minHeight: 33)
                 if !last { K.line2.frame(height: 1) }
             }.contentShape(Rectangle())
@@ -195,7 +195,7 @@ struct BirdsPage: View {
                 else { TimelineView(.periodic(from: .now, by: 0.1)) { c in let n = Int(c.date.timeIntervalSinceReferenceDate * 10); let pool = id == "favs" && !favBirds.isEmpty ? favBirds : allSkins(); PixImage(img: skinCanvas(pool[(n / 6 * 7919) % pool.count], [1, 2, 3, 2][n % 4]), w: 54, h: 45) } }
             }.frame(width: 54, height: 45).background(K.sky).clipShape(RoundedRectangle(cornerRadius: 6)).overlay(RoundedRectangle(cornerRadius: 6).stroke(K.brown, lineWidth: 2))
             VStack(alignment: .leading, spacing: 4) {
-                KT(real ? skinName(id) : (id == "favs" ? "Random favorite" : "Random bird"), 9, K.orange, shadow: K.cream, lines: 1)
+                KT(real ? skinName(id) : (id == "favs" ? "Random favorite" : "Random bird"), 9, K.orange, lines: 1)
                 KT(real ? skinCat(id) : (id == "favs" ? "\(favBirds.count) favorites" : "A new bird every game"), 6).opacity(0.8)
             }.frame(maxWidth: .infinity, alignment: .leading)
             if real && id.hasPrefix("custom_") {
@@ -323,7 +323,7 @@ struct TrailsPage: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 70), spacing: 4)], spacing: 4) {
                     tile("none", "None")
                     ForEach(Array(cats.enumerated()), id: \.offset) { _, c in
-                        Section(header: KT(c, 8, K.orange, shadow: K.cream).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6).padding(.horizontal, 2).padding(.bottom, 1)) {
+                        Section(header: KT(c, 8, K.orange).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 6).padding(.horizontal, 2).padding(.bottom, 1)) {
                             ForEach(TRAILS.filter { $0.cat == c }, id: \.id) { t in tile(t.id, t.name) }
                         }
                     }

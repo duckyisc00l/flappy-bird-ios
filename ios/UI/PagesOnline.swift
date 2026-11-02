@@ -554,7 +554,7 @@ struct ProfilePage: View {
     private func arow(_ name: String, _ val: String, danger: Bool = false, last: Bool = false, _ act: @escaping () -> Void) -> some View {
         Button { playSound("swoosh"); haptic(); act() } label: {
             VStack(spacing: 0) {
-                HStack(spacing: 10) { KT(name, 8, danger ? K.red : K.orange, shadow: K.cream).frame(maxWidth: .infinity, alignment: .leading); KT(val, 6).opacity(0.75); Arrow() }.padding(.vertical, 7).padding(.horizontal, 9).frame(minHeight: 33)
+                HStack(spacing: 10) { KT(name, 8, danger ? K.red : K.orange).frame(maxWidth: .infinity, alignment: .leading); KT(val, 6).opacity(0.75); Arrow() }.padding(.vertical, 7).padding(.horizontal, 9).frame(minHeight: 33)
                 if !last { K.line2.frame(height: 1) }
             }.contentShape(Rectangle())
         }.buttonStyle(.plain)

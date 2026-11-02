@@ -128,7 +128,7 @@ struct ExportPage: View {
         if let cb = PK.exportId.flatMap({ customBird($0) }) {
             let code = birdToCode(cb)
             VStack(spacing: 0) {
-                HStack(spacing: 8) { BirdView(id: cb.id, w: 50, h: 48, bg: K.sky, radius: 7, border: K.brown); KT(cb.name, 9, K.orange, shadow: K.cream).frame(maxWidth: .infinity, alignment: .leading) }.padding(.bottom, 5)
+                HStack(spacing: 8) { BirdView(id: cb.id, w: 50, h: 48, bg: K.sky, radius: 7, border: K.brown); KT(cb.name, 9, K.orange).frame(maxWidth: .infinity, alignment: .leading) }.padding(.bottom, 5)
                 Hint(t: "Send this code to a friend. They tap Import a bird and paste it.")
                 CodeBox(text: .constant(code), readOnly: true)
                 HStack(spacing: 5) {

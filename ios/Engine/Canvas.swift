@@ -107,7 +107,9 @@ func cssFont(_ s: String) -> FontSpec {
     fontCache[s] = f
     return f
 }
-struct TextMetrics { let width: Double; let actualBoundingBoxLeft: Double; let actualBoundingBoxRight: Double; let ascent: Double; let descent: Double }
+struct TextMetrics { let width: Double; let actualBoundingBoxLeft: Double; let actualBoundingBoxRight: Double; let ascent: Double; let descent: Double
+    var inkAscent = 0.0, inkDescent = 0.0   // how far the glyphs really reach above / below the baseline
+}
 private func ctLine(_ text: String, _ f: FontSpec) -> CTLine {
     let a = NSAttributedString(string: text, attributes: [NSAttributedString.Key(kCTFontAttributeName as String): f.ct])
     return CTLineCreateWithAttributedString(a)
@@ -117,7 +119,8 @@ func measure(_ text: String, _ f: FontSpec) -> TextMetrics {
     var asc: CGFloat = 0, desc: CGFloat = 0, lead: CGFloat = 0
     let w = CTLineGetTypographicBounds(line, &asc, &desc, &lead)
     let ink = CTLineGetBoundsWithOptions(line, .useGlyphPathBounds)
-    return TextMetrics(width: w, actualBoundingBoxLeft: ink.isNull ? 0 : -Double(ink.minX), actualBoundingBoxRight: ink.isNull ? 0 : Double(ink.maxX), ascent: Double(asc), descent: Double(desc))
+    return TextMetrics(width: w, actualBoundingBoxLeft: ink.isNull ? 0 : -Double(ink.minX), actualBoundingBoxRight: ink.isNull ? 0 : Double(ink.maxX), ascent: Double(asc), descent: Double(desc),
+                       inkAscent: ink.isNull ? 0 : Double(ink.maxY), inkDescent: ink.isNull ? 0 : -Double(ink.minY))
 }
 
 // MARK: - the shared canvas state (transform, styles, path)
@@ -445,7 +448,8 @@ final class SKCanvas: Canvas2D {
         let pad = (fill ? 0 : st.lineWidth) + 2
         let asc = Double(CTFontGetAscent(f.ct)), desc = Double(CTFontGetDescent(f.ct))
         let left = min(0, -m.actualBoundingBoxLeft) - pad, right = max(m.width, m.actualBoundingBoxRight) + pad
-        let top = -asc - pad, bottom = desc + pad
+        // v153: big enough for the glyphs themselves (04b19's digits reach above the font's ascent: the score's top edge was cut off)
+        let top = -max(asc, m.inkAscent) - pad, bottom = max(desc, m.inkDescent) + pad
         let sc = Double(ks) / 4
         let cv = CGCanvas(Int(((right - left) * sc).rounded(.up)), Int(((bottom - top) * sc).rounded(.up)))
         cv.scale(sc, sc); cv.translate(-left, -top)

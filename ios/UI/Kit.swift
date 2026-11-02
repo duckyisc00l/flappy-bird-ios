@@ -153,7 +153,7 @@ struct Flow: Layout {
 struct Note: View { let t: String; var center = false
     var body: some View { KT(t, 6, K.brown, align: center ? .center : .leading, spacing: 3).opacity(0.8).frame(maxWidth: .infinity, alignment: center ? .center : .leading).padding(.horizontal, 2).padding(.bottom, 7) } }
 struct Sec: View { let t: String; var top: CGFloat = 0
-    var body: some View { KT(t, 8, K.orange, shadow: K.cream).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 2).padding(.top, top + 2).padding(.bottom, 4) } }
+    var body: some View { KT(t, 8, K.orange).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 2).padding(.top, top + 2).padding(.bottom, 4) } }
 struct Hint: View { let t: String
     var body: some View { KT(t, 6, K.brown, spacing: 3).opacity(0.75).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 2).padding(.top, 2).padding(.bottom, 5) } }
 struct ChT: View { let t: String; var color: Color = K.orange; var size: CGFloat = 18
