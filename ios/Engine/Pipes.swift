@@ -27,12 +27,12 @@ func themedImg(_ k: String) -> Img? {
 }
 
 // ---------- Auto weather = the weather in Florida right now ----------
-// Open-Meteo (free, no key). Orlando, in the middle of the state. Refreshed every 10 minutes; if it can't be
+// Open-Meteo (free, no key). Daytona Beach. Refreshed every 10 minutes; if it can't be
 // reached, Auto falls back to the old random weather for the season.
-let FL_PLACE = (name: "Orlando, FL", lat: 28.5384, lon: -81.3789)
+let FL_PLACE = (name: "Daytona Beach, FL", lat: 29.2108, lon: -81.0228)
 struct FLData: Codable { var w: String; var code: Int; var temp: Int; var wind: Int; var day: Bool; var t: Double }
 var FLWX: FLData? = {
-    guard let s = localStorage.getItem("fb_flwx"), let o = try? JSONDecoder().decode(FLData.self, from: Data(s.utf8)), !o.w.isEmpty else { return nil }
+    guard let s = localStorage.getItem("fb_flwx_daytona"), let o = try? JSONDecoder().decode(FLData.self, from: Data(s.utf8)), !o.w.isEmpty else { return nil }
     return o
 }()
 func nowMs() -> Double { Date().timeIntervalSince1970 * 1000 }
@@ -67,7 +67,7 @@ func fetchFlorida() {
             let temp = (c["temperature_2m"] as? NSNumber)?.doubleValue ?? 0
             let f = FLData(w: wmoToWx(code, wind, gust), code: code, temp: Int(jsRound(temp)), wind: Int(jsRound(wind)), day: (c["is_day"] as? NSNumber)?.intValue == 1, t: nowMs())
             FLWX = f
-            if let s = try? JSONEncoder().encode(f) { localStorage.setItem("fb_flwx", String(decoding: s, as: UTF8.self)) }
+            if let s = try? JSONEncoder().encode(f) { localStorage.setItem("fb_flwx_daytona", String(decoding: s, as: UTF8.self)) }
             if weatherPick == "auto" && WX.weather != f.w { WX.weather = f.w; WX.seeded = false }
             UIBridge.shared.refresh()
         }
