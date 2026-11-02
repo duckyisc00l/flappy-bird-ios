@@ -20,7 +20,7 @@ targets:
       properties:
         CFBundleDisplayName: Flappy Bird
         CFBundleShortVersionString: "6.2"
-        CFBundleVersion: "161"
+        CFBundleVersion: "162"
         UILaunchScreen:
           UIColorName: ""
         UIRequiresFullScreen: true
@@ -36,6 +36,7 @@ targets:
           - CFBundleURLName: flappybird
             CFBundleURLSchemes: [flappybird]
         NSPhotoLibraryAddUsageDescription: Save your score card and replay clips to Photos.
+        NSLocationWhenInUseUsageDescription: So the game's weather matches the weather where you are. Your location is rounded to about 1 km and only used to look up the weather.
         ITSAppUsesNonExemptEncryption: false
     settings:
       base:

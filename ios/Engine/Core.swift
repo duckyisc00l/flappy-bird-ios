@@ -283,9 +283,16 @@ func hardOn() -> Bool { modeOn("hard") }
 func turboMul() -> Double { 1 + Double(min(max(score, 0), 50)) * 0.016 }
 func speedMul() -> Double { hardOn() ? HARD.speed : modeOn("turbo") ? turboMul() : 1 }
 func modeGap() -> Double { hardOn() ? HARD.gap : modeOn("tiny") ? 106 : modeOn("wavy") ? 140 : C.verticalPipeGap }
-let PIPE_EVERY = 2.0   // v151: a new pipe every 2 seconds (was 1)
+let PIPE_EVERY = 1.0   // a new pipe every second (v153: back from 2; the wait is at the start now)
 func spawnEvery() -> Double { PIPE_EVERY * (hardOn() ? HARD.every : modeOn("turbo") ? 1 / turboMul().squareRoot() : 1) }
 func birdWidthNow() -> Double { bird.scale * (34 * abs(cos(bird.rot)) + 24 * abs(sin(bird.rot))) }
+let FIRST_PIPE_WAIT = 2.0
+/// when the spawner should drop the first pipe so it reaches the screen edge 2 s after the tap
+func firstPipeWait() -> Double {
+    let v = viewBox(), pts = 200 * moving.speed * speedMul()   // pipes move 1 pt per 0.005 s
+    let travel = max(0, (width + 30) - v.R)                     // spawned at width + 60, 30 pt half-width
+    return max(0, FIRST_PIPE_WAIT - travel / pts)
+}
 func spawnPipe() {
     if endingWantsControl() { return }
     if afterlife >= 1 && afterlife != 1 { return }
@@ -381,6 +388,12 @@ func startGame() {
     for (i, p) in pipeList.filter({ !$0.gold && $0.falling == nil }).sorted(by: { $0.gx < $1.gx }).enumerated() { p.k = passedCount() + 1 + i }
     bird.dynamic = true
     flapBird()
+    // v153: clear sky, and the first pipe comes onto the screen 2 seconds after the tap (ghosts record the same start)
+    if afterlife == 0 && !ending.on {
+        pipeList = pipeList.filter { $0.gold || $0.falling != nil }
+        if let a = spawnerAction() { a.i = 1; a.started = true; a.t = a.steps[1].dur - firstPipeWait() }   // (setSpawnerRemaining caps it at one interval)
+        if let R = ghostRec { R.pipes = []; R.phase = spawnerRemaining() }
+    }
     // v147: watching someone's run
     if let W = WATCH, !W.done {
         runUsedBot = true
@@ -396,6 +409,7 @@ func removeStartUI() {
 func handlePlayTap() {
     if !hitButton {
         hitButton = true
+        wxAskOnce()   // v153: the first time, ask for your location for the weather
         playSound("swoosh")
         playButton.scale = 1.15
         run(scene, [.wait(0.1), .call({ haptic() }), .call({ playButton.scale = 1.2 }), .call({ flashScreen("#000", 0.25, 1, 0.25) }), .wait(0.25)], "playTap", done: prepareNewGame)

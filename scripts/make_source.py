@@ -13,7 +13,7 @@ SITE = 'https://duckyisc00l.github.io/flappy-bird/'
 size = os.path.getsize(ipa)
 date = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 desc = ('My own Flappy Bird remix, all in Swift: 2,000+ birds and a bird maker, game modes and a Daily Challenge, '
-        'seasons with their own pipes, live Florida weather, trails, ghosts, race links and live duels with friends, '
+        'seasons with their own pipes, the live weather where you are (or Daytona Beach), trails, ghosts, race links and live duels with friends, '
         'leaderboards, and a secret ending if you make it far enough.')
 notes = (notes or '').strip() or 'Build ' + build
 app = {
@@ -44,7 +44,8 @@ app = {
     'size': size,
     'appPermissions': {
         'entitlements': [],
-        'privacy': {'NSPhotoLibraryAddUsageDescription': 'Save your score cards and replay clips to Photos.'},
+        'privacy': {'NSPhotoLibraryAddUsageDescription': 'Save your score cards and replay clips to Photos.',
+                    'NSLocationWhenInUseUsageDescription': "So the game's weather matches the weather where you are (rounded to about 1 km)."},
     },
 }
 src = {

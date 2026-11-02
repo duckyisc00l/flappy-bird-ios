@@ -285,7 +285,12 @@ struct WeatherPage: View {
             VStack(alignment: .leading, spacing: 0) {
                 Sec(t: "Weather")
                 Flow(spacing: 4) { ForEach(WEATHERS, id: \.0) { w in Opt(t: w.2, on: weatherPick == w.0) { weatherPick = w.0; saveStr("weather", w.0); haptic(); playSound("swoosh"); rollWeather(); tick += 1 } } }.padding(.bottom, 8)
-                Note(t: floridaLine())   // v150: Auto = the live weather in Florida
+                Sec(t: "Weather from")   // v153: Daytona Beach or where you are
+                Flow(spacing: 4) {
+                    Opt(t: "Daytona Beach", on: wxFrom == "daytona") { haptic(); playSound("swoosh"); wxUseDaytona(); tick += 1 }
+                    Opt(t: "My location", on: wxFrom == "here") { haptic(); playSound("swoosh"); wxUseHere(); tick += 1 }
+                }.padding(.bottom, 6)
+                Note(t: floridaLine())
                 Sec(t: "Season")
                 Flow(spacing: 4) { ForEach(SEASONS, id: \.0) { w in Opt(t: w.2, on: seasonPick == w.0) { seasonPick = w.0; saveStr("season", w.0); haptic(); playSound("swoosh"); rollWeather(); tick += 1 } } }.padding(.bottom, 8)
                 Sec(t: "Pipes")
