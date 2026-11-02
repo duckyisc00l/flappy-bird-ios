@@ -180,7 +180,7 @@ final class WXLoc: NSObject, CLLocationManagerDelegate {
                     guard let p = marks?.first, var h = HERE else { return }
                     let town = p.locality ?? p.subAdministrativeArea ?? p.name ?? ""
                     let st = p.administrativeArea ?? ""
-                    if !town.isEmpty { h.name = st.isEmpty ? town : town + ", " + st; HERE = h; saveHere()
+                    if !town.isEmpty { h.name = st.isEmpty ? town : town + ", " + st; HERE = h; self.saveHere()
                         if var f = FLWX, f.here { f.name = h.name; FLWX = f }
                         UIBridge.shared.refresh() }
                 }
