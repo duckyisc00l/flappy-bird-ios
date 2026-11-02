@@ -508,7 +508,7 @@ func leaveParty(quiet: Bool = false) {
 func partyMe() -> [String: Any]? { (PARTY.st?["pl"] as? [[String: Any]])?.first { ($0["id"] as? String) == PARTY.id } }
 
 // ---------- v139: saved progress ----------
-let SAVE_SCALARS: [String] = ["birdPick", "trail", "gameMode", "weather", "season", "playSounds", "ghostOn", "adaptiveBackground", "appHaptics", "dailyStreak", "dailyLast"].map { "fb_" + $0 }
+let SAVE_SCALARS: [String] = ["birdPick", "trail", "gameMode", "weather", "season", "playSounds", "ghostOn", "adaptiveBackground", "appHaptics", "dailyStreak", "dailyLast", "pipes"].map { "fb_" + $0 }
 let SAVE_UNION = ["fb_favBirds", "fb_inboxSeen"], SAVE_BYID = ["fb_customBirds", "fb_friends"]
 func LIVE_KEYS(_ k: String) -> Bool { k.hasPrefix("fb_bestScore") || k.range(of: "^fb_ghost(Hard|_[a-z]+)?$", options: .regularExpression) != nil || k == "fb_inboxSeen" }
 func saveKind(_ k: String) -> String? {

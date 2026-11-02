@@ -274,17 +274,22 @@ struct ModesPage: View {
 
 struct WeatherPage: View {
     @State private var tick = 0
+    @ObservedObject var ui = UIBridge.shared   // redraws when the Florida weather comes in
     var body: some View {
-        _ = tick
+        _ = tick; _ = ui.tick
         let sToday = seasonByDate(Date())
         func sName(_ id: String) -> String { SEASONS.first { $0.0 == id }!.2 }
-        let status = "Today is " + sName(sToday) + ". Now showing: " + sName(WX.season) + ", " + (WEATHERS.first { $0.0 == WX.weather }?.2.lowercased() ?? "") + "."
+        let tod: String? = adaptiveBackground ? ["dawn": "sunrise", "day": "daytime", "dusk": "sunset", "night": "night"][clockTod()] : nil
+        let status = "Today is " + sName(sToday) + (tod != nil ? ", " + tod! : "") + ". Now showing: " + sName(WX.season) + ", " + (WEATHERS.first { $0.0 == WX.weather }?.2.lowercased() ?? "") + "."
         return FitScroll {
             VStack(alignment: .leading, spacing: 0) {
                 Sec(t: "Weather")
                 Flow(spacing: 4) { ForEach(WEATHERS, id: \.0) { w in Opt(t: w.2, on: weatherPick == w.0) { weatherPick = w.0; saveStr("weather", w.0); haptic(); playSound("swoosh"); rollWeather(); tick += 1 } } }.padding(.bottom, 8)
+                Note(t: floridaLine())   // v150: Auto = the live weather in Florida
                 Sec(t: "Season")
                 Flow(spacing: 4) { ForEach(SEASONS, id: \.0) { w in Opt(t: w.2, on: seasonPick == w.0) { seasonPick = w.0; saveStr("season", w.0); haptic(); playSound("swoosh"); rollWeather(); tick += 1 } } }.padding(.bottom, 8)
+                Sec(t: "Pipes")
+                Flow(spacing: 4) { ForEach(PIPE_SETS, id: \.0) { w in Opt(t: w.2, on: pipePick == w.0) { pipePick = w.0; saveStr("pipes", w.0); haptic(); playSound("swoosh"); applyPipes(); tick += 1 } } }.padding(.bottom, 8)
                 Note(t: status)
             }
         }.fixedSize(horizontal: false, vertical: true)

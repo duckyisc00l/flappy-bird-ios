@@ -41,7 +41,12 @@ enum Demo {
         at(1) { autoplay = true; handlePlayTap(); say("snap ready") }
         at(1.5) { say("snap play1") }
         at(3) { say("snap play2") }
-        at(4) { say("snap play3") }
+        at(0.5) { pipePick = "halloween"; say("pipes \(pipeSkin)") }
+        at(1.0) { say("snap pipes_halloween"); pipePick = "christmas" }
+        at(1.0) { say("snap pipes_christmas"); pipePick = "winter" }
+        at(1.0) { say("snap pipes_winter"); pipePick = "newyear" }
+        at(1.0) { say("snap pipes_newyear"); pipePick = "auto"; say("pipes now \(pipeSkin) season \(WX.season)") }
+        at(1) { say("snap play3") }
         at(1) { autoplay = false; say("score \(score)") }
         at(3) { say("over \(isGameOver)"); say("snap over") }
         at(1.5) { say("snap over2") }
@@ -52,6 +57,7 @@ enum Demo {
         at(0.5) { touchesBegan(0, 0) }
         at(0.6) { say("snap dailyplay") }
         at(3) { say("snap dailyover") }
+        at(1) { say("florida \(floridaLine()) weather \(WX.weather) pick \(weatherPick)") }
         at(1) { say("end") }
     }
 }

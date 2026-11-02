@@ -24,7 +24,7 @@ func layout() {
 }
 
 // ---------- Assets ----------
-func img(_ k: String) -> Img? { Assets.img(k) }
+func img(_ k: String) -> Img? { themedImg(k) }   // pipes follow the chosen set (Pipes.swift)
 func ok(_ im: Img?) -> Bool { im != nil }
 
 // ---------- Audio ----------
@@ -103,7 +103,7 @@ func loadSettings() {
     haunted = false; DEATHS = []
     adaptiveBackground = false; newBirds = true   // (switches removed in v101 / v102)
     haptics = loadBool("appHaptics", true)
-    weatherPick = loadStr("weather", "auto"); seasonPick = loadStr("season", "auto")
+    weatherPick = loadStr("weather", "auto"); seasonPick = loadStr("season", "auto"); pipePick = loadStr("pipes", "auto")
     birdPick = loadStr("birdPick", "random")
     favBirds = (try? JSONSerialization.jsonObject(with: Data((localStorage.getItem("fb_favBirds") ?? "[]").utf8)) as? [String]) ?? []
     trailPick = loadStr("trail", "none"); trailDefNow = trailDef(trailPick)

@@ -84,6 +84,7 @@ func rollWeather() {
         for (k, p) in odds { if r < p { w = k; break }; r -= p }
         WX.weather = w
     }
+    floridaOverride()   // Auto = the live weather in Florida (Pipes.swift)
     if WX.season == "halloween" && !adaptiveBackground { skyIsNight = true; WX.tod = "night" }
     WX.parts = []; WX.splash = []; WX.seeded = false; WX.bolt = nil; WX.flash = 0; WX.bats = []; WX.fw = []; WX.shoot = nil
 }
@@ -126,6 +127,7 @@ func newPart(_ k: String, _ v: (L: Double, R: Double), _ anywhere: Bool) -> WPar
 func updateWeather(_ dt: Double) {
     updateWeatherBase(dt)
     updateSeasons(dt)
+    applyPipes()
 }
 private func updateWeatherBase(_ dt: Double) {
     WX.t += dt

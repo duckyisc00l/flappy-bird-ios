@@ -6,8 +6,9 @@ struct FlappyBirdApp: App {
         _ = Audio.shared
         startEngine()
         startOnline()
+        startFlorida()
         NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { _ in appActive = false; hauntedMusicSync() }
-        NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in appActive = true; hauntedMusicSync() }
+        NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in appActive = true; hauntedMusicSync(); floridaWake() }
         if ProcessInfo.processInfo.arguments.contains("-shots") { DispatchQueue.main.asyncAfter(deadline: .now() + 3) { Demo.run() } }
     }
     var body: some Scene {

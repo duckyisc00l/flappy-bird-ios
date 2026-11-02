@@ -73,7 +73,7 @@ struct FriendsPage: View {
                 }
             } else { Note(t: "Play a round in \(mi.title) first (with no autoplay). Your best run becomes your ghost.") }
             Sec(t: "Add a friend's run", top: 6)
-            CodeBox(text: $pasted, ph: "Paste a race link (or a code)", lines: 3)
+            CodeBox(text: $pasted, ph: "Paste a race link (or a code)", lines: 3, editSize: 8)
             Msg(t: msg)
             MkBtn("Add friend", .save) { addFriend() }
             if !friendList.isEmpty {

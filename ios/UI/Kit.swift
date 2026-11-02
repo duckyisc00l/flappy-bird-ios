@@ -184,15 +184,15 @@ struct Field: View {
 }
 /// .mk-code text areas
 struct CodeBox: View {
-    @Binding var text: String; var readOnly = false; var ph = ""; var lines: CGFloat = 5; var size: CGFloat = 11
+    @Binding var text: String; var readOnly = false; var ph = ""; var lines: CGFloat = 5; var size: CGFloat = 11; var editSize: CGFloat = 16
     var body: some View {
         ZStack(alignment: .topLeading) {
             if readOnly {
                 ScrollView { Text(text).font(.system(size: size, design: .monospaced)).foregroundColor(K.brown).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled) }
             } else {
-                TextEditor(text: $text).font(.system(size: 16, design: .monospaced)).foregroundColor(K.brown).autocorrectionDisabled().textInputAutocapitalization(.never)
+                TextEditor(text: $text).font(.system(size: editSize, design: .monospaced)).foregroundColor(K.brown).autocorrectionDisabled().textInputAutocapitalization(.never)
                     .scrollContentBackground(.hidden)
-                if text.isEmpty { Text(ph).font(.system(size: 16, design: .monospaced)).foregroundColor(K.placeholder).padding(.top, 8).padding(.leading, 5).allowsHitTesting(false) }
+                if text.isEmpty { Text(ph).font(.system(size: editSize, design: .monospaced)).foregroundColor(K.placeholder).padding(.top, 8).padding(.leading, 5).allowsHitTesting(false) }
             }
         }
         .padding(7).frame(height: lines * 15 + 14).padding(2)

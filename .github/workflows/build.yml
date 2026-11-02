@@ -49,12 +49,35 @@ jobs:
           cp "$F" out/demo.txt 2>/dev/null || true
           xcrun simctl terminate "$UDID" com.jordanvalladares.flappybird || true
           grep DEMO out/console.txt | head -30 || true
-      - name: Save the IPA to the 'ipa' branch
+      - name: Publish the IPA, a GitHub release and the SideStore source
         if: ${{ hashFiles('FlappyBird.ipa') != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NOTES: ${{ github.event.head_commit.message }}
         run: |
-          mkdir ipaout && cp FlappyBird.ipa ipaout/ && cd ipaout
+          PL=build/Build/Products/Release-iphoneos/FlappyBird.app/Info.plist
+          VER=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$PL")
+          BLD=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" "$PL")
+          TAG="ios-$BLD"; NOTE1=$(printf '%s' "$NOTES" | head -1)
+          # one release per build number (the SideStore source points at it)
+          if gh release view "$TAG" > /dev/null 2>&1; then gh release upload "$TAG" FlappyBird.ipa --clobber
+          else gh release create "$TAG" FlappyBird.ipa --title "iPhone $VER ($BLD)" --notes "${NOTE1:-Build $BLD}" --latest; fi
+          # keep the 6 newest iPhone releases
+          gh release list --limit 100 --json tagName,createdAt -q '[.[] | select(.tagName | startswith("ios-"))] | sort_by(.createdAt) | reverse | .[6:] | .[].tagName' \
+            | while read -r t; do gh release delete "$t" --yes --cleanup-tag || true; done
+          URL="https://github.com/${{ github.repository }}/releases/download/$TAG/FlappyBird.ipa"
+          mkdir -p ipaout/shots && cp FlappyBird.ipa ipaout/
+          sips -Z 512 App/Assets.xcassets/AppIcon.appiconset/icon-1024.png --out ipaout/icon.png > /dev/null
+          SH=""
+          for n in title play2 pipes_halloween over2 card weather; do
+            f=$(ls out/shots/*_$n.png 2> /dev/null | head -1)
+            if [ -n "$f" ]; then sips -Z 1400 "$f" --out "ipaout/shots/$n.png" > /dev/null; SH="$SH $n.png"; fi
+          done
+          python3 scripts/make_source.py ipaout/source.json FlappyBird.ipa "$VER" "$BLD" "$URL" "$NOTE1" $SH
+          cp ipaout/source.json out/source.json
+          cd ipaout
           git init -q; git config user.name "github-actions"; git config user.email "github-actions@users.noreply.github.com"
-          git checkout -q -b ipa; git add FlappyBird.ipa; git commit -qm "FlappyBird.ipa from build ${{ github.run_number }}"
+          git checkout -q -b ipa; git add -A; git commit -qm "FlappyBird.ipa + SideStore source from build ${{ github.run_number }} ($VER $BLD)"
           git push -qf "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ipa
       - name: Save the results to the 'ios-build' branch
         if: always()
