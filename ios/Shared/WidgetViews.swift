@@ -41,17 +41,18 @@ private enum WG {
     static func big(_ s: CGFloat) -> Font { .custom("04b19", size: s) }
 }
 
-/// white digits with the dark outline, like the score in the game
+/// the score's look in the game: the white "inside" font under the dark 04b19 outline font
 private struct WGOutlined: View {
     let t: String; let size: CGFloat
     var body: some View {
-        ZStack {
-            ForEach(0..<8, id: \.self) { i in
-                let a = Double(i) * .pi / 4
-                Text(t).font(WG.big(size)).foregroundColor(WG.brown).offset(x: cos(a) * 1.6, y: sin(a) * 1.6 + 0.6)
-            }
-            Text(t).font(WG.big(size)).foregroundColor(.white)
+        let k = size / 50
+        ZStack(alignment: .leading) {
+            Text(t).font(.custom("inside", size: size)).foregroundColor(.white)
+            Text(t).font(.custom("inside", size: size)).foregroundColor(.white).offset(x: 1.5 * k)
+            Text(t).font(WG.big(size)).foregroundColor(WG.brown)
         }
+        .fixedSize()
+        .padding(.top, size * 0.12)   // (the glyphs reach above the font's ascent)
     }
 }
 
@@ -59,7 +60,8 @@ private struct WGGround: View {
     var body: some View {
         VStack(spacing: 0) {
             WG.brown.frame(height: 2)
-            HStack(spacing: 0) { ForEach(0..<24, id: \.self) { i in (i % 2 == 0 ? WG.grass : WG.grassLight).frame(width: 7) } }.frame(height: 6).clipped()
+            HStack(spacing: 0) { ForEach(0..<64, id: \.self) { i in (i % 2 == 0 ? WG.grass : WG.grassLight).frame(width: 7) } }
+                .frame(maxWidth: .infinity, alignment: .leading).frame(height: 6).clipped()
             WG.brown.opacity(0.35).frame(height: 1)
             WG.cream
         }
@@ -118,10 +120,10 @@ struct FlappyWidgetView: View {
     }
 
     private var small: some View {
-        VStack(spacing: 4) {
-            HStack(alignment: .center, spacing: 6) {
-                WGBirdPic(img: e.bird, w: 40)
-                VStack(alignment: .leading, spacing: 2) {
+        VStack(spacing: 6) {
+            HStack(alignment: .center, spacing: 8) {
+                WGBirdPic(img: e.bird, w: 42)
+                VStack(alignment: .leading, spacing: 3) {
                     Text("BEST").font(WG.kong(7)).foregroundColor(.white).shadow(color: WG.brown, radius: 0, x: 0, y: 1)
                     WGOutlined(t: "\(e.data?.best ?? 0)", size: 22)
                 }
@@ -135,8 +137,8 @@ struct FlappyWidgetView: View {
                 .padding(.horizontal, 6).padding(.vertical, 3)
                 .background(RoundedRectangle(cornerRadius: 5).fill(dailyToday == nil ? WG.orange : WG.cream))
                 .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(WG.brown, lineWidth: 1.5))
-            Spacer(minLength: 18)
-        }.padding(.top, 8)
+            Spacer(minLength: 24)
+        }.padding(.top, 12)
     }
 
     private var medium: some View {
