@@ -17,7 +17,14 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Make the Xcode project
-        run: xcodegen generate
+        run: |
+          xcodegen generate
+          # SideStore (and older AltStore) only look at the version to spot an update, so each build gets its own:
+          # 6.2 + build 168 -> 6.2.168
+          PL=App/Info.plist
+          V=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" $PL); B=$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" $PL)
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $V.$B" $PL
+          echo "version $V.$B ($B)"
       - name: Build the app (unsigned)
         run: |
           mkdir -p out

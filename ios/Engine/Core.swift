@@ -766,7 +766,7 @@ func handleStopTap() {
     autoplay = false; saveBool("autoplay", false); botPath = nil; botTimer = 0
     updateSettingsUI(); playSound("swoosh"); haptic()
 }
-let APP_VERSION = "5.3"
+let APP_VERSION = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "6.2"   // the app's own version (e.g. 6.2.168), so you can see which build you have
 
 // ---------- Loop ----------
 let CROSS_DISSOLVE = 0.35
