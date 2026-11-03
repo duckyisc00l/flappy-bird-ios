@@ -107,15 +107,10 @@ enum Demo {
         at(0.3) { setGameMode("normal"); NIGHT_FORCE = false; birdPick = "reborn"; updateBirdTextures(); say("bird \(birdColor)") }
         at(1.5) { say("snap reborn") }
         at(0.3) { birdPick = "random"; updateBirdTextures() }
-        // v161: the scared pipe, graveyard, moods, the staring bird, last words, old version day
-        at(0.3) { lsSetList("fb_pipeGraves", ["3", "12", "7", "45", "0", "19"]); SCARE_FORCE = true; say("graves \(graves())") }
-        at(2.0) { say("scared \(pipeList.filter { $0.scare != nil }.map { Int($0.gapV) })") }
-        at(0.3) { say("snap scared_graves") }
+        // v161: bird moods, old version day
         at(1) { autoplay = false; say("score \(score)") }
         at(3) { say("over \(isGameOver)"); say("snap over") }
         at(1.5) { say("snap over2") }
-        at(0.1) { LW.text = "TELL MY EGGS"; LW.t = 0.5 }
-        at(0.3) { say("snap last_words") }
         at(1) { openSheet("card") }
         at(1.5) { say("snap card") }
         at(3) { closePicker(); saveBool("autoplay", false); setGameMode("daily"); handlePlayTap() }

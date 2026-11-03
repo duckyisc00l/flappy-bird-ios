@@ -371,7 +371,6 @@ func drawSeasonGround() {
     drawSeasonGroundBase()
     if weatherOn() { seasonGround() }
     if glitchVisible() { drawGlitchGround() }   // v158
-    drawGraveyard()   // v161
 }
 private func drawSeasonGroundBase() {
     if !weatherOn() { return }

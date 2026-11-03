@@ -128,7 +128,7 @@ func render() {
         ctx.restore()
     }
 
-    drawV161Overlay()   // v161: scared pipes, moods, the staring bird, last words
+    drawV161Overlay()   // v161: bird moods
     if afterlife < 3 { drawStopButton() }
     drawV158Overlay()   // v158: the fake crash, achievement banners
 
