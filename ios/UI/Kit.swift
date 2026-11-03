@@ -51,12 +51,20 @@ struct PixImage: View {
     }
 }
 /// a bird drawn like drawSkinInto(canvas 48x40): centred, 1 picture pixel = 1 canvas pixel, flapping
+/// v157: the menus' flapping birds asked for a fresh picture 10 times a second per tile; now each frame is made once
+/// (and made again if the bird changes, e.g. a custom bird you edited)
+private var skinCanvasCache: [String: (src: Img, out: Img)] = [:]
 func skinCanvas(_ id: String, _ f: Int, _ w: Int = 48, _ h: Int = 40) -> Img? {
     ensureSkin(id)
     guard let im = img(id + "_\(f)") else { return nil }
+    let key = id + "_\(f)_\(w)x\(h)"
+    if let hit = skinCanvasCache[key], hit.src === im { return hit.out }
     let c = CGCanvas(w, h); c.imageSmoothingEnabled = false
     c.drawImage(im, jsRound(Double(w - im.width) / 2), jsRound(Double(h - im.height) / 2))
-    return c.image()
+    let out = c.image()
+    if skinCanvasCache.count > 1500 { skinCanvasCache.removeAll() }
+    skinCanvasCache[key] = (im, out)
+    return out
 }
 struct BirdView: View {
     let id: String; var w: CGFloat = 54; var h: CGFloat = 45; var flap = true; var bg: Color? = nil; var radius: CGFloat = 0; var border: Color? = nil; var borderW: CGFloat = 2

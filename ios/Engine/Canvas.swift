@@ -80,12 +80,13 @@ final class Img {
         subs[key] = t
         return t
     }
-    var ui: UIImage { UIImage(cgImage: cg) }
+    private var uiCache: UIImage?
+    var ui: UIImage { if let u = uiCache { return u }; let u = UIImage(cgImage: cg); uiCache = u; return u }   // v157: made once
 }
 
 // MARK: - fonts ("400 50px \"04b19\", monospace")
 
-struct FontSpec { let ct: CTFont; let size: Double }
+struct FontSpec { let ct: CTFont; let size: Double; var key = "" }   // key: the CSS font string (for the measure cache)
 private var fontCache: [String: FontSpec] = [:]
 func cssFont(_ s: String) -> FontSpec {
     if let f = fontCache[s] { return f }
@@ -103,7 +104,7 @@ func cssFont(_ s: String) -> FontSpec {
     let ct: CTFont
     if name.hasPrefix(".SFUI") { ct = UIFont.systemFont(ofSize: CGFloat(size), weight: bold ? .bold : .regular) as CTFont }
     else { ct = CTFontCreateWithName(name as CFString, CGFloat(size), nil) }
-    let f = FontSpec(ct: ct, size: size)
+    let f = FontSpec(ct: ct, size: size, key: s)
     fontCache[s] = f
     return f
 }
@@ -114,7 +115,19 @@ private func ctLine(_ text: String, _ f: FontSpec) -> CTLine {
     let a = NSAttributedString(string: text, attributes: [NSAttributedString.Key(kCTFontAttributeName as String): f.ct])
     return CTLineCreateWithAttributedString(a)
 }
+/// v157: measuring text means building a CoreText line, which is slow; the game measures the same few
+/// strings (the score, labels) every frame, so remember the answers
+private var measureCache: [String: TextMetrics] = [:]
 func measure(_ text: String, _ f: FontSpec) -> TextMetrics {
+    if f.key.isEmpty { return measureNow(text, f) }
+    let k = f.key + "\u{1}" + text
+    if let m = measureCache[k] { return m }
+    let m = measureNow(text, f)
+    if measureCache.count > 2000 { measureCache.removeAll() }
+    measureCache[k] = m
+    return m
+}
+private func measureNow(_ text: String, _ f: FontSpec) -> TextMetrics {
     let line = ctLine(text, f)
     var asc: CGFloat = 0, desc: CGFloat = 0, lead: CGFloat = 0
     let w = CTLineGetTypographicBounds(line, &asc, &desc, &lead)
@@ -333,6 +346,7 @@ final class SKCanvas: Canvas2D {
     var boxH = 874.0
     var scaleHint: CGFloat = 3   // screen pixels per point (for text sharpness)
     private var pool: [SKSpriteNode] = []
+    private var poolColor: [RGBA] = []   // v157: the colour each sprite has (comparing UIColors every frame was slow)
     private var used = 0
     var usedCount: Int { used }
     private var z: CGFloat = 0
@@ -348,7 +362,7 @@ final class SKCanvas: Canvas2D {
         if used == pool.count {
             let n = SKSpriteNode(texture: nil, color: .white, size: CGSize(width: 1, height: 1))
             n.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-            root.addChild(n); pool.append(n)
+            root.addChild(n); pool.append(n); poolColor.append(.white)
         }
         let n = pool[used]; used += 1
         if n.isHidden { n.isHidden = false }
@@ -367,12 +381,11 @@ final class SKCanvas: Canvas2D {
         let rot = atan2(k21, k11), sy = (k11 * k22 - k12 * k21) / sx
         let cx = x + w / 2, cy = y + h / 2
         let px = Double(m.a) * cx + Double(m.c) * cy + Double(m.tx), py = Double(m.b) * cx + Double(m.d) * cy + Double(m.ty)
-        let n = node()
+        let n = node(), idx = used - 1
         if n.texture !== tex { n.texture = tex }
         if tex == nil || tint {
-            let c = color.ui
-            if n.color != c { n.color = c }
-            n.colorBlendFactor = 1
+            if poolColor[idx] != color { poolColor[idx] = color; n.color = color.ui }
+            if n.colorBlendFactor != 1 { n.colorBlendFactor = 1 }
         } else if n.colorBlendFactor != 0 { n.colorBlendFactor = 0 }
         n.alpha = CGFloat(a)
         n.position = CGPoint(x: px, y: boxH - py)
@@ -407,6 +420,27 @@ final class SKCanvas: Canvas2D {
     override func stroke() {
         guard case .color(let c) = st.stroke else { return }
         let lw = st.lineWidth
+        // v157: fast path for lots of separate short lines (rain, wind streaks): no arrays per line
+        if path.count >= 2 && path.count % 2 == 0 {
+            var simple = true
+            var i = 0
+            while i < path.count { if case .move = path[i], case .line = path[i + 1] {} else { simple = false; break }; i += 2 }
+            if simple {
+                let cap = st.lineCap == "square" ? lw / 2 : 0, col = RGBA(r: c.r, g: c.g, b: c.b, a: 1), al = c.a * st.alpha
+                i = 0
+                while i < path.count {
+                    if case .move(let p0) = path[i], case .line(let p1) = path[i + 1] {
+                        let dx = Double(p1.x - p0.x), dy = Double(p1.y - p0.y), L = (dx * dx + dy * dy).squareRoot()
+                        if L >= 1e-9 {
+                            let m = st.m.translatedBy(x: p0.x, y: p0.y).rotated(by: CGFloat(atan2(dy, dx)))
+                            quad(m, -cap, -lw / 2, L + 2 * cap, lw, tex: nil, color: col, alpha: al, tint: false)
+                        }
+                    }
+                    i += 2
+                }
+                return
+            }
+        }
         var subs: [[CGPoint]] = []
         for s in path {
             switch s {
@@ -436,14 +470,14 @@ final class SKCanvas: Canvas2D {
     override func clip() {}   // (the game's only clip hides what is behind the ground or above the screen anyway)
 
     // text: drawn once into a picture with CoreText, then placed like an image
-    private struct TextKey: Hashable { let t: String, font: String, col: String, stroke: Double, scale: Int, join: String }
+    private struct TextKey: Hashable { let t: String, font: String, r: Double, g: Double, b: Double, stroke: Double, scale: Int, join: String }
     private var textCache: [TextKey: (Img, Double, Double)] = [:]   // picture, its left and top relative to the baseline origin (points)
     private func textImage(_ t: String, fill: Bool) -> (Img, Double, Double, Double)? {
         let paint = fill ? st.fill : st.stroke
         guard case .color(let c) = paint else { return nil }
         let k = Double(scaleHint) * max(0.25, Double((st.m.a * st.m.a + st.m.b * st.m.b).squareRoot()))
         let ks = Int((k * 4).rounded())
-        let key = TextKey(t: t, font: st.font, col: "\(c.r),\(c.g),\(c.b)", stroke: fill ? 0 : st.lineWidth, scale: ks, join: st.lineJoin)
+        let key = TextKey(t: t, font: st.font, r: c.r, g: c.g, b: c.b, stroke: fill ? 0 : st.lineWidth, scale: ks, join: st.lineJoin)
         if let hit = textCache[key] { return (hit.0, hit.1, hit.2, Double(ks) / 4) }
         let f = cssFont(st.font), m = measure(t, f)
         let pad = (fill ? 0 : st.lineWidth) + 2
