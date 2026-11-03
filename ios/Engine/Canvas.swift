@@ -527,10 +527,27 @@ final class SKCanvas: Canvas2D {
             let ratio = r0 / r1
             let key = "r" + String(format: "%.3f", ratio) + prof + (sameRGB ? "" : g.stops.map { "\($0.1.r),\($0.1.g),\($0.1.b)" }.joined())
             let tex = gradCache[key] ?? {
-                let N = 128, c = CGCanvas(N, N)
-                let gg = c.createRadialGradient(Double(N) / 2, Double(N) / 2, ratio * Double(N) / 2, Double(N) / 2, Double(N) / 2, Double(N) / 2)
-                for s in g.stops { gg.addColorStop(s.0, sameRGB ? RGBA(r: 1, g: 1, b: 1, a: s.1.a / maxA) : RGBA(r: s.1.r, g: s.1.g, b: s.1.b, a: s.1.a / maxA)) }
-                c.fillStyle = .gradient(gg); c.fillRect(0, 0, Double(N), Double(N))
+                // v158: worked out pixel by pixel (the CoreGraphics radial gradient came out empty here:
+                // the Darkness lantern showed a clear square)
+                let N = 128, stops = g.stops.sorted { $0.0 < $1.0 }
+                var px = [UInt8](repeating: 0, count: N * N * 4)
+                func at(_ t: Double) -> RGBA {
+                    if t <= stops[0].0 { return stops[0].1 }
+                    for i in 1..<stops.count where t <= stops[i].0 {
+                        let (o0, c0) = stops[i - 1], (o1, c1) = stops[i], f = (t - o0) / max(1e-9, o1 - o0)
+                        return RGBA(r: c0.r + (c1.r - c0.r) * f, g: c0.g + (c1.g - c0.g) * f, b: c0.b + (c1.b - c0.b) * f, a: c0.a + (c1.a - c0.a) * f)
+                    }
+                    return stops[stops.count - 1].1
+                }
+                for y in 0..<N { for x in 0..<N {
+                    let d = hypot(Double(x) + 0.5 - Double(N) / 2, Double(y) + 0.5 - Double(N) / 2) / (Double(N) / 2)
+                    let t = ratio >= 1 ? (d >= 1 ? 1 : 0) : max(0, min(1, (d - ratio) / (1 - ratio)))
+                    let c = at(t), i = (y * N + x) * 4
+                    let r = sameRGB ? 1 : c.r, gg = sameRGB ? 1 : c.g, b = sameRGB ? 1 : c.b
+                    px[i] = UInt8(max(0, min(255, (r * 255).rounded()))); px[i + 1] = UInt8(max(0, min(255, (gg * 255).rounded()))); px[i + 2] = UInt8(max(0, min(255, (b * 255).rounded())))
+                    px[i + 3] = d > 1 ? 0 : UInt8(max(0, min(255, (c.a / maxA * 255).rounded())))
+                } }
+                let c = CGCanvas(N, N); c.putImageData(px)
                 let t = SKTexture(cgImage: c.image().cg); t.filteringMode = .linear
                 if gradCache.count > 120 { gradCache.removeAll() }
                 gradCache[key] = t; return t
