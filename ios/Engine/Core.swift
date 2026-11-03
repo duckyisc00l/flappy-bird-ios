@@ -382,6 +382,7 @@ func handleGameTap() {
 func startGame() {
     if !isWaitingToStart { return }
     glitchArm()   // v158
+    newBestStart()   // v171
     isWaitingToStart = false
     gameStartTime = sceneTime
     stopIdleAnimation()
@@ -535,6 +536,7 @@ func handleScore() {
     playSound("point")
     scaleTwice(scoreLabel, 1.5, 0.1, 1, 0.1)
     v158Score()   // achievements, the fake crash
+    newBestScore()   // v171
 }
 
 // ---------- Game over ----------

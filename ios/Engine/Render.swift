@@ -132,6 +132,7 @@ func render() {
     drawV161Overlay()   // v161: bird moods
     if afterlife < 3 { drawStopButton() }
     drawV158Overlay()   // v158: the fake crash, achievement banners
+    drawNewBest()   // v171
     drawPause()   // v170
 
     for f in flashes where f.alpha > 0 {
