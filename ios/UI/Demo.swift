@@ -93,8 +93,8 @@ enum Demo {
         at(0.5) { seasonPick = "thanksgiving"; pipePick = "auto"; rollWeather(); TG.nextGeese = 0; say("season \(WX.season) pipes \(pipeSkin) tod \(WX.tod)") }
         at(2.5) { say("snap thanksgiving") }
         at(0.5) { seasonPick = "auto"; rollWeather() }
-        // v158: the fake crash, the glitch level, scars, achievements
-        at(0.5) { lsSetNum("fb_lifeDeaths", 99); SCAR.at = 0; rebornRegister(); say("scars stage \(scarStage()) reborn \(skinExists("reborn"))") }
+        // v158: the fake crash, the glitch level, achievements
+        at(0.5) { lsSetNum("fb_lifeDeaths", 99); rebornRegister(); say("reborn \(skinExists("reborn"))") }
         at(0.3) { glitchCrash(); say("glitch \(GL.phase)") }
         at(0.45) { say("snap glitch_tear") }
         at(0.5) { say("snap glitch_error") }

@@ -39,7 +39,7 @@ var ACH: [AchInfo] = [
     AchInfo(id: "s100", name: "Golden Wings", desc: "Score 100 in one round."),
     AchInfo(id: "s250", name: "Legend", desc: "Score 250 in one round."),
     AchInfo(id: "faceplant", name: "Faceplant", desc: "Crash before the first pipe."),
-    AchInfo(id: "d50", name: "Battle Scarred", desc: "Crash 50 times. Your bird remembers."),
+    AchInfo(id: "d50", name: "Battle Scarred", desc: "Crash 50 times."),
     AchInfo(id: "d100", name: "Reborn", desc: "Crash 100 times. A new bird rises."),
     AchInfo(id: "d500", name: "Unkillable", desc: "Crash 500 times."),
     AchInfo(id: "p500", name: "Pipe Dreams", desc: "Pass 500 pipes in total."),
@@ -88,7 +88,7 @@ func achScoreCheck() {
 /// every crash of yours (the bot's and the afterlife's don't count)
 func achDeath() {
     if runUsedBot || afterlife >= 1 { return }
-    let d = lsNum("fb_lifeDeaths") + 1; lsSetNum("fb_lifeDeaths", d); SCAR.at = 0
+    let d = lsNum("fb_lifeDeaths") + 1; lsSetNum("fb_lifeDeaths", d)
     lsSetNum("fb_lifeGames", lsNum("fb_lifeGames") + 1)
     if d >= 50 { achUnlock("d50") }
     if d >= 100 { achUnlock("d100") }
@@ -123,46 +123,8 @@ func drawAchBanner(_ dt: Double) {
     ctx.globalAlpha = 1
 }
 
-// ======================================================= the bird remembers (scars) + the Reborn bird
-var scarsOn = true
-final class ScarState { var at = 0.0, stage = 0; var cache: [ObjectIdentifier: [Int: Img]] = [:]; var keep: [ObjectIdentifier: Img] = [:] }
-let SCAR = ScarState()
-/// in the bird's own big pixels (17 x 12, 2 px each); nil = that pixel is knocked out
-let SCARS: [[(Int, Int, String?)]] = [
-    [(5, 2, "#a01818"), (6, 3, "#a01818"), (7, 4, "#a01818"), (7, 2, "#d03a3a"), (4, 3, "#d03a3a")],                                   // 10: claw marks
-    [(6, 0, "#f0e0c0"), (7, 0, "#f0e0c0"), (8, 0, "#f0e0c0"), (6, 1, "#f0e0c0"), (7, 1, "#c8a880"), (8, 1, "#f0e0c0")],                // 25: a bandage
-    [(16, 7, nil), (15, 7, "#3a2a30"), (15, 9, nil), (14, 9, "#3a2a30"), (6, 8, "#6a5a6a"), (4, 9, "#5a4a5a"), (5, 9, "#5a4a5a")],      // 50: chipped beak, bruise
-    [(10, 2, "#16121a"), (11, 2, "#16121a"), (9, 3, "#16121a"), (10, 3, "#3a3440"), (11, 3, "#16121a"), (12, 3, "#16121a"),
-     (9, 4, "#16121a"), (10, 4, "#16121a"), (11, 4, "#16121a"), (12, 4, "#16121a"), (10, 5, "#16121a"), (11, 5, "#16121a")],          // 75: an eye patch
-]
-let SCAR_AT = [10, 25, 50, 75]
-func scarStage() -> Int {
-    let now = CACurrentMediaTime()
-    if now - SCAR.at > 2 { SCAR.at = now; let d = lsNum("fb_lifeDeaths"); SCAR.stage = SCAR_AT.filter { d >= $0 }.count }
-    return SCAR.stage
-}
-func scarred(_ im: Img, _ stage: Int) -> Img {
-    let key = ObjectIdentifier(im)
-    if let hit = SCAR.cache[key]?[stage] { return hit }
-    let w = im.width, h = im.height
-    let c = CGCanvas(w, h); c.imageSmoothingEnabled = false; c.drawImage(im, 0, 0)
-    let d = c.getImageData(), ox = Int((Double(w - 34) / 2).rounded()), oy = Int((Double(h - 24) / 2).rounded())
-    for s in 0..<stage { for (x, y, col) in SCARS[s] {
-        let px = ox + x * 2, py = oy + y * 2
-        if px < 0 || py < 0 || px + 1 >= w || py + 1 >= h || d[(py * w + px) * 4 + 3] < 10 { continue }   // only on the bird itself
-        if let col = col { c.fill(col); c.fillRect(Double(px), Double(py), 2, 2) } else { c.clearRect(Double(px), Double(py), 2, 2) }
-    } }
-    let out = c.image()
-    SCAR.cache[key, default: [:]][stage] = out; SCAR.keep[key] = im   // (keep the original alive so its id isn't reused)
-    return out
-}
-/// birdFrame's add-on
-func scarFrame(_ im: Img?) -> Img? {
-    guard let im = im, scarsOn, afterlife == 0, !haunted, !["reborn", "super", "haunted"].contains(birdColor) else { return im }
-    let st = scarStage()
-    return st > 0 ? scarred(im, st) : im
-}
-// Reborn: a bird made of light and embers. It never scars.
+// ======================================================= the Reborn bird (100 crashes)
+// Reborn: a bird made of light and embers.
 let REBORN_PAL = ["R": "#fff1d0", "L": "#ffffff", "D": "#ffd27a", "W": "#ffb347", "G": "#ff7a2a", "B": "#ff4a1e", "E": "#ffffff", "P": "#e8281e", "O": "#6a2a14"]
 let REBORN_PX = ["8,-3": "#ffe14a", "7,-2": "#ff8a1e", "8,-2": "#ffe14a", "9,-2": "#ff8a1e", "7,-1": "#ff8a1e", "8,-1": "#ff4a1e", "9,-1": "#ff8a1e", "10,-1": "#ffe14a",
                  "-1,3": "#ff8a1e", "-2,4": "#ffe14a", "-1,4": "#ff4a1e", "-1,5": "#ff8a1e", "-2,6": "#ffe14a"]
@@ -304,6 +266,5 @@ func drawV158Overlay() {
 
 // ======================================================= startup
 func v158Start() {
-    scarsOn = loadBool("scars", true)
     if rebornUnlocked() { rebornRegister() }
 }

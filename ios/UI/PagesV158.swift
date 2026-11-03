@@ -21,7 +21,6 @@ struct AchievementsPage: View {
     var body: some View {
         _ = tick
         let got = lsList("fb_ach"), n = ACH.filter { got.contains($0.id) }.count
-        let d = lsNum("fb_lifeDeaths"), next = SCAR_AT.first { $0 > d }
         return VStack(spacing: 0) {
             Note(t: "\(n) of \(ACH.count) unlocked")
             HStack(spacing: 6) {
@@ -29,20 +28,6 @@ struct AchievementsPage: View {
             }.padding(.bottom, 8)
             ScrollView(showsIndicators: false) {   // v160: always scrolls inside the card (the long list spilled out of it)
                 VStack(spacing: 0) {
-                    Button {
-                        scarsOn.toggle(); saveBool("scars", scarsOn); playSound("swoosh"); haptic(); tick += 1
-                    } label: {
-                        VStack(spacing: 0) {
-                            HStack(spacing: 10) {
-                                VStack(alignment: .leading, spacing: 3) {
-                                    KT("Battle scars", 8, K.orange)
-                                    KT(next != nil ? "Your bird gets a new scar at \(next!) crashes" : "Your bird has seen it all", 6, spacing: 2).opacity(0.8)
-                                }.frame(maxWidth: .infinity, alignment: .leading)
-                                Sw(on: scarsOn)
-                            }.padding(.vertical, 7).padding(.horizontal, 9)
-                            K.line2.frame(height: 1)
-                        }.contentShape(Rectangle())
-                    }.buttonStyle(.plain)
                     ForEach(Array(ACH.enumerated()), id: \.offset) { i, a in
                         let on = got.contains(a.id), hide = a.secret && !on
                         VStack(spacing: 0) {

@@ -262,7 +262,7 @@ func applyBirdAnimation() { bird.animT = 0 }
 func birdFrame() -> Img? {
     let seq = [1, 2, 3, 2]
     let idx = Int(floor(bird.animT / C.animationFrameDuration)) % 4
-    return scarFrame(img(birdColor + "_" + String(seq[idx])))   // v158: the bird remembers
+    return img(birdColor + "_" + String(seq[idx]))
 }
 func idleAnimation() -> [Step] { [Step(moveBy: (0, C.idleFloatDistance), d: C.idleFloatDuration), Step(moveBy: (0, -C.idleFloatDistance), d: C.idleFloatDuration)] }
 func startIdleAnimation() { removeAction(bird, "idle"); run(bird, idleAnimation(), "idle", rep: true) }

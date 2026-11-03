@@ -373,7 +373,7 @@ struct DevPage: View {
                     Opt(t: "Mood: grumpy", on: false) { localStorage.setItem("fb_mood", jsonStr(["m": "grumpy", "t": 0] as [String: Any])); lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000)) }
                     Opt(t: "Mood: sleepy", on: false) { lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000) - 2 * 86_400_000) }
                     Opt(t: "Sleepy bird", on: SLEEP_FORCE) { haptic(); playSound("swoosh"); SLEEP_FORCE.toggle(); tick += 1 }
-                    Opt(t: "+10 crashes", on: false) { haptic(); playSound("swoosh"); lsSetNum("fb_lifeDeaths", lsNum("fb_lifeDeaths") + 10); SCAR.at = 0; if rebornUnlocked() { rebornRegister() } }
+                    Opt(t: "+10 crashes", on: false) { haptic(); playSound("swoosh"); lsSetNum("fb_lifeDeaths", lsNum("fb_lifeDeaths") + 10); if rebornUnlocked() { rebornRegister() } }
                 }.padding(.bottom, 8)
                 Sec(t: "Reset"); Hint(t: "Tap twice to confirm")
                 Flow(spacing: 4) {
