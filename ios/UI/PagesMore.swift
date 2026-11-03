@@ -368,6 +368,11 @@ struct DevPage: View {
                 Flow(spacing: 4) {
                     Opt(t: "Glitch now", on: false) { haptic(); playSound("swoosh"); closePicker(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { if bird.dynamic && !isGameOver { glitchCrash() } else { GL.force = true } } }
                     Opt(t: "Night Shift open", on: NIGHT_FORCE) { haptic(); playSound("swoosh"); NIGHT_FORCE.toggle(); tick += 1 }
+                    Opt(t: "Scared pipe next", on: false) { haptic(); playSound("swoosh"); SCARE_FORCE = true }
+                    Opt(t: "Old version day", on: OLD_FORCE) { haptic(); playSound("swoosh"); OLD_FORCE.toggle(); rollWeather(); tick += 1 }
+                    Opt(t: "Mood: happy", on: false) { localStorage.setItem("fb_mood", jsonStr(["m": "happy", "t": 0] as [String: Any])); lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000)) }
+                    Opt(t: "Mood: grumpy", on: false) { localStorage.setItem("fb_mood", jsonStr(["m": "grumpy", "t": 0] as [String: Any])); lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000)) }
+                    Opt(t: "Mood: sleepy", on: false) { lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000) - 2 * 86_400_000) }
                     Opt(t: "+10 crashes", on: false) { haptic(); playSound("swoosh"); lsSetNum("fb_lifeDeaths", lsNum("fb_lifeDeaths") + 10); SCAR.at = 0; if rebornUnlocked() { rebornRegister() } }
                 }.padding(.bottom, 8)
                 Sec(t: "Reset"); Hint(t: "Tap twice to confirm")

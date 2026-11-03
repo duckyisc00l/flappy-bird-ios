@@ -23,7 +23,7 @@ targets:
       properties:
         CFBundleDisplayName: Flappy Bird
         CFBundleShortVersionString: "6.2"
-        CFBundleVersion: "180"
+        CFBundleVersion: "181"
         UILaunchScreen:
           UIColorName: ""
         UIRequiresFullScreen: true
@@ -67,7 +67,7 @@ targets:
       properties:
         CFBundleDisplayName: Flappy Bird
         CFBundleShortVersionString: "6.2"
-        CFBundleVersion: "180"
+        CFBundleVersion: "181"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
         UIAppFonts: [inside.ttf, outside.ttf, pixel.ttf]

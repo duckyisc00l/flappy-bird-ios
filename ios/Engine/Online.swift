@@ -479,7 +479,7 @@ func saveKind(_ k: String) -> String? {
     if k.range(of: "^fb_ghost(Hard|_[a-z]+)?$", options: .regularExpression) != nil { return "ghost" }
     if ["fb_lifeDeaths", "fb_lifePipes", "fb_lifeGames"].contains(k) { return "max" }   // v158
     if k == "fb_ach" || k == "fb_modesPlayed" { return "union" }
-    if k == "fb_scars" { return "scalar" }
+    if k == "fb_scars" || k == "fb_pipeGraves" || k == "fb_graveyard" { return "scalar" }
     if SAVE_UNION.contains(k) { return "union" }
     if SAVE_BYID.contains(k) { return "byid" }
     if SAVE_SCALARS.contains(k) { return "scalar" }

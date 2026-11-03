@@ -31,7 +31,7 @@ func glyphWidth(_ text: String, _ k: Double = 2) -> Double {
 
 // ======================================================= achievements
 struct AchInfo { let id: String, name: String, desc: String; var secret = false }
-let ACH: [AchInfo] = [
+var ACH: [AchInfo] = [
     AchInfo(id: "first", name: "First Flight", desc: "Pass your first pipe."),
     AchInfo(id: "s10", name: "Getting The Hang", desc: "Score 10 in one round."),
     AchInfo(id: "s25", name: "Bronze Wings", desc: "Score 25 in one round."),
@@ -112,6 +112,7 @@ func v158Score() {
 }
 /// the banner on the ground
 func drawAchBanner(_ dt: Double) {
+    oldDayBanner()   // v161
     guard let b = ACHQ.first else { return }
     b.t += dt
     let T = 3.4, a = min(1, b.t / 0.2, (T - b.t) / 0.3)

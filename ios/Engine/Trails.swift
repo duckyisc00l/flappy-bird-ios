@@ -180,6 +180,7 @@ func updateTrailGame(_ dt: Double) {
     tStep(TRS, trailDefNow, dt, bird.x, bird.y, trailScroll, spawning)
 }
 func drawTrail(_ layer: Int) {
+    if oldDay() { return }   // v161: old version day
     if trailDefNow == nil || !trailLive() { return }
     ctx.save()
     tDraw(ctx, TRS, trailDefNow, layer, bird.x, bird.y)

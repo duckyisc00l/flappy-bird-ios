@@ -43,6 +43,20 @@ struct AchievementsPage: View {
                             K.line2.frame(height: 1)
                         }.contentShape(Rectangle())
                     }.buttonStyle(.plain)
+                    Button {   // v161
+                        graveOn.toggle(); saveBool("graveyard", graveOn); playSound("swoosh"); haptic(); tick += 1
+                    } label: {
+                        VStack(spacing: 0) {
+                            HStack(spacing: 10) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    KT("Pipe graveyard", 8, K.orange)
+                                    KT("The pipes that got you, as little gravestones on the ground", 6, spacing: 2).opacity(0.8)
+                                }.frame(maxWidth: .infinity, alignment: .leading)
+                                Sw(on: graveOn)
+                            }.padding(.vertical, 7).padding(.horizontal, 9)
+                            K.line2.frame(height: 1)
+                        }.contentShape(Rectangle())
+                    }.buttonStyle(.plain)
                     ForEach(Array(ACH.enumerated()), id: \.offset) { i, a in
                         let on = got.contains(a.id), hide = a.secret && !on
                         VStack(spacing: 0) {

@@ -91,7 +91,7 @@ func rollWeather() {
     if WX.season == "halloween" && !adaptiveBackground { skyIsNight = true; WX.tod = "night" }
     WX.parts = []; WX.splash = []; WX.seeded = false; WX.bolt = nil; WX.flash = 0; WX.bats = []; WX.fw = []; WX.shoot = nil
 }
-func weatherOn() -> Bool { !glitchVisible() && weatherOnBase() }
+func weatherOn() -> Bool { !oldDay() && !glitchVisible() && weatherOnBase() }
 func weatherOnBase() -> Bool { !ending.on && afterlife == 0 && !haunted && creepyLvl <= 0.001 && score > -1 }
 func viewBox() -> (L: Double, R: Double) { (-camX / camS, (boxW - camX) / camS) }
 func rnd(_ a: Double, _ b: Double) -> Double { a + mrand() * (b - a) }
@@ -371,6 +371,7 @@ func drawSeasonGround() {
     drawSeasonGroundBase()
     if weatherOn() { seasonGround() }
     if glitchVisible() { drawGlitchGround() }   // v158
+    drawGraveyard()   // v161
 }
 private func drawSeasonGroundBase() {
     if !weatherOn() { return }

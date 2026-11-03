@@ -52,6 +52,15 @@ enum Demo {
         perf("title") {}
         at(2) { say("snap title") }
         at(0.5) { Task { @MainActor in widgetShots() } }
+        at(0.5) { localStorage.setItem("fb_mood", jsonStr(["m": "grumpy", "t": 0] as [String: Any])); lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000)); say("mood \(mood()) title \(flappyBird.added)") }
+        at(1.0) { say("snap mood_grumpy") }
+        at(0.3) { localStorage.setItem("fb_mood", jsonStr(["m": "happy", "t": 0] as [String: Any])) }
+        at(0.8) { say("snap mood_happy") }
+        at(0.3) { lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000) - 2 * 86_400_000) }
+        at(1.2) { say("snap mood_sleepy") }
+        at(0.3) { OLD_FORCE = true; rollWeather(); say("old \(oldDay()) weather \(weatherOn())") }
+        at(1.0) { say("snap old_day") }
+        at(0.3) { OLD_FORCE = false; rollWeather() }
         at(4) {}
         for p in ["settings", "birds", "modes", "weather", "trails", "maker", "account", "leaders", "friends", "dev", "avatar", "import"] {
             at(1.0) { if p == "dev" { devMode = true }; openSheet(p) }
@@ -98,9 +107,15 @@ enum Demo {
         at(0.3) { setGameMode("normal"); NIGHT_FORCE = false; birdPick = "reborn"; updateBirdTextures(); say("bird \(birdColor)") }
         at(1.5) { say("snap reborn") }
         at(0.3) { birdPick = "random"; updateBirdTextures() }
+        // v161: the scared pipe, graveyard, moods, the staring bird, last words, old version day
+        at(0.3) { lsSetList("fb_pipeGraves", ["3", "12", "7", "45", "0", "19"]); SCARE_FORCE = true; say("graves \(graves())") }
+        at(2.0) { say("scared \(pipeList.filter { $0.scare != nil }.map { Int($0.gapV) })") }
+        at(0.3) { say("snap scared_graves") }
         at(1) { autoplay = false; say("score \(score)") }
         at(3) { say("over \(isGameOver)"); say("snap over") }
         at(1.5) { say("snap over2") }
+        at(0.1) { LW.text = "TELL MY EGGS"; LW.t = 0.5 }
+        at(0.3) { say("snap last_words") }
         at(1) { openSheet("card") }
         at(1.5) { say("snap card") }
         at(3) { closePicker(); saveBool("autoplay", false); setGameMode("daily"); handlePlayTap() }
@@ -109,6 +124,7 @@ enum Demo {
         at(0.6) { say("snap dailyplay") }
         at(3) { say("snap dailyover") }
         at(1) { say("florida \(floridaLine()) weather \(WX.weather) pick \(weatherPick)") }
+        at(0.3) { OLD_FORCE = false; rollWeather(); say("ach \(lsList("fb_ach"))") }
         at(1) { say("end") }
     }
 }

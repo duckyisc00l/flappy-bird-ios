@@ -218,6 +218,7 @@ final class Pipe {
     var y0: Double? = nil, amp: Double? = nil, ph: Double? = nil, wk: Double? = nil
     var falling: (t: Double, ang: Double, vel: Double)? = nil
     var pb: PipeBlood? = nil, bt: Double? = nil, mass: [Death]? = nil
+    var scareRolled = false, scare: PipeScare? = nil   // v161: the scared pipe
     var gapV: Double { gap ?? C.verticalPipeGap }
     /// GHOST_PIPE_KEYS: the course as stored in ghosts (JSON, like the website)
     func json() -> [String: Any] {
@@ -540,6 +541,7 @@ func handleScore() {
 // ---------- Game over ----------
 func gameOver() {
     if isShowingGameOver { return }
+    v161Death()   // v161: the graveyard, last words, moods
     achDeath()   // v158
     isShowingGameOver = true
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { widgetSync() }   // v156: new best / Daily for the widget
@@ -590,6 +592,7 @@ func addResultsAndButtons() {
 }
 var resultBestLabel = "0"
 func setResultScore(_ s: Int) {
+    if oldDay() && realRun() { achUnlock("oldday") }   // v161
     let previousHighScore = bestScore()
     if s > previousHighScore && START_SCORE == 0 && !runUsedBot { setBestScore(s) }
     result = ResultState(score: s, prevBest: previousHighScore, shownAt: sceneTime, medal: nil, lastI: -1, currentText: nil)
@@ -767,6 +770,7 @@ func update(_ dt: Double) {
     }
     if resultNode.added { updateResultCount() }
     v158Tick(dt)
+    v161Tick(dt)
     PERF.mark("u.rest")
 }
 
@@ -839,6 +843,7 @@ func startEngine() {
     loadSettings()
     prepareSkins()
     v158Start()
+    v161Start()
     didMove()
     dissolving = true
     dailyFresh()
