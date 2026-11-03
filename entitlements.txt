@@ -1,0 +1,5 @@
+[Dict]
+	[Key] com.apple.security.application-groups
+	[Value]
+		[Array]
+			[String] group.com.jordanvalladares.flappybird

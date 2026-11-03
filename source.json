@@ -1,0 +1,69 @@
+{
+  "apps" : [
+    {
+      "appPermissions" : {
+        "entitlements" : [
+          "com.apple.security.application-groups"
+        ],
+        "privacy" : {
+          "NSLocationWhenInUseUsageDescription" : "So the game's weather matches the weather where you are (rounded to about 1 km).",
+          "NSPhotoLibraryAddUsageDescription" : "Save your score cards and replay clips to Photos."
+        }
+      },
+      "bundleIdentifier" : "com.jordanvalladares.flappybird",
+      "category" : "games",
+      "developerName" : "Jordan Valladares",
+      "downloadURL" : "https://github.com/duckyisc00l/flappy-bird-ios/releases/download/ios-193/FlappyBird.ipa",
+      "iconURL" : "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/icon.png",
+      "localizedDescription" : "My own Flappy Bird remix, all in Swift: 2,000+ birds and a bird maker, game modes and a Daily Challenge, seasons with their own pipes, the live weather and real day and night where you are (or Daytona Beach), a Home Screen widget, trails, ghosts, race links and live duels with friends, leaderboards, and a secret ending if you make it far enough.",
+      "name" : "Flappy Bird",
+      "screenshots" : [
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/title.png",
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/play2.png",
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/pipes_halloween.png",
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/over2.png",
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/card.png",
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/weather.png"
+      ],
+      "screenshotURLs" : [
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/title.png",
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/play2.png",
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/pipes_halloween.png",
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/over2.png",
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/card.png",
+        "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/weather.png"
+      ],
+      "size" : 4796117,
+      "subtitle" : "Flap through the pipes. Then keep going.",
+      "tintColor" : "#4EC0CA",
+      "version" : "6.2.193",
+      "versionDate" : "2026-11-03T19:51:11Z",
+      "versionDescription" : "Build 193 (animation reverted)",
+      "versions" : [
+        {
+          "buildVersion" : "193",
+          "date" : "2026-11-03T19:51:11Z",
+          "downloadURL" : "https://github.com/duckyisc00l/flappy-bird-ios/releases/download/ios-193/FlappyBird.ipa",
+          "localizedDescription" : "Build 193 (animation reverted)",
+          "minOSVersion" : "16.0",
+          "size" : 4796117,
+          "version" : "6.2.193"
+        }
+      ]
+    }
+  ],
+  "description" : "My own Flappy Bird remix, all in Swift: 2,000+ birds and a bird maker, game modes and a Daily Challenge, seasons with their own pipes, the live weather and real day and night where you are (or Daytona Beach), a Home Screen widget, trails, ghosts, race links and live duels with friends, leaderboards, and a secret ending if you make it far enough.",
+  "featuredApps" : [
+    "com.jordanvalladares.flappybird"
+  ],
+  "headerURL" : "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/shots/title.png",
+  "iconURL" : "https://raw.githubusercontent.com/duckyisc00l/flappy-bird-ios/ipa/icon.png",
+  "identifier" : "com.jordanvalladares.flappybird.source",
+  "name" : "Flappy Bird",
+  "news" : [
+
+  ],
+  "subtitle" : "Jordan's Flappy Bird remix",
+  "tintColor" : "#4EC0CA",
+  "website" : "https://duckyisc00l.github.io/flappy-bird/"
+}

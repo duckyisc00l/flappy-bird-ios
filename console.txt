@@ -1,0 +1,114 @@
+2026-11-03 19:45:28.623 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO dailycourse daily-20261103 [328, 363, 230, 204, 315, 217, 360, 283, 196, 235, 288, 344]
+DEMO mulberry 12345 [0.9797282677609473, 0.3067522644996643, 0.484205421525985, 0.817934412509203]
+DEMO perf title          fps 60 cpu update 0.11ms render 0.58ms worst 3.0ms slow 0 nodes 95
+DEMO perf   parts r.ui 0.34, r.ground 0.09, u.weather 0.08, r.wxfront 0.07, r.sky 0.06
+DEMO snap title
+DEMO widget group group.com.jordanvalladares.flappybird folder false
+DEMO mood grumpy title true
+DEMO snap mood_grumpy
+DEMO snap mood_happy
+DEMO snap mood_sleepy
+DEMO old true weather false
+DEMO snap old_day
+DEMO season christmas weather snow
+DEMO snap logo_christmas
+DEMO season spring weather rain
+2026-11-03 19:45:43.754 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap logo_spring
+DEMO season summer weather clear
+DEMO snap logo_summer
+DEMO season halloween weather fog
+DEMO snap logo_halloween
+DEMO season newyear weather clear
+DEMO snap logo_newyear
+DEMO sleeping true eye true
+DEMO snap sleepy
+2026-11-03 19:45:54.304 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap settings
+2026-11-03 19:45:59.448 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap birds
+2026-11-03 19:46:06.303 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap modes
+2026-11-03 19:46:11.335 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap weather
+2026-11-03 19:46:16.434 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+2026-11-03 19:46:21.886 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap trails
+DEMO snap maker
+2026-11-03 19:46:33.186 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap account
+2026-11-03 19:46:38.187 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap leaders
+DEMO snap friends
+DEMO snap dev
+DEMO snap avatar
+2026-11-03 19:47:04.149 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap import
+DEMO snap ready
+DEMO snap play1
+2026-11-03 19:47:14.998 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap play2
+DEMO pipes fall
+DEMO snap pipes_halloween
+DEMO snap pipes_christmas
+DEMO snap pipes_winter
+2026-11-03 19:47:20.167 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap pipes_newyear
+DEMO pipes now newyear season fall
+DEMO snap play3
+DEMO perf play classic   fps 59 cpu update 0.78ms render 2.43ms worst 26.6ms slow 2 nodes 103
+DEMO perf   parts r.ui 1.89, u.physics+bot 0.49, u.rest 0.17, r.pipes 0.11, r.sky 0.07, u.weather 0.06
+DEMO perf play storm     fps 50 cpu update 1.17ms render 5.09ms worst 114.4ms slow 15 nodes 460
+DEMO perf   parts r.ui 3.71, r.wxfront 0.81, u.weather 0.61, u.physics+bot 0.40, r.sky 0.20, r.ground 0.13, u.rest 0.07, r.pipes 0.06
+2026-11-03 19:47:31.442 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO perf xmas snow      fps 50 cpu update 1.47ms render 3.95ms worst 46.0ms slow 17 nodes 327
+DEMO perf   parts r.ui 2.57, u.weather 0.76, u.physics+bot 0.53, r.ground 0.46, r.wxfront 0.31, r.sky 0.20, u.rest 0.09, r.pipes 0.07
+DEMO perf halloween fog  fps 52 cpu update 0.94ms render 4.23ms worst 39.6ms slow 14 nodes 181
+DEMO perf   parts r.ui 3.01, u.physics+bot 0.52, r.sky 0.31, r.ground 0.24, u.weather 0.20, r.wxfront 0.13, u.rest 0.07, u.extras 0.07
+2026-11-03 19:47:36.918 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO perf menu over game fps 0 cpu update 0.28ms render 1.03ms worst 1.3ms slow 1 nodes 312
+DEMO perf   parts r.ui 0.44, r.sky 0.22, u.weather 0.14, r.ground 0.12, u.physics+bot 0.07
+DEMO season thanksgiving pipes halloween tod night
+DEMO snap thanksgiving
+DEMO reborn true
+DEMO glitch crash
+DEMO snap glitch_tear
+DEMO snap glitch_error
+DEMO glitch now crash pipes halloween
+DEMO snap glitch_inside
+DEMO ach ["first"]
+DEMO snap ach_banner
+2026-11-03 19:47:52.218 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap achievements
+DEMO snap modes
+2026-11-03 19:47:57.652 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap dark_mode
+DEMO bird reborn
+DEMO snap reborn
+DEMO paused true
+DEMO snap paused
+DEMO resumed true
+DEMO score 25
+DEMO over true
+DEMO snap over
+DEMO snap over2
+2026-11-03 19:48:09.334 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+DEMO snap card
+DEMO snap daily
+DEMO snap dailyplay
+DEMO snap dailyover
+DEMO florida Live in Daytona Beach, FL: 78F, clear sky. Auto weather plays it. weather clear pick auto
+DEMO ach ["first", "d50", "d100", "faceplant", "daily"]
+DEMO end
+2026-11-03 19:48:23.003 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+2026-11-03 19:48:40.462 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+2026-11-03 19:48:54.085 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+2026-11-03 19:49:00.049 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+2026-11-03 19:49:08.258 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+2026-11-03 19:49:25.801 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+2026-11-03 19:49:37.050 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+2026-11-03 19:49:47.035 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+2026-11-03 19:50:00.068 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+2026-11-03 19:50:08.209 FlappyBird[17270:52288] SKView: no drawables available for rendering. Skipping this frame.
+com.jordanvalladares.flappybird: 17270
