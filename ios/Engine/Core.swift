@@ -356,6 +356,7 @@ func namedAt(_ px: Double, _ py: Double) -> String? {
     return nil
 }
 func touchesBegan(_ px: Double, _ py: Double) {
+    pauseResume()   // v170
     if afterlife >= 3 { return }
     if stopButtonVisible() {
         let r = stopButtonRect()
@@ -700,6 +701,7 @@ var contactGround = false
 
 func update(_ dt: Double) {
     if glitchFrozen(dt) { return }   // v158: the fake crash freezes everything
+    if pauseFrozen(dt) { return }    // v170: paused (you left the game mid-round)
     PERF.begin()
     sceneTime += dt
     updateCreepy(dt)

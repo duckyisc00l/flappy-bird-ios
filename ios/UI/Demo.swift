@@ -114,6 +114,10 @@ enum Demo {
         at(1.5) { say("snap reborn") }
         at(0.3) { birdPick = "random"; updateBirdTextures() }
         // v161: bird moods, old version day
+        // v170: pausing (the demo flies with autoplay, which never pauses: switch it off for a moment)
+        at(0.3) { autoplay = false; runUsedBot = false; pauseNow(); say("paused \(PAUSE.on)") }
+        at(0.8) { say("snap paused") }
+        at(0.2) { pauseResume(); autoplay = true; say("resumed \(!PAUSE.on)") }
         at(1) { autoplay = false; say("score \(score)") }
         at(3) { say("over \(isGameOver)"); say("snap over") }
         at(1.5) { say("snap over2") }
