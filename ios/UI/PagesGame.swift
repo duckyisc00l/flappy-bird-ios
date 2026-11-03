@@ -3,7 +3,6 @@ import SwiftUI
 // MARK: - little pictures made from the game's own sprites (the website's drawModeIcon / weatherIcon)
 
 func drawModeIcon(_ id: String) -> Img {
-    if id == "night" { return nightModeIcon(drawModeIcon("dark")) }   // v158
     let S = 84.0, GROUND = 68.0
     let g = CGCanvas(84, 84); g.imageSmoothingEnabled = false
     let sky = id == "dark" ? img("night_sky") : img("day_sky")
@@ -253,7 +252,7 @@ struct ModesPage: View {
             FitScroll {
                 VStack(spacing: 5) {
                     ForEach(MODES, id: \.id) { m in
-                        let locked = m.id == "night" && !nightOpen()   // v158: Night Shift only opens from 12 to 3 AM
+                        let locked = false
                         Button {
                             if locked { playSound("swoosh"); return }
                             setGameMode(m.id); haptic(); sel = m.id

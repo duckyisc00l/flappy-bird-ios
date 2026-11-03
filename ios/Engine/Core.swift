@@ -277,7 +277,6 @@ func updateSky() {
     rollWeather()
     // v156: real day and night (the sun where your weather comes from); Halloween stays spooky at night
     if WX.season != "halloween" { WX.tod = realTod(); skyIsNight = WX.tod == "night" }
-    if gameMode == "night" && afterlife == 0 && !haunted { skyIsNight = true; WX.tod = "night" }   // v158: Night Shift
     skyX = 0
 }
 
@@ -285,7 +284,7 @@ func updateSky() {
 func modeOn(_ id: String) -> Bool { gameMode == id && !ending.on }
 func hardOn() -> Bool { modeOn("hard") }
 func turboMul() -> Double { 1 + Double(min(max(score, 0), 50)) * 0.016 }
-func speedMul() -> Double { modeOn("night") ? 1.1 : hardOn() ? HARD.speed : modeOn("turbo") ? turboMul() : 1 }
+func speedMul() -> Double { hardOn() ? HARD.speed : modeOn("turbo") ? turboMul() : 1 }
 func modeGap() -> Double { hardOn() ? HARD.gap : modeOn("tiny") ? 106 : modeOn("wavy") ? 140 : C.verticalPipeGap }
 let PIPE_EVERY = 1.0   // a new pipe every second (v153: back from 2; the wait is at the start now)
 func spawnEvery() -> Double { PIPE_EVERY * (hardOn() ? HARD.every : modeOn("turbo") ? 1 / turboMul().squareRoot() : 1) }

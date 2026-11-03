@@ -1,7 +1,7 @@
 import Foundation
 import QuartzCore
 
-// ===================== v158: the bird remembers, the fake crash, Night Shift, achievements =====================
+// ===================== v158: the bird remembers, the fake crash, achievements =====================
 // (the website's nb/t_zzzzzzv158.js, line by line)
 
 // ---------- small helpers ----------
@@ -53,8 +53,6 @@ var ACH: [AchInfo] = [
     AchInfo(id: "daily", name: "Daily Flyer", desc: "Finish a Daily Challenge."),
     AchInfo(id: "streak7", name: "Week Streak", desc: "Keep a 7 day Daily streak."),
     AchInfo(id: "storm10", name: "Storm Chaser", desc: "Score 10 in a thunderstorm."),
-    AchInfo(id: "night", name: "Night Shift", desc: "Play a round of Night Shift (12 to 3 AM)."),
-    AchInfo(id: "night20", name: "Graveyard Shift", desc: "Score 20 in Night Shift."),
     AchInfo(id: "glitch", name: "Inside The Glitch", desc: "Find what hides behind the crash.", secret: true),
     AchInfo(id: "patched", name: "Patched", desc: "Make it out of the glitch.", secret: true),
     AchInfo(id: "theend", name: "The End", desc: "Reach the ending.", secret: true),
@@ -82,7 +80,6 @@ func achScoreCheck() {
     if m == "tiny" && s >= 10 { achUnlock("tiny10") }
     if m == "turbo" && s >= 30 { achUnlock("turbo30") }
     if m == "dark" && s >= 10 { achUnlock("dark10") }
-    if m == "night" && s >= 20 { achUnlock("night20") }
     if WX.weather == "storm" && weatherOn() && s >= 10 { achUnlock("storm10") }
     let p = lsNum("fb_lifePipes") + 1; lsSetNum("fb_lifePipes", p)
     if p >= 500 { achUnlock("p500") }
@@ -100,9 +97,8 @@ func achDeath() {
     if score <= 0 && !haunted { achUnlock("faceplant") }
     var played = lsList("fb_modesPlayed")
     if !played.contains(gameMode) { played.append(gameMode); lsSetList("fb_modesPlayed", played) }
-    if MODES.filter({ $0.id != "night" }).allSatisfy({ played.contains($0.id) }) { achUnlock("tourist") }
+    if MODES.allSatisfy({ played.contains($0.id) }) { achUnlock("tourist") }
     if gameMode == "daily" { achUnlock("daily") }
-    if gameMode == "night" { achUnlock("night") }
     DispatchQueue.main.async { if lsNum("fb_dailyStreak") >= 7 { achUnlock("streak7") } }   // (after the Daily has counted today)
 }
 /// handleScore's add-ons
@@ -222,12 +218,11 @@ func v158Tick(_ dt: Double) {
     if GL.phase == "exit" { GL.t += dt; if GL.t >= 1.2 { GL.phase = ""; if !isShowingGameOver && !runUsedBot { achUnlock("patched") } } }
     else if GL.phase == "inside" { GL.t += dt }
     if !GL.phase.isEmpty && !bird.dynamic && !isGameOver && !isShowingGameOver { GL.phase = "" }   // (back on the title)
-    nightTick(dt)
 }
-/// applyPipes' add-on: the glitch pipes, the Night Shift pipes
+/// applyPipes' add-on: the glitch pipes
 func v158Pipes(_ weatherWasOn: Bool) {
     var set: String? = nil
-    if glitchVisible() { set = "glitch" } else if nightOn() && weatherWasOn { set = "night" }
+    if glitchVisible() { set = "glitch" }
     if let s = set, Assets.img("pipe_\(s)_up") != nil { pipeSkin = s }
 }
 private func glitchBars() -> [GlitchBar] {   // new tears every 70 ms
@@ -300,98 +295,6 @@ func drawGlitchOverlay() {
     while y < SH { ctx.fillRect(L, y, W, 2); y += 6 }   // scanlines
 }
 
-// ======================================================= Night Shift (12 to 3 AM, your time)
-var NIGHT_FORCE = false   // (Developer page: open it now)
-func nightOpen() -> Bool { NIGHT_FORCE || Calendar.current.component(.hour, from: Date()) < 3 }
-func nightOn() -> Bool { modeOn("night") && afterlife == 0 && !haunted }
-struct NightEye { var x, y, t, life: Double }
-final class NightState { var eyes: [NightEye] = [], nextEye = 1.0, flick = 0.0, nextFlick = 7.0, check = 0.0, told = "" }
-let NS = NightState()
-func nightTick(_ dt: Double) {
-    NS.check -= dt
-    if NS.check <= 0 {
-        NS.check = 1
-        let title = !bird.dynamic && !isGameOver && !isShowingGameOver && !isWaitingToStart
-        if gameMode == "night" && !nightOpen() && !inRun() { setGameMode("normal"); achBanner("NIGHT SHIFT", "IS OVER") }
-        let f = DateFormatter(); f.dateFormat = "EEE MMM dd yyyy"; f.locale = Locale(identifier: "en_US_POSIX")
-        let night = f.string(from: Date().addingTimeInterval(-3 * 3600))   // (one "night" runs 12 AM to 3 AM)
-        if nightOpen() && title && NS.told != night && lsList("fb_nightTold").first != night {
-            NS.told = night; lsSetList("fb_nightTold", [night])
-            if gameMode != "night" { achBanner("NIGHT SHIFT IS OPEN", "PICK IT IN MODES") }
-        }
-    }
-    if !nightOn() { NS.eyes = []; return }
-    let v = viewBox(), scroll = moving.speed > 0 ? 200 * speedMul() : 0
-    NS.nextEye -= dt
-    if NS.nextEye <= 0 && NS.eyes.count < 4 { NS.nextEye = 1.2 + mrand() * 2; NS.eyes.append(NightEye(x: v.L + 30 + mrand() * (v.R - v.L - 60), y: 250 + mrand() * 120, t: 0, life: 2.5 + mrand() * 2)) }
-    for i in NS.eyes.indices { NS.eyes[i].t += dt; NS.eyes[i].x -= scroll * 0.25 * dt }
-    NS.eyes = NS.eyes.filter { $0.t < $0.life && $0.x > v.L - 20 }
-    NS.nextFlick -= dt
-    if NS.nextFlick <= 0 { NS.nextFlick = 6 + mrand() * 6; NS.flick = 0.45 }
-    if NS.flick > 0 { NS.flick -= dt }
-}
-/// drawDarkness' add-on
-func drawNightShift(_ flip: Bool) {
-    if !nightOn() || glitchVisible() { return }
-    let v = viewBox(), bx = bird.x, by = flip ? SH - bird.y : bird.y
-    let out = NS.flick > 0 && Int(floor(NS.flick * 16)) % 3 != 0 ? 0.97 : 0.8   // the lights go out now and then
-    let r = 175 + 5 * sin(WX.t * 7)
-    drawVignette(bx, by, r, (8, 2, 10), [(0, 0), (0.5, 0.22), (1, out)], v.L - 10, -10, v.R - v.L + 20, SH + 20)
-    ctx.fill("rgba(70,0,14,0.14)"); ctx.fillRect(v.L - 10, -10, v.R - v.L + 20, SH + 20)
-    for e in NS.eyes {   // eyes in the dark (they blink)
-        let a = min(1, e.t / 0.4, (e.life - e.t) / 0.4), blink = e.t.truncatingRemainder(dividingBy: 1.7) > 1.5
-        if blink { continue }
-        ctx.globalAlpha = a * 0.25; ctx.fill("#ff2020"); ctx.fillRect(jsRound(e.x) - 4, jsRound(e.y) - 3, 19, 9)
-        ctx.globalAlpha = a; ctx.fill("#ff3030"); ctx.fillRect(jsRound(e.x), jsRound(e.y), 3, 3); ctx.fillRect(jsRound(e.x) + 8, jsRound(e.y), 3, 3)
-        ctx.globalAlpha = 1
-    }
-}
-/// a round shadow with a clear middle, drawn as a picture (the same as a radial gradient filling the rect;
-/// the game screen's own radial gradients came out as a clear square here)
-private var vigCache: [String: Img] = [:]
-func vignetteImg(_ rgb: (Int, Int, Int), _ stops: [(Double, Double)]) -> Img {
-    let key = "\(rgb)" + stops.map { String(format: "%.2f:%.2f", $0.0, $0.1) }.joined(separator: ",")
-    if let hit = vigCache[key] { return hit }
-    let N = 64
-    var px = [UInt8](repeating: 0, count: N * N * 4)
-    func alpha(_ d: Double) -> Double {
-        if d <= stops[0].0 { return stops[0].1 }
-        for i in 1..<stops.count where d <= stops[i].0 { let (a0, b0) = stops[i - 1], (a1, b1) = stops[i]; return b0 + (b1 - b0) * (d - a0) / max(1e-9, a1 - a0) }
-        return stops[stops.count - 1].1
-    }
-    for y in 0..<N { for x in 0..<N {
-        let d = hypot(Double(x) + 0.5 - Double(N) / 2, Double(y) + 0.5 - Double(N) / 2) / (Double(N) / 2), i = (y * N + x) * 4
-        px[i] = UInt8(rgb.0); px[i + 1] = UInt8(rgb.1); px[i + 2] = UInt8(rgb.2); px[i + 3] = UInt8(max(0, min(255, (alpha(d) * 255).rounded())))
-    } }
-    let c = CGCanvas(N, N); c.putImageData(px)
-    let im = c.image()
-    if vigCache.count > 40 { vigCache.removeAll() }
-    vigCache[key] = im
-    return im
-}
-func drawVignette(_ cx: Double, _ cy: Double, _ r: Double, _ rgb: (Int, Int, Int), _ stops: [(Double, Double)], _ x: Double, _ y: Double, _ w: Double, _ h: Double) {
-    let im = vignetteImg(rgb, stops)
-    ctx.save(); ctx.imageSmoothingEnabled = true; ctx.drawImage(im, cx - r, cy - r, 2 * r, 2 * r); ctx.restore()
-    let last = stops[stops.count - 1].1
-    if last <= 0.001 { return }
-    ctx.fill("rgba(\(rgb.0),\(rgb.1),\(rgb.2),\(last))")
-    let L = x, R = x + w, B = y, T = y + h, sl = cx - r, sr = cx + r, sb = cy - r, st = cy + r
-    if sb > B { ctx.fillRect(L, B, w, sb - B) }                                   // below the circle's square
-    if T > st { ctx.fillRect(L, st, w, T - st) }                                  // above
-    let lo = max(B, sb), hi = min(T, st)
-    if hi > lo { if sl > L { ctx.fillRect(L, lo, sl - L, hi - lo) }; if R > sr { ctx.fillRect(sr, lo, R - sr, hi - lo) } }   // left and right
-}
-
-/// the mode picker's picture for Night Shift
-func nightModeIcon(_ base: Img) -> Img {
-    let g = CGCanvas(84, 84); g.imageSmoothingEnabled = false; g.drawImage(base, 0, 0)
-    g.fill("rgba(70,0,14,0.35)"); g.fillRect(0, 0, 84, 84)
-    g.fill("#f0e6c8")   // a crescent moon
-    for (x, y, w) in [(63.0, 6.0, 4.0), (61, 8, 3), (60, 10, 3), (60, 12, 3), (60, 14, 3), (61, 16, 3), (63, 18, 4)] { g.fillRect(x, y, w, 2) }
-    g.fill("#ff3030"); g.fillRect(20, 52, 3, 3); g.fillRect(28, 52, 3, 3); g.fillRect(58, 40, 2, 2); g.fillRect(64, 40, 2, 2)
-    return g.image()
-}
-
 // ======================================================= drawing hook (after the STOP button)
 private var v158LastT = 0.0
 func drawV158Overlay() {
@@ -402,9 +305,5 @@ func drawV158Overlay() {
 // ======================================================= startup
 func v158Start() {
     scarsOn = loadBool("scars", true)
-    if !MODES.contains(where: { $0.id == "night" }) {
-        MODES.append(ModeInfo(id: "night", name: "NIGHT SHIFT", title: "Night Shift", descText: { "Only open from 12 to 3 AM. Darker and faster, with things watching, and its own leaderboard." }))
-    }
-    if !LB_MODES.contains("night") { LB_MODES.append("night") }
     if rebornUnlocked() { rebornRegister() }
 }

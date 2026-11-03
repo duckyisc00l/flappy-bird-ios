@@ -210,7 +210,7 @@ func fgLabel(_ name: String) -> String {
 func drawModeTag() {
     // "WAVY MODE" under Get Ready
     if getReady.added && getReady.scale > 0 && gameMode != "normal" && !ending.on && afterlife == 0 {
-        let t = gameMode == "night" ? "NIGHT SHIFT" : modeInfo().name + " MODE"
+        let t = modeInfo().name + " MODE"
         drawPanelText(t, jsRound(getReady.x - panelTextWidth(t) / 2), getReady.y - 44)
     }
     // v132: "RACING SAM 42" / who won

@@ -19,7 +19,6 @@ func inRun() -> Bool { isWaitingToStart || bird.dynamic || isGameOver || isShowi
 func worldFlipped() -> Bool { modeOn("flipped") && inRun() }
 
 func drawDarkness(_ flip: Bool) {
-    drawNightShift(flip)   // v158
     if !(modeOn("dark") && inRun()) { return }
     let bx = bird.x, by = flip ? SH - bird.y : bird.y
     let r = 125 + 4 * sin(WX.t * 9) + 3 * sin(WX.t * 23)
