@@ -232,6 +232,7 @@ func uploadRun(_ enc: [String: Any], _ mode: String, _ extra: [String: Any] = [:
                                "bird": String((enc["skin"] as? String ?? "yellow").prefix(40)), "data": enc, "round": 1, "duel": id]
     for (k, v) in extra { body[k] = v }
     _ = try await sbAsync("ghosts", method: "POST", body: body, headers: ["Prefer": "return=minimal"])
+    var mine = lsList("fb_myRuns"); mine.append(id); lsSetList("fb_myRuns", Array(mine.suffix(200)))   // v164: so your own links can't be raced
     return id
 }
 func myBestLink(_ mode: String) async throws -> String? {
@@ -245,6 +246,10 @@ func myBestLink(_ mode: String) async throws -> String? {
 func fetchRun(_ id: String) async throws -> [String: Any] {
     if id.range(of: "^[A-Za-z0-9]{8,12}$", options: .regularExpression) == nil { throw NetError(message: "That link isn't right") }
     guard let rows = try await sbAsync("ghosts?select=*&id=eq.\(id)") as? [[String: Any]], let r = rows.first else { throw NetError(message: "That race was not found") }
+    // v164: you can't race your own link
+    let rid0 = r["id"] as? String ?? id, uid = r["user_id"] as? String
+    let mine = (accSignedIn() && uid != nil && uid == ACCT.uid) || lsList("fb_myRuns").contains(rid0) || linkCache.values.contains(rid0)
+    if mine { throw NetError(message: "That's your own run. Send the link to a friend so they can race you!") }
     return r
 }
 func fetchDuel(_ duel: String) async throws -> [[String: Any]] { try await sbAsync("ghosts?select=id,name,score,round,bird,created_at&duel=eq.\(duel)&order=round.asc") as? [[String: Any]] ?? [] }

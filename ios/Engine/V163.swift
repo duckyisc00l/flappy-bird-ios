@@ -1,6 +1,6 @@
 import Foundation
 
-// ===================== v163: the bird sleeps at night, a seasonal logo, the bird reacts to the weather =====================
+// ===================== v163: the bird sleeps at night, a seasonal logo =====================
 // (the website's nb/t_zzzzzzzz163.js, line by line)
 
 /// drawing in a sprite's own pixels (y down, like the picture), so extras sit exactly on it
@@ -147,46 +147,5 @@ func drawLogoSeason() {
     }
 }
 
-// ======================================================= the bird reacts to the weather
-// clear and sunny: sunglasses. Rain or a storm: a little umbrella. Snow: snow on its head, and it shivers.
-let UMBRELLA = ["......OOOO......", "....OOrrwwOO....", "..OOrrrwwwrrOO..", ".OrrrrwwwwrrrrO.", "OOOOOOOOOOOOOOOO", ".......O........", ".......O........", ".......O........", ".......O........"]
-var WX_FORCE = ""   // (Developer page)
-func wxReaction() -> String {
-    if !birdExtrasOK() || gameMode == "night" || sleepingNow() { return "" }
-    let w = !WX_FORCE.isEmpty ? WX_FORCE : (weatherOn() ? WX.weather : "")
-    if w == "clear" && !skyIsNight { return "sun" }
-    if w == "rain" || w == "storm" { return "rain" }
-    if w == "snow" { return "snow" }
-    return ""
-}
-func drawWeatherReaction() {
-    let r = wxReaction(); if r.isEmpty { return }
-    onBird { im, w, h, ox, oy in
-        if r == "sun" {   // sunglasses over the eye
-            guard let e = birdEye(im) else { return }
-            for (x, y) in e.cells { px1(ox + x * 2, oy + y * 2, 2, 2, "#16141c") }
-            px1(ox + e.left * 2 - 2, oy + e.top * 2 + 1, 2, 1, "#16141c")                          // the arm
-            px1(ox + (e.left + 1) * 2, oy + e.top * 2 + 1, 1, 1, "#ffffff"); px1(ox + (e.left + 1) * 2 + 1, oy + e.top * 2 + 2, 1, 1, "#9aa0b0")   // a glint
-        } else if r == "rain" {   // an umbrella held over its head
-            let cx = ox + 16, top = oy + 1 - UMBRELLA.count * 2   // (in the bird's big pixels; the handle reaches its head)
-            for (j, row) in UMBRELLA.enumerated() { for (i, ch) in row.enumerated() where ch != "." { px1(cx - 16 + i * 2, top + j * 2, 2, 2, ch == "O" ? "#533846" : ch == "r" ? "#e8281e" : "#ffffff") } }
-        } else if r == "snow" {   // snow piled on its head
-            let P = pixData(im)
-            var x = ox + 10
-            while x < ox + 28 && x < w {
-                var top = -1
-                for y in 0..<h where P.d[(y * P.w + x) * 4 + 3] > 40 { top = y; break }
-                if top >= 0 { let lump = hash1(Double(x)) > 0.5 ? 2 : 1; px1(x, top - lump, 1, lump, "#ffffff") }
-                x += 1
-            }
-        }
-    }
-    if r == "snow" && Int(floor(sceneTime * 12)) % 2 == 1 {   // shivering
-        let by = bird.y; ctx.fill("rgba(200,230,255,0.9)")
-        ctx.fillRect(jsRound(bird.x - 34), jsRound(by + 2), 6, 2); ctx.fillRect(jsRound(bird.x - 32), jsRound(by - 6), 4, 2)
-        ctx.fillRect(jsRound(bird.x + 28), jsRound(by + 4), 6, 2); ctx.fillRect(jsRound(bird.x + 30), jsRound(by - 4), 4, 2)
-    }
-}
-
 // ======================================================= hook (before the STOP button)
-func drawV163Overlay() { drawLogoSeason(); drawWeatherReaction(); drawSleep() }
+func drawV163Overlay() { drawLogoSeason(); drawSleep() }

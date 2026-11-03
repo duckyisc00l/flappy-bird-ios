@@ -61,9 +61,9 @@ enum Demo {
         at(0.3) { OLD_FORCE = true; rollWeather(); say("old \(oldDay()) weather \(weatherOn())") }
         at(1.0) { say("snap old_day") }
         at(0.3) { OLD_FORCE = false; rollWeather() }
-        // v163: the seasonal logo, the bird and the weather, the sleepy bird
+        // v163: the seasonal logo, the sleepy bird
         for (sn, wx) in [("christmas", "snow"), ("spring", "rain"), ("summer", "clear"), ("halloween", "fog"), ("newyear", "clear")] {
-            at(0.3) { seasonPick = sn; weatherPick = wx; rollWeather(); skyIsNight = false; say("season \(WX.season) weather \(WX.weather) reaction \(wxReaction())") }
+            at(0.3) { seasonPick = sn; weatherPick = wx; rollWeather(); skyIsNight = false; say("season \(WX.season) weather \(WX.weather)") }
             at(0.8) { say("snap logo_\(sn)") }
         }
         at(0.3) { seasonPick = "auto"; weatherPick = "auto"; rollWeather(); SLEEP_FORCE = true; localStorage.removeItem("fb_mood") }

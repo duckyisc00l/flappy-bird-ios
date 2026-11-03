@@ -48,7 +48,7 @@ func render() {
     let skyW = 288 * 1.5, skyH = 512 * 1.5
     let flipWorld = worldFlipped()
     if flipWorld { ctx.save(); ctx.translate(0, SH); ctx.scale(1, -1) }
-    for i in 0..<(2 + Int(floor(width / skyW))) { spr(sky, skyX + Double(i) * (skyW - 1), skyH / 3.5 + 112 * 2, 1.5, 1.5, 0) }
+    do { let v = viewBox(); var i = Int(floor((v.L - skyX - skyW / 2) / (skyW - 1))); while Double(i) <= ceil((v.R - skyX + skyW / 2) / (skyW - 1)) { spr(sky, skyX + Double(i) * (skyW - 1), skyH / 3.5 + 112 * 2, 1.5, 1.5, 0); i += 1 } }   // v164: the whole screen
     drawCreepySky(skyX, skyW, skyH)
     drawCreepyFog()
     drawWeatherSky()
@@ -68,7 +68,7 @@ func render() {
     PERF.mark("r.bird")
 
     let landW = 336 * 2.0
-    for i in 0..<(2 + Int(floor(width / landW))) { spr(img("land"), groundX + Double(i) * (landW - 1), 112, 2, 2, 0) }
+    do { let v = viewBox(); var i = Int(floor((v.L - groundX - 336) / (landW - 1))); while Double(i) <= ceil((v.R - groundX + 336) / (landW - 1)) { spr(img("land"), groundX + Double(i) * (landW - 1), 112, 2, 2, 0); i += 1 } }   // v164: the whole screen, however wide (a strip was missing on iPad)
     drawSeasonGround()
     if score <= -1 { drawMassGraves() }
     drawArmyFill()
@@ -128,7 +128,7 @@ func render() {
         ctx.restore()
     }
 
-    drawV163Overlay()   // v163: the seasonal logo, the bird and the weather, the sleepy bird
+    drawV163Overlay()   // v163: the seasonal logo, the sleepy bird
     drawV161Overlay()   // v161: bird moods
     if afterlife < 3 { drawStopButton() }
     drawV158Overlay()   // v158: the fake crash, achievement banners
