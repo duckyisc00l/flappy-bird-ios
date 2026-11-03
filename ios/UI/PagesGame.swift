@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - little pictures made from the game's own sprites (the website's drawModeIcon / weatherIcon)
 
 func drawModeIcon(_ id: String) -> Img {
+    if id == "night" { return nightModeIcon(drawModeIcon("dark")) }   // v158
     let S = 84.0, GROUND = 68.0
     let g = CGCanvas(84, 84); g.imageSmoothingEnabled = false
     let sky = id == "dark" ? img("night_sky") : img("day_sky")
@@ -92,6 +93,7 @@ struct SettingsPage: View {
             FitScroll {
                 VStack(spacing: 0) {
                     row("Account", trailing: AnyView(Arrow())) { playSound("swoosh"); haptic(); accGo(accSignedIn() ? "profile" : "account", accSignedIn() ? ACCT.uid : nil) }
+                    row("Achievements", trailing: AnyView(HStack(spacing: 10) { KT("\(achCount())/\(ACH.count)", 6).opacity(0.75); Arrow() })) { playSound("swoosh"); haptic(); showPage("achievements") }
                     row("Notifications", trailing: AnyView(Arrow())) { playSound("swoosh"); accGo("notify") }
                     row("Trail", trailing: AnyView(HStack(spacing: 10) { KT(trailDef(trailPick)?.name ?? "None", 6).opacity(0.75).lineLimit(1).frame(maxWidth: 90, alignment: .trailing); Arrow() })) { playSound("swoosh"); haptic(); showPage("trails") }
                     row("Haptics", trailing: AnyView(Sw(on: haptics))) { haptics.toggle(); saveBool("appHaptics", haptics); if haptics { appHaptic("medium") }; playSound("swoosh"); ui.refresh() }
@@ -251,7 +253,9 @@ struct ModesPage: View {
             FitScroll {
                 VStack(spacing: 5) {
                     ForEach(MODES, id: \.id) { m in
+                        let locked = m.id == "night" && !nightOpen()   // v158: Night Shift only opens from 12 to 3 AM
                         Button {
+                            if locked { playSound("swoosh"); return }
                             setGameMode(m.id); haptic(); sel = m.id
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { if !PK.open { return }; if PK.fromSettings { playSound("swoosh"); showPage("settings") } else { closePicker() } }
                         } label: {
@@ -260,11 +264,12 @@ struct ModesPage: View {
                                 VStack(alignment: .leading, spacing: 0) {
                                     OutlinedTitle(t: m.title, size: 14, outline: 2, drop: 3)
                                     KT(m.desc, 6, spacing: 3).padding(.top, 3).padding(.bottom, 2)
-                                    let b = modeBest(m.id); KT(b > 0 ? "Best \(b)" : "Not played yet", 6, K.orange)
+                                    let b = modeBest(m.id); KT(locked ? "Opens at 12 AM (your time)" : b > 0 ? "Best \(b)" : "Not played yet", 6, K.orange)
                                 }.frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .padding(.vertical, 5).padding(.horizontal, 7)
-                            .tile(m.id == sel, radius: 8)
+                            .tile(m.id == sel && !locked, radius: 8)
+                            .opacity(locked ? 0.5 : 1)
                         }.buttonStyle(PressStyle(scale: 0.98, dy: 0))
                     }
                 }.padding(2)

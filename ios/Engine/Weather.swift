@@ -19,6 +19,7 @@ func inRun() -> Bool { isWaitingToStart || bird.dynamic || isGameOver || isShowi
 func worldFlipped() -> Bool { modeOn("flipped") && inRun() }
 
 func drawDarkness(_ flip: Bool) {
+    drawNightShift(flip)   // v158
     if !(modeOn("dark") && inRun()) { return }
     let bx = bird.x, by = flip ? SH - bird.y : bird.y
     let r = 125 + 4 * sin(WX.t * 9) + 3 * sin(WX.t * 23)
@@ -90,7 +91,8 @@ func rollWeather() {
     if WX.season == "halloween" && !adaptiveBackground { skyIsNight = true; WX.tod = "night" }
     WX.parts = []; WX.splash = []; WX.seeded = false; WX.bolt = nil; WX.flash = 0; WX.bats = []; WX.fw = []; WX.shoot = nil
 }
-func weatherOn() -> Bool { !ending.on && afterlife == 0 && !haunted && creepyLvl <= 0.001 && score > -1 }
+func weatherOn() -> Bool { !glitchVisible() && weatherOnBase() }
+func weatherOnBase() -> Bool { !ending.on && afterlife == 0 && !haunted && creepyLvl <= 0.001 && score > -1 }
 func viewBox() -> (L: Double, R: Double) { (-camX / camS, (boxW - camX) / camS) }
 func rnd(_ a: Double, _ b: Double) -> Double { a + mrand() * (b - a) }
 func wantParts() -> [(String, Int)] {
@@ -248,6 +250,7 @@ func drawImgUp(_ im: Img?, _ x: Double, _ y: Double, _ w: Double, _ h: Double, _
     ctx.restore()
 }
 func drawWeatherSky() {
+    if glitchVisible() { drawGlitchSky(); return }   // v158
     drawWeatherSkyBase()
     if weatherOn() { seasonSky() }
 }
@@ -367,6 +370,7 @@ private func drawSeasonPipesBase() {
 func drawSeasonGround() {
     drawSeasonGroundBase()
     if weatherOn() { seasonGround() }
+    if glitchVisible() { drawGlitchGround() }   // v158
 }
 private func drawSeasonGroundBase() {
     if !weatherOn() { return }

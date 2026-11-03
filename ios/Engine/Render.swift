@@ -129,6 +129,7 @@ func render() {
     }
 
     if afterlife < 3 { drawStopButton() }
+    drawV158Overlay()   // v158: the fake crash, achievement banners
 
     for f in flashes where f.alpha > 0 {
         ctx.globalAlpha = f.alpha; ctx.fill(f.color)
@@ -207,7 +208,7 @@ func fgLabel(_ name: String) -> String {
 func drawModeTag() {
     // "WAVY MODE" under Get Ready
     if getReady.added && getReady.scale > 0 && gameMode != "normal" && !ending.on && afterlife == 0 {
-        let t = modeInfo().name + " MODE"
+        let t = gameMode == "night" ? "NIGHT SHIFT" : modeInfo().name + " MODE"
         drawPanelText(t, jsRound(getReady.x - panelTextWidth(t) / 2), getReady.y - 44)
     }
     // v132: "RACING SAM 42" / who won

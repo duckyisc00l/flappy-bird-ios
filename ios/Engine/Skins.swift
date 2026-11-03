@@ -2,7 +2,7 @@ import Foundation
 
 // Birds: 2,265 from the website (sheets), plus your own from the Bird Maker (built here exactly like the website does).
 let CLASSIC_SKINS = ["yellow", "red", "blue", "green", "peach", "purple", "kup"]
-let CAT_ORDER = ["My Birds", "Classic", "Real Birds", "Animals", "Food & Drink", "Outfits & Jobs", "Sports & Music", "Fantasy", "Spooky", "Holidays", "Space",
+let CAT_ORDER = ["My Birds", "Secret", "Classic", "Real Birds", "Animals", "Food & Drink", "Outfits & Jobs", "Sports & Music", "Fantasy", "Spooky", "Holidays", "Space",
                  "Nature & Weather", "Things", "Moods & Faces", "Cartoon", "Patterns & Colors", "Countries", "US States"]
 let BASE_PAL: [String: String] = ["O": "#533846", "E": "#fafafa", "P": "#533846", "W": "#fafafa", "G": "#d7e6cc", "R": "#fc3800", "D": "#d32f00", "L": "#fc730f", "B": "#f8b733"]
 let SKIN_PX = 4.0, SKIN_PY = 8.0
@@ -36,20 +36,22 @@ func registerCustom(_ cb: CustomBird) {
 }
 func unregisterCustom(_ id: String) { customIds.removeAll { $0 == id }; customBuilt.remove(id); for n in 1...3 { Assets.drop(id + "_\(n)") } }
 func prepareSkins() { loadCustomBirdsList(); for cb in customBirds { registerCustom(cb) } }
-func extraSkinIds() -> [String] { Birds2.all.map { $0.id }.filter { !CLASSIC_SKINS.contains($0) } + customIds }
-func skinExists(_ id: String) -> Bool { CLASSIC_SKINS.contains(id) || Birds2.byId[id] != nil || customIds.contains(id) }
+func extraSkinIds() -> [String] { Birds2.all.map { $0.id }.filter { !CLASSIC_SKINS.contains($0) } + customIds + (rebornOn ? ["reborn"] : []) }
+func skinExists(_ id: String) -> Bool { (id == "reborn" && rebornOn) || CLASSIC_SKINS.contains(id) || Birds2.byId[id] != nil || customIds.contains(id) }
 func customBird(_ id: String) -> CustomBird? { customBirds.first { $0.id == id } }
 func skinName(_ id: String) -> String {
+    if id == "reborn" { return "Reborn" }   // v158
     if let c = customBird(id) { return c.name }
     if let b = Birds2.byId[id] { return b.name }
     return id.replacingOccurrences(of: "_", with: " ").capitalized
 }
 func skinCat(_ id: String) -> String {
+    if id == "reborn" { return "Secret" }   // v158
     if id.hasPrefix("custom_") { return "My Birds" }
     if CLASSIC_SKINS.contains(id) { return "Classic" }
     return Birds2.byId[id]?.cat ?? "Patterns & Colors"
 }
-func allSkins() -> [String] { customIds + Birds2.all.map { $0.id } }
+func allSkins() -> [String] { customIds + (rebornOn ? ["reborn"] : []) + Birds2.all.map { $0.id } }
 func pickedSkin() -> String? {
     if birdPick == "favs" { let f = favBirds.filter(skinExists); return f.isEmpty ? nil : f[Int(floor(mrand() * Double(f.count)))] }
     if birdPick != "random" && skinExists(birdPick) { return birdPick }
@@ -57,6 +59,7 @@ func pickedSkin() -> String? {
 }
 /// your own birds' frames are drawn the first time they're used (the website's buildSkin2)
 func ensureSkin(_ id: String) {
+    if id == "reborn" { if rebornOn { ensureReborn() }; return }   // v158
     guard let cb = customBird(id), !customBuilt.contains(id) else { return }
     for n in 1...3 { Assets.put(id + "_\(n)", buildCustomFrame(n - 1, pal: cb.pal, px: cb.px)) }
     customBuilt.insert(id)

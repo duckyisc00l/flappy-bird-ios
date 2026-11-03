@@ -19,6 +19,7 @@ func applyPipes() {
     if weatherOn() { set = pipeSet() }
     if set != "classic" && Assets.img("pipe_\(set)_up") == nil { set = "classic" }
     pipeSkin = set
+    v158Pipes(weatherOnBase())   // the glitch pipes, Night Shift
 }
 /// img["pipe_up"] / img["pipe_down"] follow the chosen set (the red and gold pipes have their own pictures)
 func themedImg(_ k: String) -> Img? {

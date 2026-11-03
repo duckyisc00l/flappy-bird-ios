@@ -113,6 +113,7 @@ struct MenuLayer: View {
             case "pals": PalsPage()
             case "avatar": AvatarPage()
             case "notify": NotifyPage()
+            case "achievements": AchievementsPage()
             default: EmptyView()
             }
         }

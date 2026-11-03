@@ -76,6 +76,25 @@ enum Demo {
         at(0.5) { seasonPick = "thanksgiving"; pipePick = "auto"; rollWeather(); TG.nextGeese = 0; say("season \(WX.season) pipes \(pipeSkin) tod \(WX.tod)") }
         at(2.5) { say("snap thanksgiving") }
         at(0.5) { seasonPick = "auto"; rollWeather() }
+        // v158: the fake crash, the glitch level, Night Shift, scars, achievements
+        at(0.5) { lsSetNum("fb_lifeDeaths", 99); SCAR.at = 0; rebornRegister(); say("scars stage \(scarStage()) reborn \(skinExists("reborn"))") }
+        at(0.3) { glitchCrash(); say("glitch \(GL.phase)") }
+        at(0.45) { say("snap glitch_tear") }
+        at(0.5) { say("snap glitch_error") }
+        at(1.6) { say("glitch now \(GL.phase) pipes \(pipeSkin)") }
+        at(2.5) { say("snap glitch_inside") }
+        at(0.3) { achUnlock("first"); say("ach \(lsList("fb_ach"))") }
+        at(0.6) { say("snap ach_banner") }
+        at(0.5) { GL.phase = ""; NIGHT_FORCE = true; setGameMode("night"); rollWeather(); updateSky(); say("night \(gameMode) speed \(speedMul()) open \(nightOpen())") }
+        at(4) { say("snap night_shift"); say("night pipes \(pipeSkin) eyes \(NS.eyes.count) sky \(skyIsNight)") }
+        perf("night shift") {}
+        at(0.5) { openSheet("achievements") }
+        at(1.5) { say("snap achievements") }
+        at(0.5) { showPage("modes") }
+        at(1.5) { say("snap modes_night") }
+        at(0.5) { closePicker(); setGameMode("normal"); NIGHT_FORCE = false; birdPick = "reborn"; updateBirdTextures(); say("bird \(birdColor)") }
+        at(1.5) { say("snap reborn") }
+        at(0.3) { birdPick = "random"; updateBirdTextures() }
         at(1) { autoplay = false; say("score \(score)") }
         at(3) { say("over \(isGameOver)"); say("snap over") }
         at(1.5) { say("snap over2") }

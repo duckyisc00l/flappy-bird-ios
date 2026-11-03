@@ -364,6 +364,12 @@ struct DevPage: View {
                 }.padding(.bottom, 8)
                 Sec(t: "Ending")
                 Flow(spacing: 4) { Opt(t: "Haunted mode", on: haunted) { devHaunt(!haunted); tick += 1 } }.padding(.bottom, 8)
+                Sec(t: "Secrets")   // v158
+                Flow(spacing: 4) {
+                    Opt(t: "Glitch now", on: false) { haptic(); playSound("swoosh"); closePicker(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { if bird.dynamic && !isGameOver { glitchCrash() } else { GL.force = true } } }
+                    Opt(t: "Night Shift open", on: NIGHT_FORCE) { haptic(); playSound("swoosh"); NIGHT_FORCE.toggle(); tick += 1 }
+                    Opt(t: "+10 crashes", on: false) { haptic(); playSound("swoosh"); lsSetNum("fb_lifeDeaths", lsNum("fb_lifeDeaths") + 10); SCAR.at = 0; if rebornUnlocked() { rebornRegister() } }
+                }.padding(.bottom, 8)
                 Sec(t: "Reset"); Hint(t: "Tap twice to confirm")
                 Flow(spacing: 4) {
                     resetOpt("Best scores") { removeKeys { $0.hasPrefix("fb_bestScore") }; resultBestLabel = String(bestScore()) }

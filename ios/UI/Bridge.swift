@@ -79,7 +79,7 @@ func backTarget(_ kind: String) -> String? {
 let PAGE_TITLES = ["settings": "Settings", "birds": "Birds", "modes": "Modes", "weather": "Weather", "maker": "Bird Maker", "export": "Share", "import": "Import", "card": "Score Card",
                    "dev": "Developer", "replay": "Replay", "trails": "Trails", "friends": "Race a Friend", "leaders": "Leaderboard", "challenge": "Race!", "live": "Live Duel",
                    "account": "Account", "profile": "Profile", "twofa": "Two-Factor", "email": "Email", "newpass": "Password", "pals": "Friends", "avatar": "Picture",
-                   "notify": "Notifications"]
+                   "notify": "Notifications", "achievements": "Achievements"]
 
 // MARK: - the game's SpriteKit scene: runs the web loop every frame and passes taps to it
 

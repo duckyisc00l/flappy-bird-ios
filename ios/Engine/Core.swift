@@ -262,7 +262,7 @@ func applyBirdAnimation() { bird.animT = 0 }
 func birdFrame() -> Img? {
     let seq = [1, 2, 3, 2]
     let idx = Int(floor(bird.animT / C.animationFrameDuration)) % 4
-    return img(birdColor + "_" + String(seq[idx]))
+    return scarFrame(img(birdColor + "_" + String(seq[idx])))   // v158: the bird remembers
 }
 func idleAnimation() -> [Step] { [Step(moveBy: (0, C.idleFloatDistance), d: C.idleFloatDuration), Step(moveBy: (0, -C.idleFloatDistance), d: C.idleFloatDuration)] }
 func startIdleAnimation() { removeAction(bird, "idle"); run(bird, idleAnimation(), "idle", rep: true) }
@@ -277,6 +277,7 @@ func updateSky() {
     rollWeather()
     // v156: real day and night (the sun where your weather comes from); Halloween stays spooky at night
     if WX.season != "halloween" { WX.tod = realTod(); skyIsNight = WX.tod == "night" }
+    if gameMode == "night" && afterlife == 0 && !haunted { skyIsNight = true; WX.tod = "night" }   // v158: Night Shift
     skyX = 0
 }
 
@@ -284,7 +285,7 @@ func updateSky() {
 func modeOn(_ id: String) -> Bool { gameMode == id && !ending.on }
 func hardOn() -> Bool { modeOn("hard") }
 func turboMul() -> Double { 1 + Double(min(max(score, 0), 50)) * 0.016 }
-func speedMul() -> Double { hardOn() ? HARD.speed : modeOn("turbo") ? turboMul() : 1 }
+func speedMul() -> Double { modeOn("night") ? 1.1 : hardOn() ? HARD.speed : modeOn("turbo") ? turboMul() : 1 }
 func modeGap() -> Double { hardOn() ? HARD.gap : modeOn("tiny") ? 106 : modeOn("wavy") ? 140 : C.verticalPipeGap }
 let PIPE_EVERY = 1.0   // a new pipe every second (v153: back from 2; the wait is at the start now)
 func spawnEvery() -> Double { PIPE_EVERY * (hardOn() ? HARD.every : modeOn("turbo") ? 1 / turboMul().squareRoot() : 1) }
@@ -380,6 +381,7 @@ func handleGameTap() {
 }
 func startGame() {
     if !isWaitingToStart { return }
+    glitchArm()   // v158
     isWaitingToStart = false
     gameStartTime = sceneTime
     stopIdleAnimation()
@@ -532,11 +534,13 @@ func handleScore() {
     haptic()
     playSound("point")
     scaleTwice(scoreLabel, 1.5, 0.1, 1, 0.1)
+    v158Score()   // achievements, the fake crash
 }
 
 // ---------- Game over ----------
 func gameOver() {
     if isShowingGameOver { return }
+    achDeath()   // v158
     isShowingGameOver = true
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { widgetSync() }   // v156: new best / Daily for the widget
     recordDeath()
@@ -694,6 +698,7 @@ var contactPipe = false
 var contactGround = false
 
 func update(_ dt: Double) {
+    if glitchFrozen(dt) { return }   // v158: the fake crash freezes everything
     PERF.begin()
     sceneTime += dt
     updateCreepy(dt)
@@ -761,6 +766,7 @@ func update(_ dt: Double) {
         if contactGround { if devGod && !isShowingGameOver { bird.vy = C.flapImpulse / BIRD_MASS } else { handleGroundCollision() } }
     }
     if resultNode.added { updateResultCount() }
+    v158Tick(dt)
     PERF.mark("u.rest")
 }
 
@@ -832,6 +838,7 @@ func pointerDown(_ cx: Double, _ cy: Double) {
 func startEngine() {
     loadSettings()
     prepareSkins()
+    v158Start()
     didMove()
     dissolving = true
     dailyFresh()
