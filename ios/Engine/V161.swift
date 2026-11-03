@@ -32,24 +32,29 @@ func moodSet() {
     localStorage.setItem("fb_mood", jsonStr(["m": m, "t": Date().timeIntervalSince1970 * 1000] as [String: Any]))
     lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000))
 }
+/// the mood shows on the bird's own face (its eye), whatever bird it is
 func drawMood() {
     if sleepingNow() { return }   // v163: sleep wins over moods
-    if afterlife != 0 || haunted || ending.on || bird.dynamic || !bird.added { return }
+    if afterlife != 0 || haunted || ending.on || bird.dynamic || !bird.added || worldFlipped() || glitchVisible() { return }
     let m = mood(); if m.isEmpty { return }
-    let t = sceneTime, by = worldFlipped() ? SH - bird.y : bird.y, x = bird.x, y = by + 30
-    if m == "happy" {
-        if let h = pix("heart") { spr(h, jsRound(x + 6), jsRound(y + 4 + sin(t * 3) * 3), 2, 2, 0) }
-        if Int(floor(t * 3)) % 2 == 1 { ctx.fill("#fff6a0"); ctx.fillRect(jsRound(x - 16), jsRound(y + 8), 2, 2); ctx.fillRect(jsRound(x + 22), jsRound(y + 14), 2, 2) }
-    } else if m == "grumpy" {
-        let cloud = pixArt("moodCloud", ["...ggg...", ".gggggggg", "ggggggggg", ".ggggggg.", "....y....", "...y.....", "....y...."], ["g": "#5a5a6a", "y": "#ffd23c"])
-        spr(cloud, jsRound(x + 2 + sin(t * 2) * 2), jsRound(y + 10), 3, 3, 0)
-    } else if m == "sleepy" {
-        for i in 0..<3 {
-            let f = (t * 0.5 + Double(i) / 3).truncatingRemainder(dividingBy: 1), k = [1.0, 2, 2][i]
-            ctx.globalAlpha = min(1, (1 - f) * 2)
-            glyphText("Z", jsRound(x + 14 + f * 16 + Double(i) * 3), jsRound(y + f * 30 + 6), "#ffffff", k + f)
+    onBird { im, _, _, _, _ in
+        guard let e = birdEye(im) else { return }
+        func X(_ x: Int) -> Int { e.ox + x * 2 }
+        func Y(_ y: Int) -> Int { e.oy + y * 2 }
+        let mid = Int(jsRound(Double(e.top + e.bot) / 2))
+        if m == "happy" {          // eyes closed in a smile ^ and a little blush
+            for (x, y) in e.cells { px1(X(x), Y(y), 2, 2, e.L) }
+            let c = Int(jsRound(Double(e.left + e.right) / 2))
+            for (dx, dy) in [(-2, 1), (-1, 0), (0, -1), (1, -1), (2, 0), (3, 1)] { px1(X(c + dx - 1), Y(mid + dy), 2, 2, e.O) }
+            px1(X(e.left - 1), Y(e.bot + 1), 2, 2, "#ff8aa8"); px1(X(e.left), Y(e.bot + 1), 2, 2, "#ff8aa8")
+        } else if m == "grumpy" {  // a heavy brow comes down over the eye, lower on the beak side
+            func brow(_ x: Int) -> Int { e.top + Int(floor(Double(x - e.left) * 0.6)) }
+            for (x, y) in e.cells where y <= brow(x) { px1(X(x), Y(y), 2, 2, e.L) }
+            for x in (e.left - 1)...e.right { px1(X(x), Y(brow(max(x, e.left))) + 1, 2, 2, e.O) }
+        } else if m == "sleepy" {  // droopy half-closed eyelids
+            for (x, y) in e.cells where y <= mid { px1(X(x), Y(y), 2, 2, e.L) }
+            px1(X(e.left), Y(mid) + 1, (e.right - e.left + 1) * 2, 1, e.O)
         }
-        ctx.globalAlpha = 1
     }
 }
 

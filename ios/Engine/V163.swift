@@ -5,10 +5,10 @@ import Foundation
 
 /// drawing in a sprite's own pixels (y down, like the picture), so extras sit exactly on it
 func inSprite(_ x: Double, _ y: Double, _ s: Double, _ rot: Double, _ w: Double, _ h: Double, _ fn: () -> Void) {
-    ctx.save(); ctx.translate(x, y); if rot != 0 { ctx.rotate(rot) }; ctx.scale(s, -s); ctx.translate(-w / 2, -h / 2)
+    ctx.save(); ctx.globalAlpha = 1; ctx.translate(x, y); if rot != 0 { ctx.rotate(rot) }; ctx.scale(s, -s); ctx.translate(-w / 2, -h / 2)
     fn(); ctx.restore()
 }
-func px1(_ x: Double, _ y: Double, _ w: Double, _ h: Double, _ col: String) { ctx.fill(col); ctx.fillRect(x, y, w, h) }
+func px1(_ x: Double, _ y: Double, _ w: Double, _ h: Double, _ col: String) { ctx.fill(col); ctx.fillRect(x, y, w + 0.12, h + 0.12) }   // (a hair bigger: no seams between pixels)
 func px1(_ x: Int, _ y: Int, _ w: Int, _ h: Int, _ col: String) { px1(Double(x), Double(y), Double(w), Double(h), col) }
 /// what a picture looks like inside: its pixels (cached)
 struct PixData { let w: Int, h: Int, d: [UInt8] }
@@ -36,8 +36,11 @@ func birdEye(_ im: Img) -> BirdEye? {
         return P.d[i + 3] > 10 ? [Int(P.d[i]), Int(P.d[i + 1]), Int(P.d[i + 2])] : nil
     }
     func hex(_ c: [Int]) -> String { "#" + c.map { String(format: "%02x", $0) }.joined() }
-    if let white = px(11, 2), let pupil = px(12, 3), let lid = px(8, 2) ?? px(7, 2) {
-        let line = px(7, 0)
+    let line = px(7, 0)
+    // the eyelid is the bird's body colour (the first of these that isn't the dark outline)
+    func dark(_ c: [Int]?) -> Bool { guard let c = c else { return true }; if let l = line, abs(c[0] - l[0]) + abs(c[1] - l[1]) + abs(c[2] - l[2]) < 40 { return true }; return c[0] + c[1] + c[2] < 120 }
+    let lid = [px(7, 2), px(6, 2), px(6, 3), px(7, 3), px(5, 3)].first { !dark($0) } ?? nil
+    if let white = px(11, 2), let pupil = px(12, 3), let lid = lid {
         func near(_ a: [Int]?, _ b: [Int]) -> Bool { guard let a = a else { return false }; return abs(a[0] - b[0]) + abs(a[1] - b[1]) + abs(a[2] - b[2]) < 40 }
         var cells: [(Int, Int)] = []
         for y in 0...6 { for x in 8...15 { let c = px(x, y); if near(c, white) || (near(c, pupil) && x >= 11 && y >= 2 && y <= 5) { cells.append((x, y)) } } }
