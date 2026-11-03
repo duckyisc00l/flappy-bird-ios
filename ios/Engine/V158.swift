@@ -335,9 +335,7 @@ func drawNightShift(_ flip: Bool) {
     let v = viewBox(), bx = bird.x, by = flip ? SH - bird.y : bird.y
     let out = NS.flick > 0 && Int(floor(NS.flick * 16)) % 3 != 0 ? 0.97 : 0.8   // the lights go out now and then
     let r = 175 + 5 * sin(WX.t * 7)
-    let g = ctx.createRadialGradient(bx, by, 0, bx, by, r)
-    g.addColorStop(0, "rgba(8,2,10,0)"); g.addColorStop(0.5, "rgba(8,2,10,0.22)"); g.addColorStop(1, "rgba(8,2,10,\(out))")
-    ctx.fillStyle = .gradient(g); ctx.fillRect(v.L - 10, -10, v.R - v.L + 20, SH + 20)
+    drawVignette(bx, by, r, (8, 2, 10), [(0, 0), (0.5, 0.22), (1, out)], v.L - 10, -10, v.R - v.L + 20, SH + 20)
     ctx.fill("rgba(70,0,14,0.14)"); ctx.fillRect(v.L - 10, -10, v.R - v.L + 20, SH + 20)
     for e in NS.eyes {   // eyes in the dark (they blink)
         let a = min(1, e.t / 0.4, (e.life - e.t) / 0.4), blink = e.t.truncatingRemainder(dividingBy: 1.7) > 1.5
@@ -347,6 +345,42 @@ func drawNightShift(_ flip: Bool) {
         ctx.globalAlpha = 1
     }
 }
+/// a round shadow with a clear middle, drawn as a picture (the same as a radial gradient filling the rect;
+/// the game screen's own radial gradients came out as a clear square here)
+private var vigCache: [String: Img] = [:]
+func vignetteImg(_ rgb: (Int, Int, Int), _ stops: [(Double, Double)]) -> Img {
+    let key = "\(rgb)" + stops.map { String(format: "%.2f:%.2f", $0.0, $0.1) }.joined(separator: ",")
+    if let hit = vigCache[key] { return hit }
+    let N = 64
+    var px = [UInt8](repeating: 0, count: N * N * 4)
+    func alpha(_ d: Double) -> Double {
+        if d <= stops[0].0 { return stops[0].1 }
+        for i in 1..<stops.count where d <= stops[i].0 { let (a0, b0) = stops[i - 1], (a1, b1) = stops[i]; return b0 + (b1 - b0) * (d - a0) / max(1e-9, a1 - a0) }
+        return stops[stops.count - 1].1
+    }
+    for y in 0..<N { for x in 0..<N {
+        let d = hypot(Double(x) + 0.5 - Double(N) / 2, Double(y) + 0.5 - Double(N) / 2) / (Double(N) / 2), i = (y * N + x) * 4
+        px[i] = UInt8(rgb.0); px[i + 1] = UInt8(rgb.1); px[i + 2] = UInt8(rgb.2); px[i + 3] = UInt8(max(0, min(255, (alpha(d) * 255).rounded())))
+    } }
+    let c = CGCanvas(N, N); c.putImageData(px)
+    let im = c.image()
+    if vigCache.count > 40 { vigCache.removeAll() }
+    vigCache[key] = im
+    return im
+}
+func drawVignette(_ cx: Double, _ cy: Double, _ r: Double, _ rgb: (Int, Int, Int), _ stops: [(Double, Double)], _ x: Double, _ y: Double, _ w: Double, _ h: Double) {
+    let im = vignetteImg(rgb, stops)
+    ctx.save(); ctx.imageSmoothingEnabled = true; ctx.drawImage(im, cx - r, cy - r, 2 * r, 2 * r); ctx.restore()
+    let last = stops[stops.count - 1].1
+    if last <= 0.001 { return }
+    ctx.fill("rgba(\(rgb.0),\(rgb.1),\(rgb.2),\(last))")
+    let L = x, R = x + w, B = y, T = y + h, sl = cx - r, sr = cx + r, sb = cy - r, st = cy + r
+    if sb > B { ctx.fillRect(L, B, w, sb - B) }                                   // below the circle's square
+    if T > st { ctx.fillRect(L, st, w, T - st) }                                  // above
+    let lo = max(B, sb), hi = min(T, st)
+    if hi > lo { if sl > L { ctx.fillRect(L, lo, sl - L, hi - lo) }; if R > sr { ctx.fillRect(sr, lo, R - sr, hi - lo) } }   // left and right
+}
+
 /// the mode picker's picture for Night Shift
 func nightModeIcon(_ base: Img) -> Img {
     let g = CGCanvas(84, 84); g.imageSmoothingEnabled = false; g.drawImage(base, 0, 0)

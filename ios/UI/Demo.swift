@@ -90,9 +90,12 @@ enum Demo {
         perf("night shift") {}
         at(0.5) { openSheet("achievements") }
         at(1.5) { say("snap achievements") }
-        at(0.5) { showPage("modes") }
+        at(0.5) { closePicker() }
+        at(0.6) { openSheet("modes") }
         at(1.5) { say("snap modes_night") }
-        at(0.5) { closePicker(); setGameMode("normal"); NIGHT_FORCE = false; birdPick = "reborn"; updateBirdTextures(); say("bird \(birdColor)") }
+        at(0.5) { closePicker(); setGameMode("dark") }
+        at(2.5) { say("snap dark_mode") }
+        at(0.3) { setGameMode("normal"); NIGHT_FORCE = false; birdPick = "reborn"; updateBirdTextures(); say("bird \(birdColor)") }
         at(1.5) { say("snap reborn") }
         at(0.3) { birdPick = "random"; updateBirdTextures() }
         at(1) { autoplay = false; say("score \(score)") }
