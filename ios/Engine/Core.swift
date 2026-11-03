@@ -545,6 +545,7 @@ func gameOver() {
     if isShowingGameOver { return }
     v161Death()   // v161: bird moods
     achDeath()   // v158
+    if afterlife == 0 && !ending.on && !haunted && shakeT >= 1.2 { shakeT = 0.8 }   // v173: a crash gives a small shake (a few pixels)
     isShowingGameOver = true
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { widgetSync() }   // v156: new best / Daily for the widget
     recordDeath()
