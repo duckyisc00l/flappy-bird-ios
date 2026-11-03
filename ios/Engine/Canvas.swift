@@ -334,6 +334,7 @@ final class SKCanvas: Canvas2D {
     var scaleHint: CGFloat = 3   // screen pixels per point (for text sharpness)
     private var pool: [SKSpriteNode] = []
     private var used = 0
+    var usedCount: Int { used }
     private var z: CGFloat = 0
     private lazy var white: SKTexture = {
         let c = CGCanvas(1, 1); c.fill("#fff"); c.fillRect(0, 0, 1, 1); let t = SKTexture(cgImage: c.image().cg); t.filteringMode = .nearest; return t

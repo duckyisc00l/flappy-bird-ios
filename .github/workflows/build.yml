@@ -47,7 +47,7 @@ jobs:
       - name: Run in the iPhone simulator and take screenshots
         if: ${{ hashFiles('FlappyBird.ipa') != '' }}
         run: |
-          xcodebuild -project FlappyBird.xcodeproj -scheme FlappyBird -sdk iphonesimulator -configuration Debug \
+          xcodebuild -project FlappyBird.xcodeproj -scheme FlappyBird -sdk iphonesimulator -configuration Release \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath simbuild build > out/simbuild.log 2>&1 || { echo SIMFAILED >> out/status.txt; exit 0; }
           UDID=$(xcrun simctl list devices available | grep -E "iPhone 1[5-7]( Pro)? \(" | head -1 | grep -oE '[0-9A-F-]{36}')
           [ -z "$UDID" ] && UDID=$(xcrun simctl list devices available | grep -i "iPhone" | head -1 | grep -oE '[0-9A-F-]{36}')

@@ -1,4 +1,5 @@
 import Foundation
+import QuartzCore
 import UIKit
 
 // The game, ported line by line from the website (v148). Same names, same numbers, same order of things,
@@ -777,17 +778,32 @@ var loadingAlpha = 1.0, dissolving = false, loadingHold = 0.0
 var lastTs: Double? = nil
 var devSlow = false, devGod = false, devBoxes = false, devMode = false
 var SHOW_FPS = false
+/// frame timing (the build's test run prints it per scene)
+final class PerfStats {
+    var frames = 0, upd = 0.0, ren = 0.0, worst = 0.0, slow = 0, nodes = 0, start = 0.0
+    func reset() { frames = 0; upd = 0; ren = 0; worst = 0; slow = 0; nodes = 0; start = CACurrentMediaTime() }
+    var line: String {
+        let el = max(0.001, CACurrentMediaTime() - start), f = Double(max(1, frames))
+        return String(format: "fps %.0f cpu update %.2fms render %.2fms worst %.1fms slow %d nodes %d", Double(frames) / el, upd / f * 1000, ren / f * 1000, worst * 1000, slow, nodes / max(1, frames))
+    }
+}
+let PERF = PerfStats()
 func loop(_ ts: Double) {
     if lastTs == nil { lastTs = ts }
     var dt = ts - lastTs!; lastTs = ts
+    if dt > 1.0 / 45 { PERF.slow += 1 }
     dt = min(max(dt, 0), 1.0 / 20)
+    let t0 = CACurrentMediaTime()
     if dissolving {
         let n = max(1, Int(ceil(dt * 60 - 1e-6)))
         for _ in 0..<n { update(dt / Double(n) * (devSlow ? 0.5 : 1)) }
         if loadingHold > 0 { loadingHold -= dt } else { loadingAlpha = max(0, loadingAlpha - dt / CROSS_DISSOLVE) }
     }
+    let t1 = CACurrentMediaTime()
     render()
     renderLoading()
+    let t2 = CACurrentMediaTime()
+    PERF.frames += 1; PERF.upd += t1 - t0; PERF.ren += t2 - t1; PERF.worst = max(PERF.worst, t2 - t0); PERF.nodes += screen.usedCount
 }
 func toScene(_ clientX: Double, _ clientY: Double) -> (Double, Double) {
     let x = (clientX - camX) / camS
