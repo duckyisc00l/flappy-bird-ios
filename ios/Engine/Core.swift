@@ -509,7 +509,6 @@ func flapBird() {
     if !bird.dynamic { return }
     if !(bird.y < height + C.minimumBirdYOffset) { return }
     lastFlapTime = sceneTime
-    animFlap()   // v174: squash and stretch
     bird.rot = C.flapRotation
     bird.vy = 0
     bird.vy += C.flapImpulse / BIRD_MASS
@@ -545,7 +544,6 @@ func handleScore() {
 func gameOver() {
     if isShowingGameOver { return }
     v161Death()   // v161: bird moods
-    v174Crash(true)   // v174: squash, feathers
     achDeath()   // v158
     if afterlife == 0 && !ending.on && !haunted && shakeT >= 1.2 { shakeT = 0.8 }   // v173: a crash gives a small shake (a few pixels)
     isShowingGameOver = true
@@ -571,7 +569,6 @@ func gameOver() {
 func handleGroundCollision() {
     if hasHitGround { return }
     hasHitGround = true
-    animHit(0.04)   // v174
     ghostRunEnded()
     bird.speed = 0.5
     if !isShowingGameOver { gameOver() }
@@ -777,7 +774,6 @@ func update(_ dt: Double) {
     }
     if resultNode.added { updateResultCount() }
     v158Tick(dt)
-    v174Tick(dt)
     PERF.mark("u.rest")
 }
 
