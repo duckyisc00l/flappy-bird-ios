@@ -63,7 +63,7 @@ func render() {
     drawStrangers()
     drawGhost()
     drawTrail(0)
-    if bird.added { spr(birdFrame(), bird.x, bird.y, bird.scale, bird.scale, bird.rot) }
+    if bird.added { spr(birdFrame(), bird.x, bird.y, bird.scale * birdSX(), bird.scale * birdSY(), bird.rot) }   // v174: squash and stretch
     drawTrail(1)
     PERF.mark("r.bird")
 
@@ -130,6 +130,7 @@ func render() {
 
     drawV163Overlay()   // v163: the seasonal logo, the sleepy bird
     drawV161Overlay()   // v161: bird moods
+    drawFeathers()   // v174
     if afterlife < 3 { drawStopButton() }
     drawV158Overlay()   // v158: the fake crash, achievement banners
     drawNewBest()   // v171
