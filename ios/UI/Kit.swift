@@ -24,16 +24,18 @@ struct KT: View {
     }
 }
 /// the big white title with the brown pixel outline (04b19)
+/// v159: the 04b19 font draws a small "f" like an "s" ("Prosile"), so titles use a capital F
+func b19Fix(_ t: String) -> String { t.replacingOccurrences(of: "f", with: "F") }
 struct OutlinedTitle: View {
     let t: String; var size: CGFloat = 22; var color: Color = .white; var outline: CGFloat = 2; var drop: CGFloat = 4
     var body: some View {
-        let txt = Text(t).font(K.b19(size)).foregroundColor(K.brown)
+        let txt = Text(b19Fix(t)).font(K.b19(size)).foregroundColor(K.brown)
         ZStack {
             ForEach(0..<9, id: \.self) { i in
                 let d: [(CGFloat, CGFloat)] = [(-outline, 0), (outline, 0), (0, -outline), (0, outline), (outline, outline), (-outline, outline), (outline, -outline), (-outline, -outline), (0, drop)]
                 txt.offset(x: d[i].0, y: d[i].1)
             }
-            Text(t).font(K.b19(size)).foregroundColor(color)
+            Text(b19Fix(t)).font(K.b19(size)).foregroundColor(color)
         }.fixedSize()
     }
 }
@@ -165,7 +167,7 @@ struct Sec: View { let t: String; var top: CGFloat = 0
 struct Hint: View { let t: String
     var body: some View { KT(t, 6, K.brown, spacing: 3).opacity(0.75).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 2).padding(.top, 2).padding(.bottom, 5) } }
 struct ChT: View { let t: String; var color: Color = K.orange; var size: CGFloat = 18
-    var body: some View { Text(t).font(K.b19(size)).foregroundColor(color).multilineTextAlignment(.center).frame(maxWidth: .infinity).padding(.vertical, 4) } }
+    var body: some View { Text(b19Fix(t)).font(K.b19(size)).foregroundColor(color).multilineTextAlignment(.center).frame(maxWidth: .infinity).padding(.vertical, 4) } }
 struct ChS: View { let t: String
     var body: some View { KT(t, 7, K.brown, align: .center, spacing: 3).frame(maxWidth: .infinity).padding(.bottom, 6) } }
 struct Msg: View { let t: String; var ok = false

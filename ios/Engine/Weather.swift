@@ -472,12 +472,12 @@ func seasonSky() {
     if s == "summer" { for g in WX2.gulls { let up = Int(floor(g.t * 4 + g.ph)) % 2; spr(sart(up != 0 ? "gull1" : "gull2"), jsRound(g.x), jsRound(g.y + sin(g.t + g.ph) * 6), 3, 3, 0) } }
     if s == "valentine" { for h in WX2.hearts { spr(sart("heartBal"), jsRound(h.x + sin(h.t * 1.3 + h.ph) * 10), jsRound(h.y), 3, 3, sin(h.t * 1.3 + h.ph) * 0.1) } }
     if s == "newyear", let p = WX2.plane {
-        let c = Calendar.current, yr = c.component(.month, from: Date()) == 12 ? c.component(.year, from: Date()) + 1 : c.component(.year, from: Date())
+        let c = Calendar.current, yr = c.component(.month, from: Date()) >= 7 ? c.component(.year, from: Date()) + 1 : c.component(.year, from: Date())
         let text = "HAPPY NEW YEAR \(yr)", tw = panelTextWidth(text) + 24, bx = p.x + 40, by = p.y + sin(p.t * 2) * 4
         ctx.fill("#cfc8d8"); ctx.fillRect(p.x + 18, by + 2, 24, 2)
         ctx.fill("#fff6e0"); ctx.fillRect(bx, by - 10, tw, 24)
         ctx.fill("#e8281e"); ctx.fillRect(bx, by - 12, tw, 3); ctx.fillRect(bx, by + 13, tw, 3)
-        drawPanelText(text, jsRound(bx + 12), jsRound(by - 6))
+        drawPanelText(text, jsRound(bx + 12), jsRound(by + 7))   // v159: inside the banner (it hung below it)
         spr(sart("plane"), jsRound(p.x), jsRound(p.y + sin(p.t * 2) * 4), -3, 3, 0)
     }
 }
