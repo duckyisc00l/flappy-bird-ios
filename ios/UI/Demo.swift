@@ -61,6 +61,14 @@ enum Demo {
         at(0.3) { OLD_FORCE = true; rollWeather(); say("old \(oldDay()) weather \(weatherOn())") }
         at(1.0) { say("snap old_day") }
         at(0.3) { OLD_FORCE = false; rollWeather() }
+        // v163: the seasonal logo, the bird and the weather, the sleepy bird
+        for (sn, wx) in [("christmas", "snow"), ("spring", "rain"), ("summer", "clear"), ("halloween", "fog"), ("newyear", "clear")] {
+            at(0.3) { seasonPick = sn; weatherPick = wx; rollWeather(); skyIsNight = false; say("season \(WX.season) weather \(WX.weather) reaction \(wxReaction())") }
+            at(0.8) { say("snap logo_\(sn)") }
+        }
+        at(0.3) { seasonPick = "auto"; weatherPick = "auto"; rollWeather(); SLEEP_FORCE = true; localStorage.removeItem("fb_mood") }
+        at(0.8) { say("sleeping \(sleepingNow()) eye \(birdFrame().flatMap { birdEye($0) } != nil)"); say("snap sleepy") }
+        at(0.3) { SLEEP_FORCE = false }
         at(4) {}
         for p in ["settings", "birds", "modes", "weather", "trails", "maker", "account", "leaders", "friends", "dev", "avatar", "import"] {
             at(1.0) { if p == "dev" { devMode = true }; openSheet(p) }

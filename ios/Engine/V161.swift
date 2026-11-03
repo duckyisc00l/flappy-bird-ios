@@ -33,6 +33,7 @@ func moodSet() {
     lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000))
 }
 func drawMood() {
+    if sleepingNow() { return }   // v163: sleep wins over moods
     if afterlife != 0 || haunted || ending.on || bird.dynamic || !bird.added { return }
     let m = mood(); if m.isEmpty { return }
     let t = sceneTime, by = worldFlipped() ? SH - bird.y : bird.y, x = bird.x, y = by + 30

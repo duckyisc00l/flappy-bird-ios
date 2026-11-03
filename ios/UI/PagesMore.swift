@@ -245,7 +245,8 @@ func makeScoreCard(_ d: CardData) -> Img {
     if scary { pxBox(g, nb.x, nb.y, nb.w, nb.h, "#1a0306", "#000000", "#3a070d", "#0a0103", 6) } else { pxBox(g, nb.x, nb.y, nb.w, nb.h, "#fc7858", "#533846", "#ffa587", "#d85c40", 6) }
     if scary { drawScaryName(g, nb.x + 150, nb.y, nb.w - 170, nb.h) }
     else {
-        let name = String(skinName(d.bird).prefix(18))
+        // v163: your username (the bird's name when you're not signed in); the font's small f looks like an s
+        let name = b19Fix(String((onlineName().isEmpty ? skinName(d.bird) : onlineName()).prefix(18)))
         var fs = 50.0; g.font = "\(fs)px \"04b19\", monospace"
         while g.measureText(name).width > nb.w - 230 && fs > 26 { fs -= 2; g.font = "\(fs)px \"04b19\", monospace" }
         txt(g, name, nb.x + 150 + (nb.w - 150) / 2, nb.y + nb.h / 2 + fs * 0.36, fs, "\"04b19\"", "#fff", "#533846", 10)
@@ -372,6 +373,10 @@ struct DevPage: View {
                     Opt(t: "Mood: happy", on: false) { localStorage.setItem("fb_mood", jsonStr(["m": "happy", "t": 0] as [String: Any])); lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000)) }
                     Opt(t: "Mood: grumpy", on: false) { localStorage.setItem("fb_mood", jsonStr(["m": "grumpy", "t": 0] as [String: Any])); lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000)) }
                     Opt(t: "Mood: sleepy", on: false) { lsSetNum("fb_lastPlay", Int(Date().timeIntervalSince1970 * 1000) - 2 * 86_400_000) }
+                    Opt(t: "Sleepy bird", on: SLEEP_FORCE) { haptic(); playSound("swoosh"); SLEEP_FORCE.toggle(); tick += 1 }
+                    Opt(t: "Bird: sun", on: WX_FORCE == "clear") { haptic(); playSound("swoosh"); WX_FORCE = WX_FORCE == "clear" ? "" : "clear"; tick += 1 }
+                    Opt(t: "Bird: rain", on: WX_FORCE == "rain") { haptic(); playSound("swoosh"); WX_FORCE = WX_FORCE == "rain" ? "" : "rain"; tick += 1 }
+                    Opt(t: "Bird: snow", on: WX_FORCE == "snow") { haptic(); playSound("swoosh"); WX_FORCE = WX_FORCE == "snow" ? "" : "snow"; tick += 1 }
                     Opt(t: "+10 crashes", on: false) { haptic(); playSound("swoosh"); lsSetNum("fb_lifeDeaths", lsNum("fb_lifeDeaths") + 10); SCAR.at = 0; if rebornUnlocked() { rebornRegister() } }
                 }.padding(.bottom, 8)
                 Sec(t: "Reset"); Hint(t: "Tap twice to confirm")

@@ -128,6 +128,7 @@ func render() {
         ctx.restore()
     }
 
+    drawV163Overlay()   // v163: the seasonal logo, the bird and the weather, the sleepy bird
     drawV161Overlay()   // v161: bird moods
     if afterlife < 3 { drawStopButton() }
     drawV158Overlay()   // v158: the fake crash, achievement banners
