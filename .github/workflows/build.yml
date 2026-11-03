@@ -63,6 +63,9 @@ jobs:
           xcrun simctl io "$UDID" screenshot out/shots/zz_last.png > /dev/null 2>&1 || true
           cp "$DATA"/Documents/shots/*.png out/shots/ 2>/dev/null || true
           cp "$F" out/demo.txt 2>/dev/null || true
+          # if the app crashed, keep the crash report
+          mkdir -p out/crash; find ~/Library/Logs/DiagnosticReports -name "FlappyBird*" -mmin -30 -exec cp {} out/crash/ \; 2>/dev/null || true
+          for f in out/crash/*; do [ -f "$f" ] && head -c 60000 "$f" > "$f.txt" && rm "$f"; done; ls out/crash
           xcrun simctl terminate "$UDID" com.jordanvalladares.flappybird || true
           grep DEMO out/console.txt | head -30 || true
       - name: Publish the IPA, a GitHub release and the SideStore source

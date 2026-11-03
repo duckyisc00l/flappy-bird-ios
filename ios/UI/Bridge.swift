@@ -108,6 +108,8 @@ struct GameSKView: UIViewRepresentable {
         v.ignoresSiblingOrder = true
         v.isMultipleTouchEnabled = false
         v.preferredFramesPerSecond = 120
+        v.shouldCullNonVisibleNodes = false   // v157: the canvas hides unused sprites itself; skip SpriteKit's per-sprite visibility checks
+        v.isOpaque = true
         let s = WebScene(size: CGSize(width: 402, height: 874))
         s.scaleMode = .resizeFill
         v.presentScene(s)

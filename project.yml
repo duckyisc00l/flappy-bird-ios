@@ -23,10 +23,11 @@ targets:
       properties:
         CFBundleDisplayName: Flappy Bird
         CFBundleShortVersionString: "6.2"
-        CFBundleVersion: "172"
+        CFBundleVersion: "173"
         UILaunchScreen:
           UIColorName: ""
         UIRequiresFullScreen: true
+        CADisableMinimumFrameDurationOnPhone: true   # v157: lets ProMotion iPhones run the game at 120 fps
         UIStatusBarHidden: true
         UIViewControllerBasedStatusBarAppearance: true
         UISupportedInterfaceOrientations:
@@ -66,7 +67,7 @@ targets:
       properties:
         CFBundleDisplayName: Flappy Bird
         CFBundleShortVersionString: "6.2"
-        CFBundleVersion: "172"
+        CFBundleVersion: "173"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
         UIAppFonts: [inside.ttf, outside.ttf, pixel.ttf]
