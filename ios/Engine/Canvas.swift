@@ -347,14 +347,16 @@ final class SKCanvas: Canvas2D {
     var scaleHint: CGFloat = 3   // screen pixels per point (for text sharpness)
     private var pool: [SKSpriteNode] = []
     private var poolColor: [RGBA] = []   // v157: the colour each sprite has (comparing UIColors every frame was slow)
+    // v158: what each sprite was last set to, so a sprite that hasn't moved isn't touched (each SpriteKit setter call costs)
+    private struct Geo: Equatable { var x = 0.0, y = 0.0, r = 0.0, sx = 1.0, sy = 1.0, a = 1.0 }
+    private var poolGeo: [Geo] = []
     private var used = 0
     var usedCount: Int { used }
-    private var z: CGFloat = 0
     private lazy var white: SKTexture = {
         let c = CGCanvas(1, 1); c.fill("#fff"); c.fillRect(0, 0, 1, 1); let t = SKTexture(cgImage: c.image().cg); t.filteringMode = .nearest; return t
     }()
 
-    func begin() { used = 0; z = 0; resetStack() }
+    func begin() { used = 0; resetStack() }
     func end() {
         if used < pool.count { for i in used..<pool.count where !pool[i].isHidden { pool[i].isHidden = true } }
     }
@@ -362,11 +364,11 @@ final class SKCanvas: Canvas2D {
         if used == pool.count {
             let n = SKSpriteNode(texture: nil, color: .white, size: CGSize(width: 1, height: 1))
             n.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-            root.addChild(n); pool.append(n); poolColor.append(.white)
+            n.zPosition = CGFloat(pool.count + 1)   // (sprite k is always the k-th thing drawn)
+            root.addChild(n); pool.append(n); poolColor.append(.white); poolGeo.append(Geo())
         }
         let n = pool[used]; used += 1
         if n.isHidden { n.isHidden = false }
-        z += 1; n.zPosition = z
         return n
     }
     /// one textured / coloured quad: the local rect (x, y, w, h, y down) under transform m
@@ -387,10 +389,15 @@ final class SKCanvas: Canvas2D {
             if poolColor[idx] != color { poolColor[idx] = color; n.color = color.ui }
             if n.colorBlendFactor != 1 { n.colorBlendFactor = 1 }
         } else if n.colorBlendFactor != 0 { n.colorBlendFactor = 0 }
-        n.alpha = CGFloat(a)
-        n.position = CGPoint(x: px, y: boxH - py)
-        n.zRotation = CGFloat(rot)
-        n.xScale = CGFloat(sx); n.yScale = CGFloat(sy)
+        let g = Geo(x: px, y: boxH - py, r: rot, sx: sx, sy: sy, a: a), o = poolGeo[idx]
+        if g != o {
+            if g.a != o.a { n.alpha = CGFloat(a) }
+            if g.x != o.x || g.y != o.y { n.position = CGPoint(x: g.x, y: g.y) }
+            if g.r != o.r { n.zRotation = CGFloat(rot) }
+            if g.sx != o.sx { n.xScale = CGFloat(sx) }
+            if g.sy != o.sy { n.yScale = CGFloat(sy) }
+            poolGeo[idx] = g
+        }
     }
     override func fillRect(_ x: Double, _ y: Double, _ w: Double, _ h: Double) {
         switch st.fill {

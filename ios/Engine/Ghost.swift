@@ -293,7 +293,9 @@ func botPathOK(_ path: BotPath, _ j: Int) -> Bool {
 }
 var botPath: BotPath? = nil, botStartCheck = 0.0, BOT_KEEP = 75
 func autoBot(_ dt: Double) {
-    if !autoplay || settingsNode.added || PK.open { botTimer = 0; botPath = nil; return }
+    if !autoplay || settingsNode.added { botTimer = 0; botPath = nil; return }
+    // v158: a page open over the game keeps the bot's plan (throwing it away every frame made it re-plan from scratch 30x a second)
+    if PK.open { botTimer = 0; return }
     if !isWaitingToStart && !isGameOver && !bird.dynamic && flappyBird.added && playButton.added && !hitButton {
         botTimer += dt
         if botTimer > 1.5 { botTimer = 0; handlePlayTap() }

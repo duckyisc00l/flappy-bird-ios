@@ -48,7 +48,7 @@ enum Demo {
         for _ in 0..<12 { ys.append(Int(floor(r() * 192) + 192)) }
         say("dailycourse \(dailyKey()) \(ys)")
         r = mulberry32(12345); say("mulberry 12345 \((0..<4).map { _ in r() })")
-        func perf(_ label: String, _ setup: @escaping () -> Void) { at(0.6) { setup(); PERF.reset() }; at(3) { say("perf \(label.padding(toLength: 14, withPad: " ", startingAt: 0)) " + PERF.line) } }
+        func perf(_ label: String, _ setup: @escaping () -> Void) { at(0.6) { setup(); PERF.reset() }; at(3) { say("perf \(label.padding(toLength: 14, withPad: " ", startingAt: 0)) " + PERF.line); say("perf   parts " + PERF.sections) } }
         perf("title") {}
         at(2) { say("snap title") }
         at(0.5) { Task { @MainActor in widgetShots() } }

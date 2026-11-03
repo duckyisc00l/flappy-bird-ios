@@ -32,6 +32,7 @@ func label(_ text: String, _ x: Double, _ y: Double, _ font: String, _ px: Doubl
 func nodeSpr(_ node: GNode, _ im: Img?, _ extraRot: Double = 0) { if node.added { spr(im, node.x, node.y, node.scale, node.scale, extraRot) } }
 
 func render() {
+    PERF.begin()
     screen.begin()
     ctx = screen
     screen.boxH = boxH
@@ -51,17 +52,20 @@ func render() {
     drawCreepySky(skyX, skyW, skyH)
     drawCreepyFog()
     drawWeatherSky()
+    PERF.mark("r.sky")
 
     if pipesNode.scale > 0 {
         renderEndingPipes()
         drawSeasonPipes()
     }
+    PERF.mark("r.pipes")
 
     drawStrangers()
     drawGhost()
     drawTrail(0)
     if bird.added { spr(birdFrame(), bird.x, bird.y, bird.scale, bird.scale, bird.rot) }
     drawTrail(1)
+    PERF.mark("r.bird")
 
     let landW = 336 * 2.0
     for i in 0..<(2 + Int(floor(width / landW))) { spr(img("land"), groundX + Double(i) * (landW - 1), 112, 2, 2, 0) }
@@ -71,8 +75,11 @@ func render() {
     drawCreepyOverlay()
     drawDevBoxes()
     if flipWorld { ctx.restore() }
+    PERF.mark("r.ground")
     drawWeatherFront(flipWorld)
+    PERF.mark("r.wxfront")
     drawDarkness(flipWorld)
+    PERF.mark("r.dark")
 
     nodeSpr(flappyBird, img("flappy_logo"))
     nodeSpr(getReady, img("get_ready"))

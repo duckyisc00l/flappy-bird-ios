@@ -694,6 +694,7 @@ var contactPipe = false
 var contactGround = false
 
 func update(_ dt: Double) {
+    PERF.begin()
     sceneTime += dt
     updateCreepy(dt)
     if !hasHitGround { updateBirdRotation(dt) }
@@ -720,9 +721,12 @@ func update(_ dt: Double) {
         pipeList = pipeList.filter { $0.traveled < $0.distance }
     }
     for p in pipeList where p.amp != nil && p.amp != 0 && p.falling == nil { p.y = p.y0! + p.amp! * sin(p.traveled * p.wk! + p.ph!) }
+    PERF.mark("u.move")
     updateWind(dt)
     updateWeather(dt)
+    PERF.mark("u.weather")
     updateExtras(dt)
+    PERF.mark("u.extras")
 
     updateFalling(dt * (moving.speed > 0 ? 1 : 0))
     endingUpdate(dt)
@@ -737,6 +741,7 @@ func update(_ dt: Double) {
         if ghostRec != nil || WATCH != nil { ghostSample(sceneTime - rem - gameStartTime) }
         if botFly { botNext -= h; if botNext <= 1e-7 { botNext += BOT_STEP; if botNext < 1e-7 { botNext = BOT_STEP }; botDecide(sceneTime - rem, rem) } }
     }
+    PERF.mark("u.physics+bot")
     autoBot(dt)
 
     if bird.dynamic && !hasHitGround {
@@ -756,6 +761,7 @@ func update(_ dt: Double) {
         if contactGround { if devGod && !isShowingGameOver { bird.vy = C.flapImpulse / BIRD_MASS } else { handleGroundCollision() } }
     }
     if resultNode.added { updateResultCount() }
+    PERF.mark("u.rest")
 }
 
 // ---------- STOP button (shown while Autoplay is on) ----------
@@ -781,7 +787,13 @@ var SHOW_FPS = false
 /// frame timing (the build's test run prints it per scene)
 final class PerfStats {
     var frames = 0, upd = 0.0, ren = 0.0, worst = 0.0, slow = 0, nodes = 0, start = 0.0
-    func reset() { frames = 0; upd = 0; ren = 0; worst = 0; slow = 0; nodes = 0; start = CACurrentMediaTime() }
+    // v158: where the time goes, part by part (only measured in the build's test run)
+    static let on = ProcessInfo.processInfo.arguments.contains("-shots")
+    var sec: [String: Double] = [:], lastMark = 0.0
+    @inline(__always) func begin() { if PerfStats.on { lastMark = CACurrentMediaTime() } }
+    @inline(__always) func mark(_ k: String) { if PerfStats.on { let t = CACurrentMediaTime(); sec[k, default: 0] += t - lastMark; lastMark = t } }
+    var sections: String { let f = Double(max(1, frames)); return sec.filter { $0.value / f > 0.00005 }.sorted { $0.value > $1.value }.prefix(8).map { String(format: "%@ %.2f", $0.key, $0.value / f * 1000) }.joined(separator: ", ") }
+    func reset() { frames = 0; upd = 0; ren = 0; worst = 0; slow = 0; nodes = 0; sec = [:]; start = CACurrentMediaTime() }
     var line: String {
         let el = max(0.001, CACurrentMediaTime() - start), f = Double(max(1, frames))
         return String(format: "fps %.0f cpu update %.2fms render %.2fms worst %.1fms slow %d nodes %d", Double(frames) / el, upd / f * 1000, ren / f * 1000, worst * 1000, slow, nodes / max(1, frames))
@@ -801,6 +813,7 @@ func loop(_ ts: Double) {
     }
     let t1 = CACurrentMediaTime()
     render()
+    PERF.mark("r.ui")
     renderLoading()
     let t2 = CACurrentMediaTime()
     PERF.frames += 1; PERF.upd += t1 - t0; PERF.ren += t2 - t1; PERF.worst = max(PERF.worst, t2 - t0); PERF.nodes += screen.usedCount
