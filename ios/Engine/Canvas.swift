@@ -540,8 +540,9 @@ final class SKCanvas: Canvas2D {
             let sq = CGRect(x: x0 - r1, y: y0 - r1, width: 2 * r1, height: 2 * r1), rr = CGRect(x: x, y: y, width: w, height: h)
             let inter = sq.intersection(rr)
             if !inter.isNull && inter.width > 0 && inter.height > 0 {
-                let t = inter == sq ? tex : SKTexture(rect: CGRect(x: (inter.minX - sq.minX) / sq.width, y: 1 - (inter.maxY - sq.minY) / sq.height, width: inter.width / sq.width, height: inter.height / sq.height), in: tex)
-                quad(st.m, Double(inter.minX), Double(inter.minY), Double(inter.width), Double(inter.height), tex: t, color: col, alpha: maxA * st.alpha, tint: true)
+                // v158: the whole circle's square (a cut-out part of the texture drew nothing: Darkness mode showed a clear square
+                // whenever the lantern touched the screen edge). Anything past the rect is off the screen anyway.
+                quad(st.m, Double(sq.minX), Double(sq.minY), Double(sq.width), Double(sq.height), tex: tex, color: col, alpha: maxA * st.alpha, tint: true)
             }
             // outside the circle: the last colour
             if let last = g.stops.last, last.1.a > 0.001 {
