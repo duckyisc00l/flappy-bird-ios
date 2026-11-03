@@ -71,6 +71,7 @@ struct MenuLayer: View {
         switch k {
         case "birds", "trails": v = min(V * 0.68, 560)
         case "modes": v = min(V * 0.72, 600)
+        case "achievements": v = min(V * 0.66, 540)   // v160: not so tall
         case "weather": v = V * 0.8
         case "leaders", "challenge", "live": v = min(V * 0.74, 620)
         case "friends": v = min(V * 0.78, 640)

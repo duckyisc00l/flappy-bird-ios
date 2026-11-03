@@ -27,7 +27,7 @@ struct AchievementsPage: View {
             HStack(spacing: 6) {
                 stat("Crashes", lsNum("fb_lifeDeaths")); stat("Pipes", lsNum("fb_lifePipes")); stat("Rounds", lsNum("fb_lifeGames"))
             }.padding(.bottom, 8)
-            FitScroll {
+            ScrollView(showsIndicators: false) {   // v160: always scrolls inside the card (the long list spilled out of it)
                 VStack(spacing: 0) {
                     Button {
                         scarsOn.toggle(); saveBool("scars", scarsOn); playSound("swoosh"); haptic(); tick += 1
@@ -47,17 +47,18 @@ struct AchievementsPage: View {
                         let on = got.contains(a.id), hide = a.secret && !on
                         VStack(spacing: 0) {
                             HStack(spacing: 10) {
-                                PixImage(img: achIcon(on, a.secret), w: 26, h: 26)
+                                PixImage(img: achIcon(on, a.secret), w: 22, h: 22)
                                 VStack(alignment: .leading, spacing: 3) {
                                     KT(hide ? "???" : a.name, 8, K.orange)
                                     KT(hide ? "Secret" : a.desc, 6, spacing: 2).opacity(0.8)
                                 }.frame(maxWidth: .infinity, alignment: .leading)
-                            }.padding(.vertical, 7).padding(.horizontal, 9).opacity(on ? 1 : 0.6)
+                            }.padding(.vertical, 5).padding(.horizontal, 9).opacity(on ? 1 : 0.6)
                             if i < ACH.count - 1 { K.line2.frame(height: 1) }
                         }
                     }
                 }
             }
+            .clipShape(RoundedRectangle(cornerRadius: 8))
             .background(RoundedRectangle(cornerRadius: 8).fill(K.light)).overlay(RoundedRectangle(cornerRadius: 8).stroke(K.brown, lineWidth: 2))
         }
     }
