@@ -43,3 +43,32 @@ func drawNewBest() {
     glyphOutlined(txt, jsRound(width / 2 - glyphWidth(txt, k) / 2), jsRound(scoreLabel.y - 46 + min(t, 0.2) * 20), "#ffd23c", k)
     ctx.globalAlpha = 1
 }
+
+// ===================== v172: your own runs never stay in your race list =====================
+// (a race of your own run saved before v164 kept coming back every time the game opened, and the list
+// syncs with your account, so it's checked again every few seconds and before every round)
+func ownFriend(_ f: Friend) -> Bool {
+    let me = accSignedIn() ? ACCT.uid : nil
+    if let me = me, let u = f.uid, u == me { return true }
+    if let g = f.gid, lsList("fb_myRuns").contains(g) || linkCache.values.contains(g) { return true }
+    return false
+}
+func purgeOwnRaces() {
+    let gone = friendList.filter(ownFriend).map { $0.id }
+    if gone.isEmpty { return }
+    friendList.removeAll { gone.contains($0.id) }; saveFriends()
+    if !raceId.isEmpty && gone.contains(raceId) { setRace(""); raceInfo = nil }
+}
+private var purgeTimer: Timer? = nil
+func v172Start() {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { purgeOwnRaces() }
+    purgeTimer = Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in purgeOwnRaces() }
+}
+
+// ===================== v172: tap anywhere to play again =====================
+// once the score board has finished counting up, a tap anywhere that isn't a button starts the next round
+func touchesBegan(_ px: Double, _ py: Double) {
+    let ready = isGameOver && playButton.added && playButton.scale >= 0.99 && resultNode.added && sceneTime - result.shownAt > 1.4 && !hitButton && !PK.open && afterlife == 0
+    touchesBeganBase(px, py)
+    if ready && !hitButton && isGameOver && playButton.added { handlePlayTap() }
+}

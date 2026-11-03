@@ -355,7 +355,7 @@ func namedAt(_ px: Double, _ py: Double) -> String? {
     if nodeHit(githubButton, 62, 36, px, py) { return "github" }
     return nil
 }
-func touchesBegan(_ px: Double, _ py: Double) {
+func touchesBeganBase(_ px: Double, _ py: Double) {
     pauseResume()   // v170
     if afterlife >= 3 { return }
     if stopButtonVisible() {
@@ -382,6 +382,7 @@ func handleGameTap() {
 func startGame() {
     if !isWaitingToStart { return }
     glitchArm()   // v158
+    purgeOwnRaces()   // v172
     newBestStart()   // v171
     isWaitingToStart = false
     gameStartTime = sceneTime
@@ -845,6 +846,7 @@ func startEngine() {
     prepareSkins()
     v158Start()
     v161Start()
+    v172Start()
     didMove()
     dissolving = true
     dailyFresh()
